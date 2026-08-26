@@ -277,7 +277,7 @@ class SMF_Shortcodes {
             );
         }
 
-        return new SMF_API( $url );
+        return new SMF_API( $url, SMF_API::api_key_for_verband( $slug ) );
     }
 
     /**

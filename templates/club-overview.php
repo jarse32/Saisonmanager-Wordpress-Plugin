@@ -19,6 +19,7 @@ $render_game = function ( array $game ) use ( $api ) {
     $date_ts    = $api->parse_game_date( $game );
     $liga_name  = isset( $game['_liga_name'] )           ? $game['_liga_name']           : '';
     $api_url    = isset( $game['_api_url'] )             ? $game['_api_url']             : '';
+    $verband    = isset( $game['_verband'] )             ? $game['_verband']             : '';
 
     $home_name  = isset( $game['home_team_name'] )       ? $game['home_team_name']       : '?';
     $away_name  = isset( $game['guest_team_name'] )      ? $game['guest_team_name']      : '?';
@@ -33,7 +34,7 @@ $render_game = function ( array $game ) use ( $api ) {
     <div class="<?php echo esc_attr( $card_class ); ?>"
          <?php if ( $game_id ) : ?>
              data-game-id="<?php echo esc_attr( $game_id ); ?>"
-             <?php if ( $api_url ) : ?>data-api-url="<?php echo esc_attr( $api_url ); ?>"<?php endif; ?>
+             <?php if ( $verband ) : ?>data-verband="<?php echo esc_attr( $verband ); ?>"<?php endif; ?>
              role="button"
              tabindex="0"
              aria-label="Spieldetails: <?php echo esc_attr( $home_name . ' vs ' . $away_name ); ?>"
@@ -129,6 +130,8 @@ $render_game = function ( array $game ) use ( $api ) {
         </div>
 
     </div>
+
+    <?php smf_render_attribution(); ?>
 
 </div>
 

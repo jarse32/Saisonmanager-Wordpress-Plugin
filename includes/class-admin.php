@@ -11,7 +11,7 @@ class SMF_Admin {
      */
     public function register_menu() {
         add_menu_page(
-            'Saisonmanager Floorball',
+            'SM Floorball',
             'SM Floorball',
             'manage_options',
             'smf-settings',
@@ -44,6 +44,10 @@ class SMF_Admin {
         register_setting( 'smf_settings_group', 'smf_cache_duration', [
             'sanitize_callback' => 'absint',
             'default'           => 300,
+        ] );
+        register_setting( 'smf_settings_group', 'smf_api_key', [
+            'sanitize_callback' => 'sanitize_text_field',
+            'default'           => '',
         ] );
     }
 
@@ -80,18 +84,20 @@ class SMF_Admin {
         check_admin_referer( 'smf_save_verbaende' );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Nicht erlaubt.' );
 
-        $slugs = $_POST['smf_v_slug'] ?? [];
-        $names = $_POST['smf_v_name'] ?? [];
-        $urls  = $_POST['smf_v_url']  ?? [];
+        $slugs    = $_POST['smf_v_slug']    ?? [];
+        $names    = $_POST['smf_v_name']    ?? [];
+        $urls     = $_POST['smf_v_url']     ?? [];
+        $api_keys = $_POST['smf_v_api_key'] ?? [];
 
         $verbaende = [];
         foreach ( $slugs as $i => $slug ) {
-            $slug = sanitize_key( $slug );
-            $name = sanitize_text_field( $names[ $i ] ?? '' );
-            $url  = esc_url_raw( $urls[ $i ] ?? '' );
+            $slug    = sanitize_key( $slug );
+            $name    = sanitize_text_field( $names[ $i ] ?? '' );
+            $url     = esc_url_raw( $urls[ $i ] ?? '' );
+            $api_key = sanitize_text_field( $api_keys[ $i ] ?? '' );
 
             if ( $slug && $url ) {
-                $verbaende[] = [ 'slug' => $slug, 'name' => $name, 'url' => $url ];
+                $verbaende[] = [ 'slug' => $slug, 'name' => $name, 'url' => $url, 'api_key' => $api_key ];
             }
         }
 
@@ -112,6 +118,7 @@ class SMF_Admin {
         $slugs   = isset( $_POST['smf_v_slug'] )   ? (array) $_POST['smf_v_slug']   : array();
         $anzahls = isset( $_POST['smf_v_anzahl'] ) ? (array) $_POST['smf_v_anzahl'] : array();
 
+        $t_team_ids   = isset( $_POST['smf_v_t_team_id'] )   ? (array) $_POST['smf_v_t_team_id']   : array();
         $t_liga_ids   = isset( $_POST['smf_v_t_liga_id'] )   ? (array) $_POST['smf_v_t_liga_id']   : array();
         $t_teams      = isset( $_POST['smf_v_t_team'] )      ? (array) $_POST['smf_v_t_team']      : array();
         $t_verbaende  = isset( $_POST['smf_v_t_verband'] )   ? (array) $_POST['smf_v_t_verband']   : array();
@@ -127,13 +134,23 @@ class SMF_Admin {
                 $slug = sanitize_title( $name );
             }
 
-            // Teams für diesen Verein
+            // Teams für diesen Verein. Jede Zeile hat entweder eine Team-ID
+            // (bevorzugt, ein Aufruf deckt alle Wettbewerbe der Saison ab)
+            // oder eine Liga-ID + Team-Filter (Legacy, eine Zeile pro
+            // Wettbewerb). Beide Feld-Arrays teilen sich denselben Zeilen-
+            // Index $j, da sie aus derselben Tabelle stammen.
+            $teams_id_for_club   = isset( $t_team_ids[ $i ] ) ? (array) $t_team_ids[ $i ] : array();
+            $liga_ids_for_club   = isset( $t_liga_ids[ $i ] ) ? (array) $t_liga_ids[ $i ] : array();
+            $row_indices         = array_unique( array_merge( array_keys( $teams_id_for_club ), array_keys( $liga_ids_for_club ) ) );
+
             $teams = array();
-            $liga_ids_for_club = isset( $t_liga_ids[ $i ] ) ? (array) $t_liga_ids[ $i ] : array();
-            foreach ( $liga_ids_for_club as $j => $liga_id ) {
-                $liga_id = absint( $liga_id );
-                if ( ! $liga_id ) continue;
+            foreach ( $row_indices as $j ) {
+                $team_id = absint( isset( $teams_id_for_club[ $j ] ) ? $teams_id_for_club[ $j ] : 0 );
+                $liga_id = absint( isset( $liga_ids_for_club[ $j ] ) ? $liga_ids_for_club[ $j ] : 0 );
+                if ( ! $team_id && ! $liga_id ) continue;
+
                 $teams[] = array(
+                    'team_id'   => $team_id,
                     'liga_id'   => $liga_id,
                     'team'      => sanitize_text_field( isset( $t_teams[ $i ][ $j ] )      ? $t_teams[ $i ][ $j ]      : '' ),
                     'verband'   => sanitize_key( isset( $t_verbaende[ $i ][ $j ] )         ? $t_verbaende[ $i ][ $j ]  : '' ),
@@ -167,7 +184,7 @@ class SMF_Admin {
         <div class="wrap smf-admin-wrap">
             <h1>
                 <span class="smf-logo">⚽</span>
-                Saisonmanager Floorball – Einstellungen
+                SM Floorball – Einstellungen
             </h1>
 
             <?php if ( $flushed ) : ?>
@@ -197,6 +214,22 @@ class SMF_Admin {
                                            value="<?php echo esc_attr( get_option( 'smf_api_base_url', 'https://saisonmanager.de/api/v2' ) ); ?>"
                                            class="regular-text">
                                     <p class="description">Wird genutzt, wenn im Shortcode kein <code>verband</code> angegeben ist.</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="smf_api_key">Saisonmanager API-Key</label></th>
+                                <td>
+                                    <input type="text" id="smf_api_key" name="smf_api_key"
+                                           value="<?php echo esc_attr( get_option( 'smf_api_key', '' ) ); ?>"
+                                           class="regular-text" autocomplete="off">
+                                    <p class="description">
+                                        Eigener Key für dieses Projekt, beantragt unter
+                                        <code>saisonmanager.de/api-zugang</code>. Wird nur serverseitig
+                                        (WordPress-Backend) als <code>X-Api-Key</code>-Header mitgeschickt –
+                                        erscheint nie im Seitenquelltext oder Browser der Besucher:innen. Gilt
+                                        als Standard-Key für alle Verbände, sofern unten kein abweichender
+                                        Verbands-Key hinterlegt ist.
+                                    </p>
                                 </td>
                             </tr>
                             <tr>
@@ -239,6 +272,8 @@ class SMF_Admin {
                     <p>
                         Hinterlege hier alle Verbände, die du nutzen möchtest. Im Shortcode kannst du dann einfach
                         <code>verband="slug"</code> angeben – z.B. <code>[sm_tabelle liga_id="123" verband="fvd"]</code>.
+                        Der API-Key-Spalte nur einen Wert geben, wenn dieser Verband einen eigenen Key
+                        benötigt – sonst greift der Standard-Key aus den Allgemeinen Einstellungen.
                     </p>
 
                     <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
@@ -251,6 +286,7 @@ class SMF_Admin {
                                     <th>Slug <small>(für Shortcode)</small></th>
                                     <th>Name <small>(zur Anzeige)</small></th>
                                     <th>API-URL</th>
+                                    <th>API-Key <small>(optional)</small></th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -267,6 +303,9 @@ class SMF_Admin {
                                         <td><input type="url" name="smf_v_url[]"
                                                    value="<?php echo esc_attr( $v['url'] ); ?>"
                                                    class="regular-text" placeholder="https://fvd.saisonmanager.de/api/v2"></td>
+                                        <td><input type="text" name="smf_v_api_key[]"
+                                                   value="<?php echo esc_attr( $v['api_key'] ?? '' ); ?>"
+                                                   class="regular-text" autocomplete="off" placeholder="(Standard-Key)"></td>
                                         <td><button type="button" class="button smf-remove-row">&#10005; Entfernen</button></td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -358,19 +397,33 @@ class SMF_Admin {
                                     </table>
 
                                     <h4 style="margin: 1rem 0 0.5rem;">Teams &amp; Ligen</h4>
+                                    <p class="description">
+                                        <strong>Team-ID</strong> (empfohlen): ein Aufruf deckt alle Wettbewerbe
+                                        des Teams in der Saison ab – benötigt nur einen konfigurierten
+                                        Saisonmanager API-Key (siehe Allgemeine Einstellungen).
+                                        <strong>Liga-ID</strong> (Legacy): eine Zeile pro Wettbewerb, Zuordnung
+                                        per Team-Filter-Namen. Pro Zeile nur eines von beidem ausfüllen.
+                                    </p>
                                     <table class="widefat smf-teams-table">
                                         <thead>
                                             <tr>
-                                                <th>Liga-ID</th>
-                                                <th>Team-Filter <small>(optional)</small></th>
+                                                <th>Team-ID <small>(empfohlen)</small></th>
+                                                <th>Liga-ID <small>(Legacy)</small></th>
+                                                <th>Team-Filter <small>(nur Legacy)</small></th>
                                                 <th>Verband</th>
-                                                <th>Liga-Name <small>(Anzeige)</small></th>
+                                                <th>Liga-Name <small>(Anzeige, nur Legacy)</small></th>
                                                 <th></th>
                                             </tr>
                                         </thead>
                                         <tbody class="smf-teams-body">
                                             <?php foreach ( $verein['teams'] as $team ) : ?>
                                                 <tr class="smf-team-row">
+                                                    <td>
+                                                        <input type="number"
+                                                               name="smf_v_t_team_id[<?php echo esc_attr( $vi ); ?>][]"
+                                                               value="<?php echo esc_attr( $team['team_id'] ?? '' ); ?>"
+                                                               class="small-text" placeholder="z.B. 6754">
+                                                    </td>
                                                     <td>
                                                         <input type="number"
                                                                name="smf_v_t_liga_id[<?php echo esc_attr( $vi ); ?>][]"
@@ -455,10 +508,11 @@ class SMF_Admin {
                             <table class="widefat smf-teams-table">
                                 <thead>
                                     <tr>
-                                        <th>Liga-ID</th>
-                                        <th>Team-Filter <small>(optional)</small></th>
+                                        <th>Team-ID <small>(empfohlen)</small></th>
+                                        <th>Liga-ID <small>(Legacy)</small></th>
+                                        <th>Team-Filter <small>(nur Legacy)</small></th>
                                         <th>Verband</th>
-                                        <th>Liga-Name <small>(Anzeige)</small></th>
+                                        <th>Liga-Name <small>(Anzeige, nur Legacy)</small></th>
                                         <th></th>
                                     </tr>
                                 </thead>
@@ -473,6 +527,7 @@ class SMF_Admin {
                     <div id="smf-team-row-template" style="display:none;">
                         <table><tbody>
                             <tr class="smf-team-row">
+                                <td><input type="number" name="smf_v_t_team_id[__VI__][]" class="small-text" placeholder="z.B. 6754"></td>
                                 <td><input type="number" name="smf_v_t_liga_id[__VI__][]" class="small-text" placeholder="z.B. 123"></td>
                                 <td><input type="text"   name="smf_v_t_team[__VI__][]"    class="regular-text" placeholder="z.B. Eichehorn"></td>
                                 <td>

@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name: Saisonmanager Floorball
- * Plugin URI:  https://github.com/
- * Description: Zeigt Floorball-Spiele, Tabellen und Ligen aus der Saisonmanager-API via Shortcodes an.
- * Version:     1.1.0
+ * Plugin Name: SM Floorball
+ * Plugin URI:  https://github.com/jarse32/Saisonmanager-Wordpress-Plugin
+ * Description: Zeigt Floorball-Spiele, Tabellen und Ligen aus der Saisonmanager-API via Shortcodes an. Inoffizielles Community-Projekt, nicht von Saisonmanager/FVD betrieben.
+ * Version:     1.2.0
  * Author:      Kasche
  * Text Domain: saisonmanager-floorball
  * License:     GPL-2.0+
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'SMF_VERSION', '1.1.0' );
+define( 'SMF_VERSION', '1.2.0' );
 define( 'SMF_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SMF_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -89,9 +89,19 @@ function smf_ajax_game_detail() {
         wp_send_json_error( 'Ungültige Spiel-ID' );
     }
 
-    // Optionale API-URL (für Spiele aus Verbands-spezifischen Endpunkten)
-    $api_url = isset( $_POST['api_url'] ) ? esc_url_raw( wp_unslash( $_POST['api_url'] ) ) : '';
-    $api     = $api_url ? new SMF_API( $api_url ) : new SMF_API();
+    // Optionaler Verbands-Slug (für Spiele aus Verbands-spezifischen Endpunkten).
+    // Bewusst NUR ein Slug, keine rohe URL: der Slug wird gegen die serverseitig
+    // konfigurierten Verbände geprüft (SMF_API::is_known_verband). Eine frühere
+    // Version akzeptierte hier eine vom Client mitgeschickte api_url direkt -
+    // das wäre mit einem echten API-Key eine SSRF-/Key-Exfiltrationslücke
+    // (Angreifer könnte per DevTools eine beliebige Ziel-URL einschleusen und
+    // sich den serverseitigen X-Api-Key-Header dorthin zustellen lassen).
+    $verband = isset( $_POST['verband'] ) ? sanitize_key( wp_unslash( $_POST['verband'] ) ) : '';
+    if ( $verband && SMF_API::is_known_verband( $verband ) ) {
+        $api = new SMF_API( SMF_API::url_for_verband( $verband ), SMF_API::api_key_for_verband( $verband ) );
+    } else {
+        $api = new SMF_API();
+    }
 
     $game = $api->get_game( $game_id );
 
@@ -120,6 +130,14 @@ function smf_render_template( $template, $data = array() ) {
         extract( $data, EXTR_SKIP );
         include $file;
     }
+}
+
+/**
+ * Pflicht-Quellenangabe gemäß Saisonmanager-Nutzungsvereinbarung ausgeben
+ * (Datenquelle + Kennzeichnung als inoffizielles Community-Projekt).
+ */
+function smf_render_attribution() {
+    echo '<p class="smf-attribution">Daten: Saisonmanager / Floorball Verband Deutschland e. V. – inoffizielles Community-Projekt.</p>';
 }
 
 /**

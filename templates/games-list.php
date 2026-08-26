@@ -127,6 +127,8 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : 'Spiele'
 
     <?php endif; ?>
 
+    <?php smf_render_attribution(); ?>
+
 </div>
 
 <?php if ( ! defined( 'SMF_MODAL_RENDERED' ) ) : define( 'SMF_MODAL_RENDERED', true ); ?>

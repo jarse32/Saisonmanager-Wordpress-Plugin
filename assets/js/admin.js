@@ -15,6 +15,7 @@
                        pattern="[a-z0-9\\-]+" title="Nur Kleinbuchstaben, Zahlen und Bindestriche"></td>
             <td><input type="text" name="smf_v_name[]" class="regular-text" placeholder="z.B. Floorball Verband Deutschland"></td>
             <td><input type="url"  name="smf_v_url[]"  class="regular-text" placeholder="https://fvd.saisonmanager.de/api/v2"></td>
+            <td><input type="text" name="smf_v_api_key[]" class="regular-text" autocomplete="off" placeholder="(Standard-Key)"></td>
             <td><button type="button" class="button smf-remove-row">&#10005; Entfernen</button></td>
         </tr>`;
 

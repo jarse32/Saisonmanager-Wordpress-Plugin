@@ -9,18 +9,25 @@ class SMF_API {
     /** @var string */
     private $base_url;
 
+    /** @var string API-Key, wird als X-Api-Key-Header mitgeschickt (serverseitig, nie an Besucher ausgeliefert) */
+    private $api_key;
+
     /** @var SMF_Cache */
     private $cache;
 
     /**
-     * @param string|null $base_url Optionale URL-Überschreibung (z.B. für spezifischen Verband)
+     * @param string|null $base_url Optionale URL-Überschreibung (z.B. für einen bestimmten Verband)
+     * @param string|null $api_key  Optionaler API-Key (z.B. für einen bestimmten Verband); fällt sonst auf den globalen Key zurück
      */
-    public function __construct( $base_url = null ) {
-        if ( $base_url ) {
-            $this->base_url = rtrim( $base_url, '/' );
-        } else {
-            $this->base_url = rtrim( get_option( 'smf_api_base_url', 'https://saisonmanager.de/api/v2' ), '/' );
-        }
+    public function __construct( $base_url = null, $api_key = null ) {
+        $this->base_url = $base_url
+            ? rtrim( $base_url, '/' )
+            : rtrim( get_option( 'smf_api_base_url', 'https://saisonmanager.de/api/v2' ), '/' );
+
+        $this->api_key = $api_key !== null && $api_key !== ''
+            ? $api_key
+            : trim( get_option( 'smf_api_key', '' ) );
+
         $this->cache = new SMF_Cache();
     }
 
@@ -63,6 +70,38 @@ class SMF_API {
     }
 
     /**
+     * Ob ein Slug ein bekannter, konfigurierter Verband ist. Wird u.a. von
+     * der AJAX-Spieldetail-Route genutzt, um einen vom Client mitgeschickten
+     * Slug gegen eine Allowlist zu prüfen, statt eine rohe URL entgegenzunehmen
+     * (siehe smf_ajax_game_detail() in saisonmanager-floorball.php - eine
+     * frühere Version akzeptierte dort eine beliebige api_url, was eine
+     * SSRF-/Key-Exfiltrationslücke war).
+     *
+     * @param string $slug
+     * @return bool
+     */
+    public static function is_known_verband( $slug ) {
+        return $slug !== '' && self::url_for_verband( $slug ) !== null;
+    }
+
+    /**
+     * Optionalen, Verbands-spezifischen API-Key ermitteln (überschreibt den
+     * globalen Key nur, wenn für diesen Verband explizit einer hinterlegt ist).
+     *
+     * @param string $slug
+     * @return string|null
+     */
+    public static function api_key_for_verband( $slug ) {
+        $verbaende = get_option( 'smf_verbaende', array() );
+        foreach ( $verbaende as $v ) {
+            if ( isset( $v['slug'] ) && $v['slug'] === $slug && ! empty( $v['api_key'] ) ) {
+                return $v['api_key'];
+            }
+        }
+        return null;
+    }
+
+    /**
      * Generischer GET-Request mit Caching
      *
      * @param string $endpoint
@@ -76,10 +115,18 @@ class SMF_API {
             return $cached;
         }
 
-        $response = wp_remote_get( $url, array(
+        $args = array(
             'timeout'    => 15,
             'user-agent' => 'WordPress/SMF-Plugin ' . SMF_VERSION,
-        ) );
+        );
+
+        // Key wird ausschließlich hier, serverseitig, angehängt - taucht nie
+        // im Browser oder in an Besucher ausgelieferten Seiteninhalten auf.
+        if ( $this->api_key !== '' ) {
+            $args['headers'] = array( 'X-Api-Key' => $this->api_key );
+        }
+
+        $response = wp_remote_get( $url, $args );
 
         if ( is_wp_error( $response ) ) {
             return $response;
@@ -132,6 +179,18 @@ class SMF_API {
     /** @return array|WP_Error */
     public function get_leagues() {
         return $this->request( 'leagues.json' );
+    }
+
+    /**
+     * Alle Spiele EINES Teams über alle Wettbewerbe der Saison abrufen (Heim
+     * und Auswärts, inkl. Liga-Zugehörigkeit je Spiel) - ein Request statt
+     * eines Requests pro Liga/Wettbewerb.
+     *
+     * @param int $team_id
+     * @return array|WP_Error Rohantwort mit u.a. 'team' und 'matches'
+     */
+    public function get_team_matches( $team_id ) {
+        return $this->request( "teams/{$team_id}/matches" );
     }
 
     /**

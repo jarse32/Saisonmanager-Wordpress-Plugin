@@ -42,22 +42,43 @@ class SMF_ClubOverview {
         $teams     = isset( $club['teams'] ) ? $club['teams'] : array();
 
         foreach ( $teams as $team_cfg ) {
-            $liga_id   = (int) ( isset( $team_cfg['liga_id'] )   ? $team_cfg['liga_id']   : 0 );
-            $team_name = trim( isset( $team_cfg['team'] )        ? $team_cfg['team']        : '' );
-            $verband   = trim( isset( $team_cfg['verband'] )     ? $team_cfg['verband']     : '' );
-            $liga_name = trim( isset( $team_cfg['liga_name'] )   ? $team_cfg['liga_name']   : '' );
+            $verband = sanitize_key( isset( $team_cfg['verband'] ) ? $team_cfg['verband'] : '' );
+            $team_id = (int) ( isset( $team_cfg['team_id'] ) ? $team_cfg['team_id'] : 0 );
 
-            if ( ! $liga_id ) continue;
-
-            // API-Instanz für diesen Verband ermitteln
+            // API-Instanz + Anzeige-URL (für Logo-Auflösung) für diesen Verband ermitteln
             if ( $verband ) {
                 $api_url = SMF_API::url_for_verband( $verband );
                 if ( ! $api_url ) continue; // Verband nicht konfiguriert
-                $api = new SMF_API( $api_url );
+                $api = new SMF_API( $api_url, SMF_API::api_key_for_verband( $verband ) );
             } else {
                 $api_url = rtrim( get_option( 'smf_api_base_url', 'https://saisonmanager.de/api/v2' ), '/' );
                 $api     = new SMF_API();
             }
+
+            // Bevorzugter Pfad: Team-ID gesetzt -> ein Request deckt alle
+            // Wettbewerbe des Teams in der Saison ab (teams/{id}/matches).
+            if ( $team_id ) {
+                $result = $api->get_team_matches( $team_id );
+                if ( is_wp_error( $result ) ) continue;
+
+                $matches = isset( $result['matches'] ) && is_array( $result['matches'] ) ? $result['matches'] : array();
+                foreach ( $matches as &$game ) {
+                    $game['_liga_name'] = isset( $game['league_name'] ) ? $game['league_name'] : ( isset( $game['league_short_name'] ) ? $game['league_short_name'] : '' );
+                    $game['_api_url']   = $api_url;
+                    $game['_verband']   = $verband;
+                }
+                unset( $game );
+
+                $all_games = array_merge( $all_games, $matches );
+                continue;
+            }
+
+            // Legacy-Modus: eine Zeile pro Liga/Wettbewerb, Filterung per Teamnamen.
+            $liga_id   = (int) ( isset( $team_cfg['liga_id'] )   ? $team_cfg['liga_id']   : 0 );
+            $team_name = trim( isset( $team_cfg['team'] )        ? $team_cfg['team']        : '' );
+            $liga_name = trim( isset( $team_cfg['liga_name'] )   ? $team_cfg['liga_name']   : '' );
+
+            if ( ! $liga_id ) continue;
 
             $schedule = $api->get_schedule( $liga_id );
             if ( is_wp_error( $schedule ) ) continue;
@@ -72,6 +93,7 @@ class SMF_ClubOverview {
             foreach ( $games as &$game ) {
                 $game['_liga_name'] = $liga_name !== '' ? $liga_name : ( 'Liga ' . $liga_id );
                 $game['_api_url']   = $api_url;
+                $game['_verband']   = $verband;
             }
             unset( $game );
 

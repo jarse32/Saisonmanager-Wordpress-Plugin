@@ -26,8 +26,8 @@
                 const gameId = $(this).data('game-id');
                 if (!gameId) return;
 
-                const apiUrl = $(this).data('api-url') || '';
-                SMF.openModal(gameId, apiUrl);
+                const verband = $(this).data('verband') || '';
+                SMF.openModal(gameId, verband);
             });
 
             // Modal schließen – Close-Button
@@ -52,9 +52,9 @@
          * Modal öffnen und Spieldetails laden
          *
          * @param {number} gameId
-         * @param {string} apiUrl  Optionale API-URL für Verbands-spezifische Anfragen
+         * @param {string} verband  Optionaler Verbands-Slug für Verbands-spezifische Anfragen
          */
-        openModal(gameId, apiUrl) {
+        openModal(gameId, verband) {
             // Prüfen ob ein Modal auf der Seite existiert
             let $modal = $('#smf-modal');
             if (!$modal.length) return;
@@ -89,7 +89,7 @@
                     action:   'smf_game_detail',
                     nonce:    smf_ajax.nonce,
                     game_id:  gameId,
-                    api_url:  apiUrl || '',
+                    verband:  verband || '',
                 },
                 success: (response) => {
                     if (response.success && response.data && response.data.html) {
