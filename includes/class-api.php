@@ -194,6 +194,18 @@ class SMF_API {
     }
 
     /**
+     * Generischer, öffentlicher Zugriff auf beliebige (bekannte) Endpunkte -
+     * für Hilfswerkzeuge wie SMF_TeamFinder, die keine eigene Wrapper-Methode
+     * rechtfertigen.
+     *
+     * @param string $endpoint
+     * @return array|WP_Error
+     */
+    public function get_raw( $endpoint ) {
+        return $this->request( $endpoint );
+    }
+
+    /**
      * Unix-Timestamp aus Spieldaten extrahieren.
      * API liefert Datum und Zeit getrennt: date="YYYY-MM-DD", time="HH:MM"
      *

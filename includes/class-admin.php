@@ -64,6 +64,8 @@ class SMF_Admin {
         wp_localize_script( 'smf-admin-js', 'smf_admin_data', array(
             'verbaende'    => $verband_options,
             'verein_count' => count( get_option( 'smf_vereine', array() ) ),
+            'ajax_url'     => admin_url( 'admin-ajax.php' ),
+            'nonce'        => wp_create_nonce( 'smf_admin_nonce' ),
         ) );
     }
 
@@ -335,6 +337,40 @@ class SMF_Admin {
                             Für regionale Verbände die korrekte URL bitte direkt beim Verband erfragen.
                         </p>
                     <?php endif; ?>
+                </div>
+
+                <!-- Team-Finder -->
+                <div class="smf-admin-card smf-admin-card--full">
+                    <h2>Team-Finder</h2>
+                    <p>
+                        Findet Team-IDs für die Vereinskonfiguration unten: Vereinsname (Teilstring reicht)
+                        oder Club-ID eingeben, optional eine Saison-ID für historische Daten (leer = aktuelle
+                        Saison). Durchsucht alle bekannten Spielbetriebsstellen – kann beim ersten Aufruf ein
+                        paar Sekunden dauern.
+                    </p>
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row"><label for="smf-tf-query">Vereinsname oder Club-ID</label></th>
+                            <td><input type="text" id="smf-tf-query" class="regular-text" placeholder="z.B. Eiche Horn"></td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><label for="smf-tf-verband">Verband</label></th>
+                            <td>
+                                <select id="smf-tf-verband">
+                                    <option value="">(Standard)</option>
+                                    <?php foreach ( $verbaende as $vb ) : ?>
+                                        <option value="<?php echo esc_attr( $vb['slug'] ); ?>"><?php echo esc_html( $vb['name'] ?: $vb['slug'] ); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><label for="smf-tf-season">Saison-ID <small>(optional)</small></label></th>
+                            <td><input type="number" id="smf-tf-season" class="small-text" placeholder="leer = aktuell"></td>
+                        </tr>
+                    </table>
+                    <p><button type="button" class="button button-primary" id="smf-tf-search">Suchen</button></p>
+                    <div id="smf-tf-results"></div>
                 </div>
 
                 <!-- Vereine -->

@@ -59,6 +59,40 @@
     white-space: pre-wrap;
 }
 
+/* Team-Finder */
+#smf-tf-results .smf-notice {
+    color: #646970;
+    font-style: italic;
+}
+
+#smf-tf-results .smf-error {
+    color: #cc0000;
+    background: #fff3f3;
+    border-left: 4px solid #cc0000;
+    padding: 0.6rem 0.875rem;
+    border-radius: 4px;
+}
+
+.smf-tf-club {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #dcdcde;
+}
+
+.smf-tf-club:last-child {
+    border-bottom: none;
+}
+
+.smf-tf-teams {
+    margin: 0.4rem 0 0 1.2rem;
+    list-style: disc;
+}
+
+.smf-tf-teams code {
+    background: #f0f0f1;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+}
+
 @media (max-width: 900px) {
     .smf-admin-grid {
         grid-template-columns: 1fr;

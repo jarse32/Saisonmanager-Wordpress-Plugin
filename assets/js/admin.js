@@ -106,10 +106,77 @@
     }
 
     // ----------------------------------------------------------------
+    // Team-Finder
+    // ----------------------------------------------------------------
+
+    function runTeamFinderSearch() {
+        const $results = $('#smf-tf-results');
+        const query    = $('#smf-tf-query').val().trim();
+
+        if ( ! query ) {
+            $results.html('<p class="smf-notice">Bitte einen Vereinsnamen oder eine Club-ID eingeben.</p>');
+            return;
+        }
+        if ( typeof smf_admin_data === 'undefined' || ! smf_admin_data.ajax_url ) {
+            return;
+        }
+
+        $results.html('<p>Suche läuft…</p>');
+
+        $.post(smf_admin_data.ajax_url, {
+            action:    'smf_find_teams',
+            nonce:     smf_admin_data.nonce,
+            query:     query,
+            verband:   $('#smf-tf-verband').val(),
+            season_id: $('#smf-tf-season').val(),
+        }).done(function (response) {
+            if ( ! response || ! response.success ) {
+                const msg = (response && response.data) ? response.data : 'Unbekannter Fehler';
+                $results.html('<p class="smf-error">' + escHtml(msg) + '</p>');
+                return;
+            }
+
+            const clubs = response.data.results || [];
+            if ( ! clubs.length ) {
+                $results.html('<p class="smf-notice">Keine Treffer.</p>');
+                return;
+            }
+
+            let html = '';
+            clubs.forEach(function (club) {
+                html += '<div class="smf-tf-club">';
+                html += '<strong>' + escHtml(club.club_name) + '</strong> ';
+                html += '<small>(Club-ID ' + escHtml(club.club_id) + ', Spielbetriebsstelle ' + escHtml(club.operation_id) + ')</small>';
+                if ( club.teams && club.teams.length ) {
+                    html += '<ul class="smf-tf-teams">';
+                    club.teams.forEach(function (team) {
+                        html += '<li><code>' + escHtml(team.id) + '</code> – ' + escHtml(team.name || '(ohne Namen)') + '</li>';
+                    });
+                    html += '</ul>';
+                } else {
+                    html += '<p class="smf-notice">Keine Teams für diesen Verein gefunden.</p>';
+                }
+                html += '</div>';
+            });
+            $results.html(html);
+        }).fail(function () {
+            $results.html('<p class="smf-error">Anfrage fehlgeschlagen. Bitte erneut versuchen.</p>');
+        });
+    }
+
+    // ----------------------------------------------------------------
     // Event-Binding
     // ----------------------------------------------------------------
 
     $(document).ready(function () {
+
+        $('#smf-tf-search').on('click', runTeamFinderSearch);
+        $('#smf-tf-query, #smf-tf-season').on('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                runTeamFinderSearch();
+            }
+        });
 
         // --- Verbände ---
 

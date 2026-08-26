@@ -48,6 +48,16 @@ eigener API-Basis-URL hinterlegen (Slug, Name, URL, optional ein
 abweichender API-Key). Ohne eigenen Verbands-Key gilt der globale Key aus den
 Allgemeinen Einstellungen.
 
+### Team-Finder
+
+Team-IDs kennt man selten auswendig. Unter **SM Floorball → Team-Finder**
+lässt sich nach Vereinsname (Teilstring reicht, z. B. "Eiche Horn") oder
+Saisonmanager-Club-ID suchen – durchsucht wird über alle bekannten
+Spielbetriebsstellen hinweg, optional für eine bestimmte Saison-ID (leer =
+aktuelle Saison; nützlich für historische Team-IDs vergangener Saisons, da
+sich Team-IDs von Saison zu Saison ändern können). Das Ergebnis zeigt alle
+gefundenen Teams mit ihrer ID zum Reinkopieren in die Vereinskonfiguration.
+
 ### Vereine & Teams
 
 Unter **SM Floorball → Vereine** einen Verein anlegen und seine Teams

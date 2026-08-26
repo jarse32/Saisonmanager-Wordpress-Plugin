@@ -19,6 +19,7 @@ define( 'SMF_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 require_once SMF_PLUGIN_DIR . 'includes/class-cache.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-api.php';
+require_once SMF_PLUGIN_DIR . 'includes/class-team-finder.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-club-overview.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-shortcodes.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-admin.php';
@@ -117,6 +118,38 @@ function smf_ajax_game_detail() {
 }
 add_action( 'wp_ajax_smf_game_detail',        'smf_ajax_game_detail' );
 add_action( 'wp_ajax_nopriv_smf_game_detail', 'smf_ajax_game_detail' );
+
+/**
+ * AJAX (nur eingeloggte Admins): Team-Finder für die Vereinskonfiguration.
+ * Sucht Vereine per Name oder Club-ID über die bekannten Spielbetriebsstellen
+ * und listet deren Team-IDs auf. Bewusst ohne _nopriv-Variante - nicht für
+ * Besucher:innen gedacht (löst pro Suche bis zu 10 Upstream-Requests aus).
+ */
+function smf_ajax_find_teams() {
+    check_ajax_referer( 'smf_admin_nonce', 'nonce' );
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( 'Nicht erlaubt.' );
+    }
+
+    $query = isset( $_POST['query'] ) ? sanitize_text_field( wp_unslash( $_POST['query'] ) ) : '';
+    if ( $query === '' ) {
+        wp_send_json_error( 'Bitte einen Vereinsnamen oder eine Club-ID angeben.' );
+    }
+
+    $verband_slug = isset( $_POST['verband'] ) ? sanitize_key( wp_unslash( $_POST['verband'] ) ) : '';
+    $season_id    = isset( $_POST['season_id'] ) ? absint( $_POST['season_id'] ) : 0;
+
+    if ( $verband_slug && SMF_API::is_known_verband( $verband_slug ) ) {
+        $api = new SMF_API( SMF_API::url_for_verband( $verband_slug ), SMF_API::api_key_for_verband( $verband_slug ) );
+    } else {
+        $api = new SMF_API();
+    }
+
+    $results = SMF_TeamFinder::search( $api, $query, $season_id ?: null );
+
+    wp_send_json_success( array( 'results' => $results ) );
+}
+add_action( 'wp_ajax_smf_find_teams', 'smf_ajax_find_teams' );
 
 /**
  * Template rendern
