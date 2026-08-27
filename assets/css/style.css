@@ -3,36 +3,136 @@
    Design angelehnt an eichehorn-floorball.de
    =================================================================== */
 
-:root {
-    --smf-green:       #006045;
-    --smf-green-light: #007757;
-    --smf-green-dark:  #004a34;
-    --smf-gold:        #ffdf26;
-    --smf-white:       #ffffff;
-    --smf-gray-light:  #f5f5f5;
-    --smf-gray:        #e0e0e0;
-    --smf-gray-mid:    #c0c0c0;
-    --smf-gray-dark:   #5a5a5a;
-    --smf-text:        #1a1a1a;
-    --smf-radius:      8px;
-    --smf-shadow:      0 2px 10px rgba(0,0,0,.08);
-    --smf-font:        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif;
+/*
+ * Design-Variablen: dieser Block liefert nur den STATISCHEN Fallback
+ * (= SMF_Design::get_defaults(), neutrale Werte für Neuinstallationen).
+ * Die tatsächlich konfigurierten Vereinsfarben kommen aus
+ * SMF_Design::build_css() per wp_add_inline_style() direkt hinter diesem
+ * Stylesheet im <head> und überschreiben die Werte hier per Kaskade -
+ * fällt das Inline-Style aus irgendeinem Grund aus, bleibt das Plugin
+ * trotzdem neutral nutzbar statt kaputt auszusehen.
+ *
+ * Scope ist .smf/.smf-modal statt :root, damit Custom Properties des
+ * Themes unberührt bleiben (siehe Umsetzungsplan).
+ */
+.smf, .smf-modal {
+    --smf-color-primary:       #2f5d7c;
+    --smf-color-accent:        #f2a531;
+    --smf-color-surface:       #ffffff;
+    --smf-color-surface-alt:   #f5f5f5;
+    --smf-color-border:        #e0e0e0;
+    --smf-color-border-strong: #c0c0c0;
+    --smf-color-text:          #1a1a1a;
+    --smf-color-text-muted:    #5a5a5a;
+    --smf-color-on-primary:    var(--smf-color-surface);
+    --smf-color-on-accent:     var(--smf-color-text);
+    --smf-radius:              8px;
+    --smf-font:                inherit;
+    --smf-font-title:          inherit;
+
+    /*
+     * Schatten-Stufen: einmalige Definition aller vier Intensitätsstufen.
+     * PHP (SMF_Design::build_css()) und beide Vorschauen (dev/preview.html,
+     * assets/js/admin-design.js - über die gemeinsame apply()-Funktion in
+     * design-contrast.js) referenzieren diese Tokens nur noch per var()
+     * über die gewählte Stufe (none/dezent/normal/stark). Keiner der drei
+     * Verbraucher kennt die Zahlen selbst - die stehen ausschließlich hier.
+     * Reine Tabellen-Lookup, keine Farbmathematik.
+     */
+    --smf-shadow-step-none-alpha: 0;             --smf-shadow-step-none-alpha-hover: 0;
+    --smf-shadow-step-none-sm-alpha: 0;          --smf-shadow-step-none-sm-alpha-hover: 0;
+    --smf-shadow-step-none-modal-alpha: 0;
+    --smf-shadow-step-none-tint-pct: 0%;         --smf-shadow-step-none-tint-pct-hover: 0%;
+
+    --smf-shadow-step-dezent-alpha: .05;         --smf-shadow-step-dezent-alpha-hover: .08;
+    --smf-shadow-step-dezent-sm-alpha: .04;      --smf-shadow-step-dezent-sm-alpha-hover: .06;
+    --smf-shadow-step-dezent-modal-alpha: .2;
+    --smf-shadow-step-dezent-tint-pct: 12%;      --smf-shadow-step-dezent-tint-pct-hover: 18%;
+
+    --smf-shadow-step-normal-alpha: .08;         --smf-shadow-step-normal-alpha-hover: .12;
+    --smf-shadow-step-normal-sm-alpha: .06;      --smf-shadow-step-normal-sm-alpha-hover: .1;
+    --smf-shadow-step-normal-modal-alpha: .3;
+    --smf-shadow-step-normal-tint-pct: 20%;      --smf-shadow-step-normal-tint-pct-hover: 30%;
+
+    --smf-shadow-step-stark-alpha: .14;          --smf-shadow-step-stark-alpha-hover: .18;
+    --smf-shadow-step-stark-sm-alpha: .1;        --smf-shadow-step-stark-sm-alpha-hover: .16;
+    --smf-shadow-step-stark-modal-alpha: .38;
+    --smf-shadow-step-stark-tint-pct: 30%;       --smf-shadow-step-stark-tint-pct-hover: 42%;
+
+    /* Aktive Stufe - Default "normal" als Fallback; PHP/JS biegen dies per
+       var()-Referenz auf die tatsächlich gewählte Stufe um (siehe oben). */
+    --smf-shadow-alpha:          var(--smf-shadow-step-normal-alpha);
+    --smf-shadow-alpha-hover:    var(--smf-shadow-step-normal-alpha-hover);
+    --smf-shadow-sm-alpha:       var(--smf-shadow-step-normal-sm-alpha);
+    --smf-shadow-sm-alpha-hover: var(--smf-shadow-step-normal-sm-alpha-hover);
+    --smf-shadow-modal-alpha:    var(--smf-shadow-step-normal-modal-alpha);
+    --smf-shadow-tint-pct:       var(--smf-shadow-step-normal-tint-pct);
+    --smf-shadow-tint-pct-hover: var(--smf-shadow-step-normal-tint-pct-hover);
+
+    /*
+     * Abgeleitete Werte: reine Auf-/Abdunklungen/Einfärbungen per
+     * color-mix(), direkt im Stylesheet statt in PHP oder JS berechnet.
+     * Jede color-mix()-Zeile hat eine statische Fallback-Deklaration in
+     * der Zeile davor - Browser ohne color-mix()-Support ignorieren die
+     * zweite Zeile und bekommen einen neutralen, ungefähren Farbton statt
+     * eines Fehlers. Für die Kontrastentscheidung (--smf-color-on-primary/
+     * -on-accent oben) reicht color-mix() nicht aus, die kommt aus PHP
+     * (relative Luminanz, siehe SMF_Design::contrast_var()).
+     */
+    --smf-color-primary-light: #4a7fa0;
+    --smf-color-primary-light: color-mix(in srgb, var(--smf-color-primary) 85%, white);
+    --smf-color-primary-dark: #24485f;
+    --smf-color-primary-dark: color-mix(in srgb, var(--smf-color-primary) 77%, black);
+    --smf-color-primary-muted: #4a5d68;
+    --smf-color-primary-muted: color-mix(in srgb, var(--smf-color-primary) 55%, var(--smf-color-text-muted));
+    --smf-color-hover: #eef2f5;
+    --smf-color-hover: color-mix(in srgb, var(--smf-color-primary) 9%, white);
+    --smf-color-tl-home: #f7f9fa;
+    --smf-color-tl-home: color-mix(in srgb, var(--smf-color-primary) 3%, white);
+    --smf-btn-hover-bg: #f8c165;
+    --smf-btn-hover-bg: color-mix(in srgb, var(--smf-color-accent) 85%, white);
+
+    --smf-shadow: 0 2px 10px rgba(0,0,0, var(--smf-shadow-alpha));
+    --smf-shadow-hover: 0 4px 16px rgba(0,0,0, var(--smf-shadow-alpha-hover));
+    --smf-shadow-sm: 0 1px 4px rgba(0,0,0, var(--smf-shadow-sm-alpha));
+    --smf-shadow-sm-hover: 0 3px 10px rgba(0,0,0, var(--smf-shadow-sm-alpha-hover));
+    --smf-shadow-modal: 0 8px 40px rgba(0,0,0, var(--smf-shadow-modal-alpha));
+    --smf-shadow-emphasis: 0 4px 16px rgba(0,0,0,.2);
+    --smf-shadow-emphasis: 0 4px 16px color-mix(in srgb, var(--smf-color-primary) var(--smf-shadow-tint-pct), transparent);
+    --smf-shadow-emphasis-hover: 0 6px 24px rgba(0,0,0,.3);
+    --smf-shadow-emphasis-hover: 0 6px 24px color-mix(in srgb, var(--smf-color-primary) var(--smf-shadow-tint-pct-hover), transparent);
+
+    /*
+     * Rückwärtskompatible Aliase: vorhandenes Custom-CSS anderer Vereine,
+     * das die alten Variablennamen referenziert, funktioniert unverändert
+     * weiter.
+     */
+    --smf-green:       var(--smf-color-primary);
+    --smf-green-light: var(--smf-color-primary-light);
+    --smf-green-dark:  var(--smf-color-primary-dark);
+    --smf-gold:        var(--smf-color-accent);
+    --smf-white:       var(--smf-color-surface);
+    --smf-gray-light:  var(--smf-color-surface-alt);
+    --smf-gray:        var(--smf-color-border);
+    --smf-gray-mid:    var(--smf-color-border-strong);
+    --smf-gray-dark:   var(--smf-color-text-muted);
+    --smf-text:        var(--smf-color-text);
 }
 
 .smf {
     font-family: var(--smf-font);
-    color: var(--smf-text);
+    color: var(--smf-color-text);
     font-size: 16px; /* harter Reset – unabhängig vom Theme */
     line-height: 1.5;
     margin: 1.5rem 0;
 }
 
 /* ------------------------------------------------------------------ */
-/*  Header / Titel  – passend zum Rookie Plus Theme (Oswald)           */
+/*  Header / Titel                                                      */
 /* ------------------------------------------------------------------ */
 
 .smf-header {
-    background: var(--smf-green);
+    background: var(--smf-color-primary);
     padding: 0.55rem 1rem;
     border-radius: var(--smf-radius) var(--smf-radius) 0 0;
     margin-bottom: 0;
@@ -52,10 +152,10 @@
 }
 
 .smf-title {
-    font-family: "Oswald", sans-serif;
+    font-family: var(--smf-font-title);
     font-size: 1.1rem;
     font-weight: normal;
-    color: var(--smf-white);
+    color: var(--smf-color-on-primary);
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -76,7 +176,7 @@
 }
 
 .smf-notice {
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
     font-style: italic;
     padding: 0.5rem 0;
     font-size: 0.95rem;
@@ -96,13 +196,13 @@
     border-collapse: collapse;
     font-size: 15px;
     min-width: 480px;
-    background: var(--smf-white);
+    background: var(--smf-color-surface);
     border: none;
 }
 
 .smf .smf-table thead tr {
-    background: var(--smf-green);
-    color: var(--smf-white);
+    background: var(--smf-color-primary);
+    color: var(--smf-color-on-primary);
 }
 
 .smf .smf-table thead th {
@@ -113,8 +213,8 @@
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--smf-white);
-    background: var(--smf-green);
+    color: var(--smf-color-on-primary);
+    background: var(--smf-color-primary);
     border: none;
 }
 
@@ -125,7 +225,7 @@
 .smf .smf-table-row td {
     padding: 10px 14px;
     border: none;
-    border-bottom: 1px solid var(--smf-gray);
+    border-bottom: 1px solid var(--smf-color-border);
     vertical-align: middle;
     font-size: 15px;
     background: transparent;
@@ -137,17 +237,17 @@
 }
 
 .smf-table-row.smf-row-even {
-    background: var(--smf-gray-light);
+    background: var(--smf-color-surface-alt);
 }
 
 .smf-table-row:hover {
-    background: #e4f0eb;
+    background: var(--smf-color-hover);
 }
 
 .smf-col-rank {
     text-align: center;
     font-weight: 700;
-    color: var(--smf-green);
+    color: var(--smf-color-primary);
     width: 36px;
     font-size: 1rem;
 }
@@ -158,7 +258,7 @@
 .smf-col-pts {
     font-size: 1rem;
     font-weight: 700;
-    color: var(--smf-green);
+    color: var(--smf-color-primary);
 }
 
 .smf-team-name {
@@ -184,9 +284,9 @@
 }
 
 .smf-game-card {
-    background: var(--smf-white);
-    border: 1px solid var(--smf-gray);
-    border-left: 4px solid var(--smf-gray-mid);
+    background: var(--smf-color-surface);
+    border: 1px solid var(--smf-color-border);
+    border-left: 4px solid var(--smf-color-border-strong);
     border-radius: var(--smf-radius);
     padding: 1rem 1.125rem;
     cursor: pointer;
@@ -200,22 +300,22 @@
 }
 
 .smf-game-card:hover {
-    border-left-color: var(--smf-green);
-    box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    border-left-color: var(--smf-color-primary);
+    box-shadow: var(--smf-shadow-hover);
     transform: translateY(-1px);
 }
 
 .smf-game-card:focus {
-    outline: 2px solid var(--smf-green);
+    outline: 2px solid var(--smf-color-primary);
     outline-offset: 2px;
 }
 
 .smf-game--played {
-    border-left-color: var(--smf-green);
+    border-left-color: var(--smf-color-primary);
 }
 
 .smf-game--upcoming {
-    border-left-color: var(--smf-gold);
+    border-left-color: var(--smf-color-accent);
 }
 
 .smf-game-meta {
@@ -224,7 +324,7 @@
     flex-wrap: wrap;
     gap: 0.35rem 0.875rem;
     font-size: 14px;
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
     align-items: center;
 }
 
@@ -235,19 +335,19 @@
 
 .smf-game-date {
     font-weight: 600;
-    color: var(--smf-green-dark);
+    color: var(--smf-color-primary-dark);
     font-size: 14px;
 }
 
 .smf-game-time {
     margin-left: 0.25rem;
     font-weight: 400;
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
 }
 
 .smf-game-day {
-    background: var(--smf-green);
-    color: var(--smf-white);
+    background: var(--smf-color-primary);
+    color: var(--smf-color-on-primary);
     border-radius: 4px;
     padding: 2px 8px;
     font-size: 0.78rem;
@@ -285,7 +385,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--smf-text);
+    color: var(--smf-color-text);
 }
 
 .smf-game-team-logo {
@@ -305,14 +405,14 @@
 .smf-score {
     font-size: 1.4rem;
     font-weight: 800;
-    color: var(--smf-green);
+    color: var(--smf-color-primary);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.01em;
 }
 
 .smf-score-vs {
     font-size: 1.05rem;
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
     font-weight: 500;
 }
 
@@ -324,7 +424,7 @@
 
 .smf-detail-link {
     font-size: 0.85rem;
-    color: var(--smf-green-light);
+    color: var(--smf-color-primary-light);
     font-weight: 600;
     white-space: nowrap;
     display: flex;
@@ -345,22 +445,22 @@
 /* ------------------------------------------------------------------ */
 
 .smf-single-game {
-    background: var(--smf-green);
-    color: var(--smf-white);
+    background: var(--smf-color-primary);
+    color: var(--smf-color-on-primary);
     border-radius: var(--smf-radius);
     padding: 1.375rem 1.75rem;
     cursor: pointer;
     transition: background 0.2s, box-shadow 0.2s;
-    box-shadow: 0 4px 16px rgba(0,96,69,.2);
+    box-shadow: var(--smf-shadow-emphasis);
 }
 
 .smf-single-game:hover {
-    background: var(--smf-green-light);
-    box-shadow: 0 6px 24px rgba(0,96,69,.3);
+    background: var(--smf-color-primary-light);
+    box-shadow: var(--smf-shadow-emphasis-hover);
 }
 
 .smf-single-game:focus {
-    outline: 2px solid var(--smf-gold);
+    outline: 2px solid var(--smf-color-accent);
     outline-offset: 2px;
 }
 
@@ -437,14 +537,15 @@
     font-size: 2.2rem;
     font-weight: 800;
     line-height: 1;
-    color: var(--smf-gold);
+    color: var(--smf-color-accent);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
 }
 
 .smf-single-game__score--upcoming {
     font-size: 1.6rem;
-    color: rgba(255,255,255,0.6);
+    color: rgba(255,255,255,0.6); /* Fallback für alte Browser */
+    color: color-mix(in srgb, var(--smf-color-on-primary) 60%, transparent);
     font-weight: 400;
     letter-spacing: 0.05em;
 }
@@ -456,7 +557,8 @@
     gap: 2px;
     margin-bottom: 1rem;
     padding-bottom: 0.875rem;
-    border-bottom: 1px solid rgba(255,255,255,0.2);
+    border-bottom: 1px solid rgba(255,255,255,0.2); /* Fallback für alte Browser */
+    border-bottom: 1px solid color-mix(in srgb, var(--smf-color-on-primary) 20%, transparent);
 }
 
 .smf-single-game__date-day {
@@ -477,7 +579,7 @@
 .smf-single-game__date-time {
     font-size: 15px;
     font-weight: 600;
-    color: var(--smf-gold);
+    color: var(--smf-color-accent);
     margin-top: 2px;
 }
 
@@ -501,8 +603,8 @@
 
 .smf-btn {
     display: inline-block;
-    background: var(--smf-gold);
-    color: var(--smf-green-dark);
+    background: var(--smf-color-accent);
+    color: var(--smf-color-primary-dark);
     font-weight: 700;
     font-size: 0.88rem;
     padding: 0.55rem 1.5rem;
@@ -513,7 +615,7 @@
 }
 
 .smf-single-game:hover .smf-btn {
-    background: #ffe84f;
+    background: var(--smf-btn-hover-bg);
     transform: scale(1.03);
 }
 
@@ -540,9 +642,9 @@
 
 .smf-modal-content {
     position: relative;
-    background: var(--smf-white);
+    background: var(--smf-color-surface);
     border-radius: var(--smf-radius);
-    box-shadow: 0 8px 40px rgba(0,0,0,.3);
+    box-shadow: var(--smf-shadow-modal);
     max-width: 700px;
     width: 100%;
     max-height: 90vh;
@@ -550,7 +652,7 @@
     padding: 2rem;
     font-family: var(--smf-font);
     font-size: 16px; /* Reset unabhängig vom Theme */
-    color: var(--smf-text);
+    color: var(--smf-color-text);
     line-height: 1.5;
 }
 
@@ -559,7 +661,7 @@
     top: 0;
     float: right;
     margin: -1.5rem -1.5rem 0 0;
-    background: var(--smf-gray-light);
+    background: var(--smf-color-surface-alt);
     border: none;
     border-radius: 50%;
     width: 38px;
@@ -567,7 +669,7 @@
     font-size: 1.3rem;
     line-height: 1;
     cursor: pointer;
-    color: var(--smf-text);
+    color: var(--smf-color-text);
     transition: background 0.15s;
     display: flex;
     align-items: center;
@@ -575,7 +677,7 @@
 }
 
 .smf-modal-close:hover {
-    background: var(--smf-gray);
+    background: var(--smf-color-border);
 }
 
 /* ------------------------------------------------------------------ */
@@ -585,14 +687,14 @@
 .smf-loading {
     text-align: center;
     padding: 2.5rem;
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
 }
 
 .smf-spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid var(--smf-gray);
-    border-top-color: var(--smf-green);
+    border: 3px solid var(--smf-color-border);
+    border-top-color: var(--smf-color-primary);
     border-radius: 50%;
     animation: smf-spin 0.7s linear infinite;
     margin: 0 auto 1rem;
@@ -607,8 +709,8 @@
 /* ------------------------------------------------------------------ */
 
 .smf-detail__header {
-    background: var(--smf-green);
-    color: var(--smf-white);
+    background: var(--smf-color-primary);
+    color: var(--smf-color-on-primary);
     margin: -2rem -2rem 1.75rem;
     padding: 1.5rem 2rem;
     border-radius: var(--smf-radius) var(--smf-radius) 0 0;
@@ -646,7 +748,7 @@
     align-items: center;
     gap: 1rem;
     padding: 1.5rem 0;
-    border-bottom: 1px solid var(--smf-gray);
+    border-bottom: 1px solid var(--smf-color-border);
     margin-bottom: 1.5rem;
 }
 
@@ -681,14 +783,14 @@
 .smf-detail__score {
     font-size: 2.4rem;
     font-weight: 800;
-    color: var(--smf-green);
+    color: var(--smf-color-primary);
     font-variant-numeric: tabular-nums;
     line-height: 1;
     letter-spacing: -0.02em;
 }
 
 .smf-detail__score--upcoming {
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
     font-size: 1.6rem;
 }
 
@@ -698,12 +800,12 @@
     gap: 0.1rem;
     margin-top: 0.5rem;
     font-size: 13px;
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
 }
 
 .smf-detail__score-postfix {
     font-size: 13px;
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
     font-weight: 600;
     margin-top: 0.2rem;
     text-transform: uppercase;
@@ -712,7 +814,7 @@
 
 .smf-detail__upcoming-hint {
     font-size: 14px;
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
     margin-top: 0.4rem;
 }
 
@@ -724,11 +826,11 @@
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    color: var(--smf-green);
+    color: var(--smf-color-primary);
     font-weight: 700;
     margin: 0 0 0.625rem;
     padding-bottom: 0.35rem;
-    border-bottom: 2px solid var(--smf-green);
+    border-bottom: 2px solid var(--smf-color-primary);
 }
 
 /* ------------------------------------------------------------------ */
@@ -745,8 +847,8 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--smf-white);
-    background: var(--smf-green-dark);
+    color: var(--smf-color-on-primary);
+    background: var(--smf-color-primary-dark);
     padding: 4px 10px;
     margin: 8px 0 2px;
     border-radius: 4px;
@@ -760,7 +862,7 @@
     align-items: center;
     gap: 0 8px;
     padding: 7px 10px;
-    border-bottom: 1px solid var(--smf-gray);
+    border-bottom: 1px solid var(--smf-color-border);
     border-left: 3px solid transparent;
     font-size: 15px;
 }
@@ -770,17 +872,17 @@
 }
 
 .smf-tl--home {
-    border-left-color: var(--smf-green);
-    background: #f7fbf9;
+    border-left-color: var(--smf-color-primary);
+    background: var(--smf-color-tl-home);
 }
 
 .smf-tl--away {
-    border-left-color: var(--smf-gray-mid);
-    background: var(--smf-white);
+    border-left-color: var(--smf-color-border-strong);
+    background: var(--smf-color-surface);
 }
 
 .smf-tl-goal .smf-tl-icon {
-    color: var(--smf-green);
+    color: var(--smf-color-primary);
 }
 
 .smf-tl-penalty .smf-tl-icon {
@@ -796,7 +898,7 @@
 .smf-tl-time {
     font-size: 13px;
     font-weight: 600;
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
     text-align: right;
     font-variant-numeric: tabular-nums;
 }
@@ -812,13 +914,13 @@
 }
 
 .smf-tl-team-badge--home {
-    background: var(--smf-green);
-    color: var(--smf-white);
+    background: var(--smf-color-primary);
+    color: var(--smf-color-on-primary);
 }
 
 .smf-tl-team-badge--away {
-    background: var(--smf-gray);
-    color: var(--smf-text);
+    background: var(--smf-color-border);
+    color: var(--smf-color-text);
 }
 
 .smf-tl-info {
@@ -836,20 +938,20 @@
 
 .smf-tl-assist {
     font-size: 13px;
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
 }
 
 .smf-tl-reason {
     font-size: 14px;
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
 }
 
 .smf-tl-tag {
     font-size: 12px;
-    background: var(--smf-gray-light);
+    background: var(--smf-color-surface-alt);
     border-radius: 3px;
     padding: 1px 6px;
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
     font-weight: 600;
 }
 
@@ -861,20 +963,20 @@
 .smf-tl-score {
     font-size: 14px;
     font-weight: 700;
-    color: var(--smf-green);
+    color: var(--smf-color-primary);
     text-align: right;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
 
 .smf-detail__section--minor .smf-detail__section-title {
-    color: var(--smf-gray-dark);
-    border-color: var(--smf-gray);
+    color: var(--smf-color-text-muted);
+    border-color: var(--smf-color-border);
 }
 
 .smf-detail__referees {
     font-size: 0.92rem;
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
     margin: 0;
 }
 
@@ -891,7 +993,7 @@
 }
 
 .smf-co-header {
-    background: var(--smf-green);
+    background: var(--smf-color-primary);
     padding: 0.55rem 1rem;
     border-radius: var(--smf-radius) var(--smf-radius) 0 0;
     margin-bottom: 0;
@@ -919,19 +1021,19 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    color: var(--smf-white);
-    background: var(--smf-green-dark);
+    color: var(--smf-color-on-primary);
+    background: var(--smf-color-primary-dark);
     padding: 0.4rem 0.75rem;
     border-radius: 5px;
     margin-bottom: 0.25rem;
 }
 
 .smf-co-col--upcoming .smf-co-col-header {
-    background: var(--smf-green-dark);
+    background: var(--smf-color-primary-dark);
 }
 
 .smf-co-col--played .smf-co-col-header {
-    background: #3a5a4a;
+    background: var(--smf-color-primary-muted);
 }
 
 .smf-co-games {
@@ -941,7 +1043,7 @@
 }
 
 .smf-co-empty {
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
     font-style: italic;
     font-size: 0.9rem;
     padding: 0.25rem 0.5rem;
@@ -949,32 +1051,32 @@
 
 /* Einzelne kompakte Spielkarte */
 .smf-co-game {
-    background: var(--smf-white);
-    border: 1px solid var(--smf-gray);
-    border-left: 4px solid var(--smf-gray-mid);
+    background: var(--smf-color-surface);
+    border: 1px solid var(--smf-color-border);
+    border-left: 4px solid var(--smf-color-border-strong);
     border-radius: 6px;
     padding: 0.875rem 1rem;
     cursor: pointer;
     transition: border-color 0.15s, box-shadow 0.15s;
-    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    box-shadow: var(--smf-shadow-sm);
 }
 
 .smf-co-game:hover {
-    border-left-color: var(--smf-green);
-    box-shadow: 0 3px 10px rgba(0,0,0,.1);
+    border-left-color: var(--smf-color-primary);
+    box-shadow: var(--smf-shadow-sm-hover);
 }
 
 .smf-co-game:focus {
-    outline: 2px solid var(--smf-green);
+    outline: 2px solid var(--smf-color-primary);
     outline-offset: 2px;
 }
 
 .smf-co-game--played {
-    border-left-color: var(--smf-green);
+    border-left-color: var(--smf-color-primary);
 }
 
 .smf-co-game--upcoming {
-    border-left-color: var(--smf-gold);
+    border-left-color: var(--smf-color-accent);
 }
 
 /* Obere Zeile: Liga-Badge + Datum */
@@ -991,8 +1093,8 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    background: var(--smf-green);
-    color: var(--smf-white);
+    background: var(--smf-color-primary);
+    color: var(--smf-color-on-primary);
     padding: 2px 9px;
     border-radius: 9999px;
     white-space: nowrap;
@@ -1004,7 +1106,7 @@
 .smf-co-date {
     font-size: 0.82rem;
     font-weight: 600;
-    color: var(--smf-green-dark);
+    color: var(--smf-color-primary-dark);
     white-space: nowrap;
     display: flex;
     align-items: center;
@@ -1013,7 +1115,7 @@
 
 .smf-co-time {
     font-weight: 400;
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
 }
 
 /* Matchup-Zeile */
@@ -1053,7 +1155,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--smf-text);
+    color: var(--smf-color-text);
 }
 
 .smf-co-game__center {
@@ -1065,14 +1167,14 @@
 .smf-co-score {
     font-size: 1.2rem;
     font-weight: 800;
-    color: var(--smf-green);
+    color: var(--smf-color-primary);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.01em;
 }
 
 .smf-co-vs {
     font-size: 0.82rem;
-    color: var(--smf-gray-dark);
+    color: var(--smf-color-text-muted);
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -1083,7 +1185,7 @@
 /* ------------------------------------------------------------------ */
 
 .smf-verein-block {
-    border: 1px solid var(--smf-gray);
+    border: 1px solid var(--smf-color-border);
     border-radius: var(--smf-radius);
     padding: 1rem 1.25rem;
     margin-bottom: 1.25rem;
@@ -1096,12 +1198,12 @@
     justify-content: space-between;
     margin-bottom: 0.75rem;
     padding-bottom: 0.625rem;
-    border-bottom: 1px solid var(--smf-gray);
+    border-bottom: 1px solid var(--smf-color-border);
 }
 
 .smf-verein-block__title {
     font-size: 1rem;
-    color: var(--smf-green-dark);
+    color: var(--smf-color-primary-dark);
 }
 
 .smf-verein-fields {
@@ -1186,7 +1288,7 @@
 
     .smf-score-vs {
         font-size: 1rem;
-        color: var(--smf-gray-dark);
+        color: var(--smf-color-text-muted);
     }
 
     .smf-single-game {
@@ -1258,7 +1360,7 @@
     }
 
     .smf-co-col--played {
-        border-top: 2px solid var(--smf-gray);
+        border-top: 2px solid var(--smf-color-border);
         padding-top: 0.75rem;
     }
 
@@ -1281,6 +1383,6 @@
     margin: 0.75rem 0 0;
     font-size: 0.75rem;
     line-height: 1.4;
-    color: var( --smf-gray, #888 );
+    color: var(--smf-color-text-muted, #888);
     text-align: right;
 }
