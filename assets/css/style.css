@@ -27,6 +27,7 @@
     --smf-color-on-primary:    var(--smf-color-surface);
     --smf-color-on-accent:     var(--smf-color-text);
     --smf-radius:              8px;
+    --smf-fs-base:             16px;
     --smf-font:                inherit;
     --smf-font-title:          inherit;
 
@@ -122,7 +123,12 @@
 .smf {
     font-family: var(--smf-font);
     color: var(--smf-color-text);
-    font-size: 16px; /* harter Reset – unabhängig vom Theme */
+    /* Reset auf --smf-fs-base statt auf ein hartes 16px: alle font-size-
+       Angaben im Stylesheet sind calc(var(--smf-fs-base) * Faktor), damit
+       bleibt der Reset auch bei anderer Root-Schriftgröße des Themes
+       zuverlässig (siehe Umsetzungsplan Phase 1c - vorher setzten sich
+       rem-Werte teils vom html{font-size} des Themes ab). */
+    font-size: calc(var(--smf-fs-base) * 1);
     line-height: 1.5;
     margin: 1.5rem 0;
 }
@@ -153,7 +159,7 @@
 
 .smf-title {
     font-family: var(--smf-font-title);
-    font-size: 1.1rem;
+    font-size: calc(var(--smf-fs-base) * 1.1);
     font-weight: normal;
     color: var(--smf-color-on-primary);
     margin: 0;
@@ -172,14 +178,14 @@
     padding: 0.875rem 1.125rem;
     border-radius: var(--smf-radius);
     color: #cc0000;
-    font-size: 0.95rem;
+    font-size: calc(var(--smf-fs-base) * 0.95);
 }
 
 .smf-notice {
     color: var(--smf-color-text-muted);
     font-style: italic;
     padding: 0.5rem 0;
-    font-size: 0.95rem;
+    font-size: calc(var(--smf-fs-base) * 0.95);
 }
 
 /* ------------------------------------------------------------------ */
@@ -194,7 +200,7 @@
 .smf .smf-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 15px;
+    font-size: calc(var(--smf-fs-base) * 0.9375);
     min-width: 480px;
     background: var(--smf-color-surface);
     border: none;
@@ -210,7 +216,7 @@
     font-weight: 600;
     text-align: center;
     white-space: nowrap;
-    font-size: 12px;
+    font-size: calc(var(--smf-fs-base) * 0.75);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--smf-color-on-primary);
@@ -227,7 +233,7 @@
     border: none;
     border-bottom: 1px solid var(--smf-color-border);
     vertical-align: middle;
-    font-size: 15px;
+    font-size: calc(var(--smf-fs-base) * 0.9375);
     background: transparent;
     text-align: center;
 }
@@ -249,21 +255,21 @@
     font-weight: 700;
     color: var(--smf-color-primary);
     width: 36px;
-    font-size: 1rem;
+    font-size: calc(var(--smf-fs-base) * 1);
 }
 
 .smf-col-team { text-align: left; }
 .smf-col-num  { text-align: center; }
 
 .smf-col-pts {
-    font-size: 1rem;
+    font-size: calc(var(--smf-fs-base) * 1);
     font-weight: 700;
     color: var(--smf-color-primary);
 }
 
 .smf-team-name {
     font-weight: 600;
-    font-size: 0.97rem;
+    font-size: calc(var(--smf-fs-base) * 0.97);
 }
 
 .smf-team-logo {
@@ -323,7 +329,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem 0.875rem;
-    font-size: 14px;
+    font-size: calc(var(--smf-fs-base) * 0.875);
     color: var(--smf-color-text-muted);
     align-items: center;
 }
@@ -336,7 +342,7 @@
 .smf-game-date {
     font-weight: 600;
     color: var(--smf-color-primary-dark);
-    font-size: 14px;
+    font-size: calc(var(--smf-fs-base) * 0.875);
 }
 
 .smf-game-time {
@@ -350,7 +356,7 @@
     color: var(--smf-color-on-primary);
     border-radius: 4px;
     padding: 2px 8px;
-    font-size: 0.78rem;
+    font-size: calc(var(--smf-fs-base) * 0.78);
     font-weight: 600;
     letter-spacing: 0.03em;
 }
@@ -381,7 +387,7 @@
 
 .smf .smf-game-team .smf-team-name {
     font-weight: 700;
-    font-size: 16px;
+    font-size: calc(var(--smf-fs-base) * 1);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -403,7 +409,7 @@
 }
 
 .smf-score {
-    font-size: 1.4rem;
+    font-size: calc(var(--smf-fs-base) * 1.4);
     font-weight: 800;
     color: var(--smf-color-primary);
     font-variant-numeric: tabular-nums;
@@ -411,7 +417,7 @@
 }
 
 .smf-score-vs {
-    font-size: 1.05rem;
+    font-size: calc(var(--smf-fs-base) * 1.05);
     color: var(--smf-color-text-muted);
     font-weight: 500;
 }
@@ -423,7 +429,7 @@
 }
 
 .smf-detail-link {
-    font-size: 0.85rem;
+    font-size: calc(var(--smf-fs-base) * 0.85);
     color: var(--smf-color-primary-light);
     font-weight: 600;
     white-space: nowrap;
@@ -498,7 +504,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.8rem;
+    font-size: calc(var(--smf-fs-base) * 0.8);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-weight: 700;
@@ -520,7 +526,7 @@
 
 .smf-single-game__team {
     flex: 1;
-    font-size: 1.1rem;
+    font-size: calc(var(--smf-fs-base) * 1.1);
     font-weight: 700;
     line-height: 1.3;
 }
@@ -534,7 +540,7 @@
 }
 
 .smf-single-game__score {
-    font-size: 2.2rem;
+    font-size: calc(var(--smf-fs-base) * 2.2);
     font-weight: 800;
     line-height: 1;
     color: var(--smf-color-accent);
@@ -543,7 +549,7 @@
 }
 
 .smf-single-game__score--upcoming {
-    font-size: 1.6rem;
+    font-size: calc(var(--smf-fs-base) * 1.6);
     color: rgba(255,255,255,0.6); /* Fallback für alte Browser */
     color: color-mix(in srgb, var(--smf-color-on-primary) 60%, transparent);
     font-weight: 400;
@@ -562,7 +568,7 @@
 }
 
 .smf-single-game__date-day {
-    font-size: 12px;
+    font-size: calc(var(--smf-fs-base) * 0.75);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -570,14 +576,14 @@
 }
 
 .smf-single-game__date-full {
-    font-size: 20px;
+    font-size: calc(var(--smf-fs-base) * 1.25);
     font-weight: 700;
     letter-spacing: -0.01em;
     line-height: 1.2;
 }
 
 .smf-single-game__date-time {
-    font-size: 15px;
+    font-size: calc(var(--smf-fs-base) * 0.9375);
     font-weight: 600;
     color: var(--smf-color-accent);
     margin-top: 2px;
@@ -586,7 +592,7 @@
 .smf-single-game__footer {
     display: flex;
     gap: 1rem;
-    font-size: 0.85rem;
+    font-size: calc(var(--smf-fs-base) * 0.85);
     opacity: 0.78;
     flex-wrap: wrap;
     margin-bottom: 1rem;
@@ -606,7 +612,7 @@
     background: var(--smf-color-accent);
     color: var(--smf-color-primary-dark);
     font-weight: 700;
-    font-size: 0.88rem;
+    font-size: calc(var(--smf-fs-base) * 0.88);
     padding: 0.55rem 1.5rem;
     border-radius: 9999px;
     text-transform: uppercase;
@@ -651,7 +657,7 @@
     overflow-y: auto;
     padding: 2rem;
     font-family: var(--smf-font);
-    font-size: 16px; /* Reset unabhängig vom Theme */
+    font-size: calc(var(--smf-fs-base) * 1); /* Reset unabhängig vom Theme */
     color: var(--smf-color-text);
     line-height: 1.5;
 }
@@ -666,7 +672,7 @@
     border-radius: 50%;
     width: 38px;
     height: 38px;
-    font-size: 1.3rem;
+    font-size: calc(var(--smf-fs-base) * 1.3);
     line-height: 1;
     cursor: pointer;
     color: var(--smf-color-text);
@@ -717,7 +723,7 @@
 }
 
 .smf-detail__league {
-    font-size: 12px;
+    font-size: calc(var(--smf-fs-base) * 0.75);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     opacity: 0.8;
@@ -725,7 +731,7 @@
 }
 
 .smf-detail__date {
-    font-size: 16px;
+    font-size: calc(var(--smf-fs-base) * 1);
     font-weight: 600;
     margin-bottom: 0.5rem;
 }
@@ -734,7 +740,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem 1rem;
-    font-size: 14px;
+    font-size: calc(var(--smf-fs-base) * 0.875);
     opacity: 0.8;
 }
 
@@ -770,7 +776,7 @@
 
 .smf-detail__team-name {
     font-weight: 700;
-    font-size: 16px;
+    font-size: calc(var(--smf-fs-base) * 1);
     line-height: 1.3;
 }
 
@@ -781,7 +787,7 @@
 }
 
 .smf-detail__score {
-    font-size: 2.4rem;
+    font-size: calc(var(--smf-fs-base) * 2.4);
     font-weight: 800;
     color: var(--smf-color-primary);
     font-variant-numeric: tabular-nums;
@@ -791,7 +797,7 @@
 
 .smf-detail__score--upcoming {
     color: var(--smf-color-text-muted);
-    font-size: 1.6rem;
+    font-size: calc(var(--smf-fs-base) * 1.6);
 }
 
 .smf-detail__periods {
@@ -799,12 +805,12 @@
     flex-direction: column;
     gap: 0.1rem;
     margin-top: 0.5rem;
-    font-size: 13px;
+    font-size: calc(var(--smf-fs-base) * 0.8125);
     color: var(--smf-color-text-muted);
 }
 
 .smf-detail__score-postfix {
-    font-size: 13px;
+    font-size: calc(var(--smf-fs-base) * 0.8125);
     color: var(--smf-color-text-muted);
     font-weight: 600;
     margin-top: 0.2rem;
@@ -813,7 +819,7 @@
 }
 
 .smf-detail__upcoming-hint {
-    font-size: 14px;
+    font-size: calc(var(--smf-fs-base) * 0.875);
     color: var(--smf-color-text-muted);
     margin-top: 0.4rem;
 }
@@ -823,7 +829,7 @@
 }
 
 .smf-detail__section-title {
-    font-size: 13px;
+    font-size: calc(var(--smf-fs-base) * 0.8125);
     text-transform: uppercase;
     letter-spacing: 0.07em;
     color: var(--smf-color-primary);
@@ -843,7 +849,7 @@
 }
 
 .smf-timeline__period {
-    font-size: 12px;
+    font-size: calc(var(--smf-fs-base) * 0.75);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -864,7 +870,7 @@
     padding: 7px 10px;
     border-bottom: 1px solid var(--smf-color-border);
     border-left: 3px solid transparent;
-    font-size: 15px;
+    font-size: calc(var(--smf-fs-base) * 0.9375);
 }
 
 .smf-timeline__event:last-child {
@@ -896,7 +902,7 @@
 }
 
 .smf-tl-time {
-    font-size: 13px;
+    font-size: calc(var(--smf-fs-base) * 0.8125);
     font-weight: 600;
     color: var(--smf-color-text-muted);
     text-align: right;
@@ -904,7 +910,7 @@
 }
 
 .smf-tl-team-badge {
-    font-size: 11px;
+    font-size: calc(var(--smf-fs-base) * 0.6875);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -933,21 +939,21 @@
 
 .smf-tl-player {
     font-weight: 600;
-    font-size: 15px;
+    font-size: calc(var(--smf-fs-base) * 0.9375);
 }
 
 .smf-tl-assist {
-    font-size: 13px;
+    font-size: calc(var(--smf-fs-base) * 0.8125);
     color: var(--smf-color-text-muted);
 }
 
 .smf-tl-reason {
-    font-size: 14px;
+    font-size: calc(var(--smf-fs-base) * 0.875);
     color: var(--smf-color-text-muted);
 }
 
 .smf-tl-tag {
-    font-size: 12px;
+    font-size: calc(var(--smf-fs-base) * 0.75);
     background: var(--smf-color-surface-alt);
     border-radius: 3px;
     padding: 1px 6px;
@@ -961,7 +967,7 @@
 }
 
 .smf-tl-score {
-    font-size: 14px;
+    font-size: calc(var(--smf-fs-base) * 0.875);
     font-weight: 700;
     color: var(--smf-color-primary);
     text-align: right;
@@ -975,7 +981,7 @@
 }
 
 .smf-detail__referees {
-    font-size: 0.92rem;
+    font-size: calc(var(--smf-fs-base) * 0.92);
     color: var(--smf-color-text-muted);
     margin: 0;
 }
@@ -1017,7 +1023,7 @@
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    font-size: 0.78rem;
+    font-size: calc(var(--smf-fs-base) * 0.78);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.07em;
@@ -1045,7 +1051,7 @@
 .smf-co-empty {
     color: var(--smf-color-text-muted);
     font-style: italic;
-    font-size: 0.9rem;
+    font-size: calc(var(--smf-fs-base) * 0.9);
     padding: 0.25rem 0.5rem;
 }
 
@@ -1089,7 +1095,7 @@
 }
 
 .smf-co-badge {
-    font-size: 0.72rem;
+    font-size: calc(var(--smf-fs-base) * 0.72);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -1104,7 +1110,7 @@
 }
 
 .smf-co-date {
-    font-size: 0.82rem;
+    font-size: calc(var(--smf-fs-base) * 0.82);
     font-weight: 600;
     color: var(--smf-color-primary-dark);
     white-space: nowrap;
@@ -1150,7 +1156,7 @@
 }
 
 .smf-co-game__name {
-    font-size: 0.92rem;
+    font-size: calc(var(--smf-fs-base) * 0.92);
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
@@ -1165,7 +1171,7 @@
 }
 
 .smf-co-score {
-    font-size: 1.2rem;
+    font-size: calc(var(--smf-fs-base) * 1.2);
     font-weight: 800;
     color: var(--smf-color-primary);
     font-variant-numeric: tabular-nums;
@@ -1173,7 +1179,7 @@
 }
 
 .smf-co-vs {
-    font-size: 0.82rem;
+    font-size: calc(var(--smf-fs-base) * 0.82);
     color: var(--smf-color-text-muted);
     font-weight: 500;
     text-transform: uppercase;
@@ -1202,7 +1208,7 @@
 }
 
 .smf-verein-block__title {
-    font-size: 1rem;
+    font-size: calc(var(--smf-fs-base) * 1);
     color: var(--smf-color-primary-dark);
 }
 
@@ -1269,7 +1275,7 @@
 
     /* Namen dürfen umbrechen */
     .smf-game-team .smf-team-name {
-        font-size: 14px;
+        font-size: calc(var(--smf-fs-base) * 0.875);
         white-space: normal;
         overflow: visible;
         text-overflow: clip;
@@ -1283,11 +1289,11 @@
     }
 
     .smf-score {
-        font-size: 1.15rem;
+        font-size: calc(var(--smf-fs-base) * 1.15);
     }
 
     .smf-score-vs {
-        font-size: 1rem;
+        font-size: calc(var(--smf-fs-base) * 1);
         color: var(--smf-color-text-muted);
     }
 
@@ -1296,21 +1302,21 @@
     }
 
     .smf-single-game__team {
-        font-size: 0.95rem;
+        font-size: calc(var(--smf-fs-base) * 0.95);
     }
 
     .smf-single-game__score {
-        font-size: 1.75rem;
+        font-size: calc(var(--smf-fs-base) * 1.75);
     }
 
     .smf-timeline__event {
         grid-template-columns: 38px 18px auto 1fr 42px;
         gap: 0 6px;
         padding: 6px 8px;
-        font-size: 14px;
+        font-size: calc(var(--smf-fs-base) * 0.875);
     }
 
-    .smf-tl-player { font-size: 14px; }
+    .smf-tl-player { font-size: calc(var(--smf-fs-base) * 0.875); }
 
     .smf-modal-content {
         padding: 1.25rem;
@@ -1330,11 +1336,11 @@
     .smf-detail__team { text-align: center; }
 
     .smf-detail__score {
-        font-size: 2rem;
+        font-size: calc(var(--smf-fs-base) * 2);
     }
 
     .smf-detail__team-name {
-        font-size: 1rem;
+        font-size: calc(var(--smf-fs-base) * 1);
     }
 
     /* Vereinsübersicht: kompaktere Karten auf kleinen Screens */
@@ -1348,7 +1354,7 @@
     }
 
     .smf-co-game__name {
-        font-size: 0.85rem;
+        font-size: calc(var(--smf-fs-base) * 0.85);
     }
 }
 
@@ -1374,14 +1380,16 @@
     }
 
     .smf-co-game__name {
-        font-size: 0.88rem;
+        font-size: calc(var(--smf-fs-base) * 0.88);
     }
 }
 
 /* Pflicht-Quellenangabe (Saisonmanager-Nutzungsvereinbarung) - dezent, aber lesbar */
 .smf-attribution {
     margin: 0.75rem 0 0;
-    font-size: 0.75rem;
+    /* Mindestgröße abgesichert - Pflicht-Quellenangabe muss auch bei
+       kleiner gewählter Basis-Schriftgröße lesbar bleiben. */
+    font-size: max( 11px, calc( var(--smf-fs-base) * 0.75 ) );
     line-height: 1.4;
     color: var(--smf-color-text-muted, #888);
     text-align: right;

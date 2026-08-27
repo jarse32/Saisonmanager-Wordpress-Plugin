@@ -22,6 +22,14 @@ class SMF_Design {
     const FONT_STACK_SYSTEM_SERIF = 'Georgia, "Times New Roman", Times, serif';
 
     /**
+     * Erlaubte Basis-Schriftgrößen (px) für --smf-fs-base. Enum statt
+     * Freitext/Slider, konsistent zur Schatten-Intensität - alle
+     * font-size-Angaben im Stylesheet sind calc(var(--smf-fs-base) * Faktor),
+     * daher skaliert die Wahl hier das gesamte Plugin-Markup mit.
+     */
+    const FONT_SIZES = array( 14, 16, 18, 20 );
+
+    /**
      * Defaults für NEUE Installationen. Bewusst neutrale Farben statt der
      * Eichehorn-Farben - das Plugin soll für beliebige Vereine nutzbar
      * sein, nicht standardmäßig fremde Vereinsfarben zeigen. Die Schrift
@@ -45,6 +53,7 @@ class SMF_Design {
             'contrast_on_accent'  => 'auto',
             'radius'              => 8,
             'shadow_intensity'    => 'normal',
+            'font_size'           => 16,
             'font_mode'           => 'inherit',
             'font_custom'         => '',
             'font_title_mode'     => 'inherit',
@@ -117,6 +126,9 @@ class SMF_Design {
 
         $radius          = isset( $input['radius'] ) ? absint( $input['radius'] ) : $defaults['radius'];
         $out['radius']   = max( 0, min( 24, $radius ) );
+
+        $font_size          = isset( $input['font_size'] ) ? absint( $input['font_size'] ) : 0;
+        $out['font_size']   = in_array( $font_size, self::FONT_SIZES, true ) ? $font_size : $defaults['font_size'];
 
         $shadow                    = isset( $input['shadow_intensity'] ) ? $input['shadow_intensity'] : '';
         $out['shadow_intensity']   = in_array( $shadow, array( 'none', 'soft', 'normal', 'strong' ), true )
@@ -279,6 +291,7 @@ class SMF_Design {
             '--smf-color-on-primary'    => self::contrast_var( $cfg['color_primary'], $cfg['contrast_on_primary'] ),
             '--smf-color-on-accent'     => self::contrast_var( $cfg['color_accent'], $cfg['contrast_on_accent'] ),
             '--smf-radius'              => $cfg['radius'] . 'px',
+            '--smf-fs-base'             => $cfg['font_size'] . 'px',
             '--smf-font'                => self::resolve_font( $cfg['font_mode'], $cfg['font_custom'] ),
             '--smf-font-title'          => self::resolve_font( $cfg['font_title_mode'], $cfg['font_title_custom'] ),
         );
