@@ -101,6 +101,113 @@ Die `liga_id` findest du über den Team-Finder oder den "Teams laden"-Button
 bei einem Verein (Spalte "Liga(en)"). Vollständige Referenz direkt in der
 Admin-Oberfläche unter **SM Floorball → Shortcode-Referenz**.
 
+## Hooks für Theme-Entwickler:innen
+
+Über **SM Floorball → Design** lässt sich das Erscheinungsbild bereits ohne
+Code anpassen (siehe oben). Für Sonderfälle, die die Design-Seite nicht
+abdeckt, stehen folgende Filter/Templates zur Verfügung:
+
+### Eigene Templates (`smf_template_path`)
+
+`smf_render_template()` sucht jedes Template zuerst im aktiven Child-Theme,
+dann im Parent-Theme, jeweils im Unterordner `saisonmanager-floorball/`,
+und erst danach im Plugin selbst:
+
+1. `wp-content/themes/<child-theme>/saisonmanager-floorball/{template}.php`
+2. `wp-content/themes/<parent-theme>/saisonmanager-floorball/{template}.php`
+3. `wp-content/plugins/saisonmanager-floorball/templates/{template}.php` (Default)
+
+Die Template-Namen (ohne `.php`) entsprechen den Dateinamen in
+`templates/`: `table`, `games-list`, `single-game`, `club-overview`,
+`game-detail`. Am einfachsten kopierst du die Plugin-Datei als
+Ausgangspunkt in dein Theme.
+
+Für Sonderfälle (z.B. Templates aus einem anderen Plugin laden) gibt es
+zusätzlich den Filter `smf_template_path`:
+
+```php
+add_filter( 'smf_template_path', function ( $file, $template, $data ) {
+    if ( $template === 'table' ) {
+        return '/pfad/zu/meinem/table.php';
+    }
+    return $file;
+}, 10, 3 );
+```
+
+### Eigene Bezeichnungen (`smf_labels`)
+
+Das Plugin hat keine eigene Textdomain (siehe Umsetzungsplan) - Texte lassen
+sich stattdessen über den Filter `smf_labels` anpassen oder übersetzen:
+
+```php
+add_filter( 'smf_labels', function ( $labels ) {
+    $labels['no_games_found'] = 'No games scheduled yet.';
+    $labels['next_game_label'] = 'Next match';
+    return $labels;
+} );
+```
+
+Verfügbare Schlüssel und ihre Standardtexte:
+
+| Schlüssel | Standardtext |
+|---|---|
+| `games_list_title_alle` | Alle Spiele |
+| `games_list_title_vergangen` | Vergangene Spiele |
+| `games_list_title_kommend` | Kommende Spiele |
+| `games_list_title_default` | Spiele |
+| `no_games_found` | Keine Spiele gefunden. |
+| `no_table_data` | Keine Tabellendaten verfügbar. |
+| `game_day_prefix` | Spieltag |
+| `time_suffix` | Uhr |
+| `detail_link_played` | Spielbericht |
+| `detail_link_upcoming` | Details |
+| `single_game_btn_played` | Spielbericht ansehen |
+| `single_game_btn_upcoming` | Details ansehen |
+| `next_game_label` | Nächstes Spiel |
+| `last_game_label` | Letztes Spiel |
+| `timeline_title` | Spielverlauf |
+| `referees_title` | Schiedsrichter |
+| `club_overview_upcoming_title` | Anstehende Spiele |
+| `club_overview_no_upcoming` | Keine kommenden Spiele gefunden. |
+| `club_overview_played_title` | Letzte Ergebnisse |
+| `club_overview_no_played` | Noch keine Ergebnisse vorhanden. |
+| `team_side_home` | Heim |
+| `team_side_away` | Gast |
+| `vs_label` | vs. |
+| `vs_label_compact` | vs |
+
+`team_side_away` z.B. auf "Auswärts" umstellen, ohne Template-Override:
+
+```php
+add_filter( 'smf_labels', function ( $labels ) {
+    $labels['team_side_away'] = 'Auswärts';
+    return $labels;
+} );
+```
+
+Kurze Tabellenspalten-Abkürzungen (Sp/S/SV/N/Pkt) sind bewusst nicht Teil
+dieses Filters - dafür reicht in der Regel eigenes CSS oder ein
+Template-Override. Die Pflicht-Quellenangabe (Datenquelle Saisonmanager/FVD)
+ist nicht überschreibbar, ihre Farbe zieht aber automatisch mit dem
+gewählten Design mit.
+
+### Design-Werte programmatisch anpassen (`smf_design_vars`)
+
+Die auf **SM Floorball → Design** gespeicherte Konfiguration lässt sich vor
+der CSS-Ausgabe per Filter anpassen oder ergänzen - z.B. für Werte, die die
+UI nicht abdeckt:
+
+```php
+add_filter( 'smf_design_vars', function ( $vars, $config ) {
+    $vars['--smf-color-primary'] = '#0055aa';
+    return $vars;
+}, 10, 2 );
+```
+
+`$vars` ist das Array der finalen CSS-Variablen (Name => Wert), `$config`
+die gespeicherte Design-Konfiguration. Der Filter läuft bei jedem
+Seitenaufruf, sollte also keine teuren Berechnungen enthalten.
+
 ## Sicherheit & Datenschutz
 
 - Der API-Key verlässt den Server nie – alle Anfragen laufen serverseitig

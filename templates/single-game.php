@@ -52,7 +52,7 @@ if ( $show_logos ) {
             <span class="smf-single-game__date-day"><?php echo esc_html( date_i18n( 'l', $date_ts ) ); ?></span>
             <span class="smf-single-game__date-full"><?php echo esc_html( date_i18n( 'd. F Y', $date_ts ) ); ?></span>
             <?php if ( ! $has_result && ! empty( $game['time'] ) ) : ?>
-                <span class="smf-single-game__date-time"><?php echo esc_html( $game['time'] ); ?> Uhr</span>
+                <span class="smf-single-game__date-time"><?php echo esc_html( $game['time'] . ' ' . smf_label( 'time_suffix', 'Uhr' ) ); ?></span>
             <?php endif; ?>
         </div>
     <?php endif; ?>
@@ -76,7 +76,7 @@ if ( $show_logos ) {
             <?php if ( $has_result ) : ?>
                 <div class="smf-single-game__score"><?php echo esc_html( $home_score . ' : ' . $away_score ); ?></div>
             <?php else : ?>
-                <div class="smf-single-game__score smf-single-game__score--upcoming">vs.</div>
+                <div class="smf-single-game__score smf-single-game__score--upcoming"><?php echo esc_html( smf_label( 'vs_label', 'vs.' ) ); ?></div>
             <?php endif; ?>
         </div>
 
@@ -103,14 +103,14 @@ if ( $show_logos ) {
                 </span>
             <?php endif; ?>
             <?php if ( $game_day ) : ?>
-                <span>Spieltag <?php echo esc_html( $game_day ); ?></span>
+                <span><?php echo esc_html( smf_label( 'game_day_prefix', 'Spieltag' ) . ' ' . $game_day ); ?></span>
             <?php endif; ?>
         </div>
     <?php endif; ?>
 
     <?php if ( $game_id ) : ?>
         <div class="smf-single-game__action">
-            <span class="smf-btn"><?php echo $has_result ? 'Spielbericht ansehen' : 'Details ansehen'; ?></span>
+            <span class="smf-btn"><?php echo esc_html( $has_result ? smf_label( 'single_game_btn_played', 'Spielbericht ansehen' ) : smf_label( 'single_game_btn_upcoming', 'Details ansehen' ) ); ?></span>
         </div>
     <?php endif; ?>
 

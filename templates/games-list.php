@@ -14,11 +14,11 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 $api = new SMF_API();
 
 $title_map = array(
-    'alle'      => 'Alle Spiele',
-    'vergangen' => 'Vergangene Spiele',
-    'kommend'   => 'Kommende Spiele',
+    'alle'      => smf_label( 'games_list_title_alle', 'Alle Spiele' ),
+    'vergangen' => smf_label( 'games_list_title_vergangen', 'Vergangene Spiele' ),
+    'kommend'   => smf_label( 'games_list_title_kommend', 'Kommende Spiele' ),
 );
-$section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : 'Spiele';
+$section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : smf_label( 'games_list_title_default', 'Spiele' );
 ?>
 
 <div class="smf smf-games-wrapper">
@@ -35,7 +35,7 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : 'Spiele'
     <?php endif; ?>
 
     <?php if ( empty( $games ) ) : ?>
-        <p class="smf-notice">Keine Spiele gefunden.</p>
+        <p class="smf-notice"><?php echo esc_html( smf_label( 'no_games_found', 'Keine Spiele gefunden.' ) ); ?></p>
     <?php else : ?>
 
         <div class="smf-games-list">
@@ -69,12 +69,12 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : 'Spiele'
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                                 <?php echo esc_html( date_i18n( 'd.m.Y', $date_ts ) ); ?>
                                 <?php if ( ! empty( $game['time'] ) ) : ?>
-                                    <span class="smf-game-time"><?php echo esc_html( $game['time'] ); ?> Uhr</span>
+                                    <span class="smf-game-time"><?php echo esc_html( $game['time'] . ' ' . smf_label( 'time_suffix', 'Uhr' ) ); ?></span>
                                 <?php endif; ?>
                             </span>
                         <?php endif; ?>
                         <?php if ( $game_day ) : ?>
-                            <span class="smf-game-day">Spieltag <?php echo esc_html( $game_day ); ?></span>
+                            <span class="smf-game-day"><?php echo esc_html( smf_label( 'game_day_prefix', 'Spieltag' ) . ' ' . $game_day ); ?></span>
                         <?php endif; ?>
                         <?php if ( $venue ) : ?>
                             <span class="smf-game-venue">
@@ -98,7 +98,7 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : 'Spiele'
                             <?php if ( $has_result ) : ?>
                                 <span class="smf-score"><?php echo esc_html( $home_score . ' : ' . $away_score ); ?></span>
                             <?php else : ?>
-                                <span class="smf-score-vs">vs.</span>
+                                <span class="smf-score-vs"><?php echo esc_html( smf_label( 'vs_label', 'vs.' ) ); ?></span>
                             <?php endif; ?>
                         </div>
 
@@ -114,7 +114,7 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : 'Spiele'
                     <?php if ( $game_id ) : ?>
                         <div class="smf-game-action">
                             <span class="smf-detail-link">
-                                <?php echo $has_result ? 'Spielbericht' : 'Details'; ?>
+                                <?php echo esc_html( $has_result ? smf_label( 'detail_link_played', 'Spielbericht' ) : smf_label( 'detail_link_upcoming', 'Details' ) ); ?>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                             </span>
                         </div>

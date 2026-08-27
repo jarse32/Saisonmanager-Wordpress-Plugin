@@ -68,7 +68,7 @@ $render_game = function ( array $game ) use ( $api ) {
                 <?php if ( $has_result && $home_score !== null && $away_score !== null ) : ?>
                     <span class="smf-co-score"><?php echo esc_html( $home_score . ':' . $away_score ); ?></span>
                 <?php else : ?>
-                    <span class="smf-co-vs">vs</span>
+                    <span class="smf-co-vs"><?php echo esc_html( smf_label( 'vs_label_compact', 'vs' ) ); ?></span>
                 <?php endif; ?>
             </div>
 
@@ -100,10 +100,10 @@ $render_game = function ( array $game ) use ( $api ) {
         <div class="smf-co-col smf-co-col--upcoming">
             <div class="smf-co-col-header">
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Anstehende Spiele
+                <?php echo esc_html( smf_label( 'club_overview_upcoming_title', 'Anstehende Spiele' ) ); ?>
             </div>
             <?php if ( empty( $upcoming ) ) : ?>
-                <p class="smf-co-empty">Keine kommenden Spiele gefunden.</p>
+                <p class="smf-co-empty"><?php echo esc_html( smf_label( 'club_overview_no_upcoming', 'Keine kommenden Spiele gefunden.' ) ); ?></p>
             <?php else : ?>
                 <div class="smf-co-games">
                     <?php foreach ( $upcoming as $game ) : $render_game( $game ); endforeach; ?>
@@ -115,10 +115,10 @@ $render_game = function ( array $game ) use ( $api ) {
         <div class="smf-co-col smf-co-col--played">
             <div class="smf-co-col-header">
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-                Letzte Ergebnisse
+                <?php echo esc_html( smf_label( 'club_overview_played_title', 'Letzte Ergebnisse' ) ); ?>
             </div>
             <?php if ( empty( $played ) ) : ?>
-                <p class="smf-co-empty">Noch keine Ergebnisse vorhanden.</p>
+                <p class="smf-co-empty"><?php echo esc_html( smf_label( 'club_overview_no_played', 'Noch keine Ergebnisse vorhanden.' ) ); ?></p>
             <?php else : ?>
                 <div class="smf-co-games">
                     <?php foreach ( $played as $game ) : $render_game( $game ); endforeach; ?>

@@ -206,17 +206,71 @@ function smf_ajax_sync_club_teams() {
 add_action( 'wp_ajax_smf_sync_club_teams', 'smf_ajax_sync_club_teams' );
 
 /**
- * Template rendern
+ * Template rendern. Suchreihenfolge: Child-Theme, dann Parent-Theme
+ * (jeweils im Unterordner "saisonmanager-floorball"), dann der
+ * Plugin-eigene Default. Themes können also z.B. templates/table.php
+ * durch eine eigene Datei unter
+ * wp-content/themes/<theme>/saisonmanager-floorball/table.php ersetzen,
+ * ohne das Plugin zu verändern.
  *
- * @param string $template
- * @param array  $data
+ * @param string $template Template-Name ohne .php, z.B. "table"
+ * @param array  $data     Variablen, die dem Template zur Verfügung stehen
  */
 function smf_render_template( $template, $data = array() ) {
     $file = SMF_PLUGIN_DIR . 'templates/' . $template . '.php';
+
+    $child_file = get_stylesheet_directory() . '/saisonmanager-floorball/' . $template . '.php';
+    if ( file_exists( $child_file ) ) {
+        $file = $child_file;
+    } else {
+        $parent_file = get_template_directory() . '/saisonmanager-floorball/' . $template . '.php';
+        if ( file_exists( $parent_file ) ) {
+            $file = $parent_file;
+        }
+    }
+
+    /**
+     * Erlaubt das vollständige Überschreiben des ermittelten Template-Pfads,
+     * z.B. um Templates aus einem anderen Verzeichnis oder Plugin zu laden.
+     *
+     * @param string $file     Ermittelter Pfad (Child-Theme > Parent-Theme > Plugin-Default)
+     * @param string $template Template-Name ohne .php
+     * @param array  $data     Variablen, die dem Template zur Verfügung stehen
+     */
+    $file = apply_filters( 'smf_template_path', $file, $template, $data );
+
     if ( file_exists( $file ) ) {
         extract( $data, EXTR_SKIP );
         include $file;
     }
+}
+
+/**
+ * Übersetzbares/überschreibbares UI-Label ausgeben. Keine eigene
+ * Textdomain (siehe Umsetzungsplan) - Vereine, die Bezeichnungen anpassen
+ * oder in eine andere Sprache übersetzen möchten, hängen sich stattdessen
+ * per smf_labels-Filter ein, z.B. im Child-Theme:
+ *
+ *     add_filter( 'smf_labels', function ( $labels ) {
+ *         $labels['no_games_found'] = 'No games scheduled.';
+ *         return $labels;
+ *     } );
+ *
+ * Die verfügbaren Schlüssel samt Standardtext stehen in der README
+ * (Abschnitt "Hooks für Theme-Entwickler:innen") - $fallback am Aufrufort
+ * ist jeweils die maßgebliche Default-Quelle, damit derselbe Text nicht
+ * zusätzlich in einem zentralen Array gepflegt werden muss.
+ *
+ * @param string $key
+ * @param string $fallback
+ * @return string
+ */
+function smf_label( $key, $fallback ) {
+    static $overrides = null;
+    if ( $overrides === null ) {
+        $overrides = apply_filters( 'smf_labels', array() );
+    }
+    return ( isset( $overrides[ $key ] ) && $overrides[ $key ] !== '' ) ? $overrides[ $key ] : $fallback;
 }
 
 /**

@@ -156,7 +156,7 @@ class SMF_Shortcodes {
         smf_render_template( 'single-game', array(
             'game'        => $game,
             'league_name' => $league_name,
-            'label'       => 'Nächstes Spiel',
+            'label'       => smf_label( 'next_game_label', 'Nächstes Spiel' ),
             'show_logos'  => $atts['logos'] === 'true',
         ) );
         return ob_get_clean();
@@ -202,7 +202,7 @@ class SMF_Shortcodes {
         smf_render_template( 'single-game', array(
             'game'        => $game,
             'league_name' => $league_name,
-            'label'       => 'Letztes Spiel',
+            'label'       => smf_label( 'last_game_label', 'Letztes Spiel' ),
             'show_logos'  => $atts['logos'] === 'true',
         ) );
         return ob_get_clean();

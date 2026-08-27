@@ -122,7 +122,7 @@ if ( ! $ref_string && $nom_refs ) {
             <div class="smf-detail__date">
                 <?php echo esc_html( date_i18n( 'l, d. F Y', $date_ts ) ); ?>
                 <?php if ( ! empty( $game['time'] ) ) : ?>
-                    &ndash; <?php echo esc_html( $game['time'] ); ?> Uhr
+                    &ndash; <?php echo esc_html( $game['time'] . ' ' . smf_label( 'time_suffix', 'Uhr' ) ); ?>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
@@ -134,7 +134,7 @@ if ( ! $ref_string && $nom_refs ) {
                 </span>
             <?php endif; ?>
             <?php if ( $game_day ) : ?>
-                <span>Spieltag <?php echo esc_html( $game_day ); ?></span>
+                <span><?php echo esc_html( smf_label( 'game_day_prefix', 'Spieltag' ) . ' ' . $game_day ); ?></span>
             <?php endif; ?>
         </div>
     </div>
@@ -186,7 +186,7 @@ if ( ! $ref_string && $nom_refs ) {
     <?php if ( ! empty( $timeline ) ) : ?>
     <!-- Chronologische Ereignisse -->
     <div class="smf-detail__section">
-        <h4 class="smf-detail__section-title">Spielverlauf</h4>
+        <h4 class="smf-detail__section-title"><?php echo esc_html( smf_label( 'timeline_title', 'Spielverlauf' ) ); ?></h4>
 
         <div class="smf-timeline">
 
@@ -225,7 +225,7 @@ if ( ! $ref_string && $nom_refs ) {
                             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><ellipse cx="12" cy="12" rx="11" ry="7"/></svg>
                         </span>
                         <span class="smf-tl-team-badge <?php echo $is_home ? 'smf-tl-team-badge--home' : 'smf-tl-team-badge--away'; ?>">
-                            <?php echo $is_home ? 'Heim' : 'Gast'; ?>
+                            <?php echo esc_html( $is_home ? smf_label( 'team_side_home', 'Heim' ) : smf_label( 'team_side_away', 'Gast' ) ); ?>
                         </span>
                         <div class="smf-tl-info">
                             <?php if ( $player ) : ?>
@@ -254,7 +254,7 @@ if ( ! $ref_string && $nom_refs ) {
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
                         </span>
                         <span class="smf-tl-team-badge <?php echo $is_home ? 'smf-tl-team-badge--home' : 'smf-tl-team-badge--away'; ?>">
-                            <?php echo $is_home ? 'Heim' : 'Gast'; ?>
+                            <?php echo esc_html( $is_home ? smf_label( 'team_side_home', 'Heim' ) : smf_label( 'team_side_away', 'Gast' ) ); ?>
                         </span>
                         <div class="smf-tl-info">
                             <?php if ( $player ) : ?>
@@ -281,7 +281,7 @@ if ( ! $ref_string && $nom_refs ) {
     <!-- Schiedsrichter -->
     <?php if ( $ref_string ) : ?>
         <div class="smf-detail__section smf-detail__section--minor">
-            <h4 class="smf-detail__section-title">Schiedsrichter</h4>
+            <h4 class="smf-detail__section-title"><?php echo esc_html( smf_label( 'referees_title', 'Schiedsrichter' ) ); ?></h4>
             <p class="smf-detail__referees"><?php echo esc_html( $ref_string ); ?></p>
         </div>
     <?php endif; ?>

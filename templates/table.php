@@ -28,7 +28,7 @@ if ( isset( $table['teams'] ) ) {
     <?php endif; ?>
 
     <?php if ( empty( $rows ) ) : ?>
-        <p class="smf-notice">Keine Tabellendaten verfügbar.</p>
+        <p class="smf-notice"><?php echo esc_html( smf_label( 'no_table_data', 'Keine Tabellendaten verfügbar.' ) ); ?></p>
     <?php else : ?>
 
         <div class="smf-table-scroll">
