@@ -155,6 +155,47 @@ class SMF_API {
     }
 
     /**
+     * Aktuelle Saison-ID ermitteln (über init.json). Saison-IDs sind
+     * fortlaufend nummeriert (z.B. 18 = aktuelle Saison, 17 = Vorsaison) -
+     * hilft im Team-Finder dabei, ohne Rätselraten die richtige Saison-ID
+     * für historische Team-Suchen einzutragen. Mehrere Feldnamen werden
+     * defensiv probiert, da die genaue init.json-Struktur nicht dokumentiert
+     * ist. Gibt null zurück, wenn nichts Verwertbares gefunden wird.
+     *
+     * @return int|null
+     */
+    public function get_current_season_id() {
+        $data = $this->get_raw( 'init.json' );
+        if ( is_wp_error( $data ) || ! is_array( $data ) ) {
+            return null;
+        }
+
+        if ( isset( $data['current_season_id'] ) ) {
+            return (int) $data['current_season_id'];
+        }
+        if ( isset( $data['current_season']['id'] ) ) {
+            return (int) $data['current_season']['id'];
+        }
+        if ( isset( $data['seasons'] ) && is_array( $data['seasons'] ) ) {
+            foreach ( $data['seasons'] as $season ) {
+                if ( is_array( $season ) && ! empty( $season['current'] ) && isset( $season['id'] ) ) {
+                    return (int) $season['id'];
+                }
+            }
+            // Fallback: höchste Saison-ID als aktuelle annehmen (Saisons sind
+            // laut Doku fortlaufend nummeriert).
+            $ids = array_filter( array_map( function ( $s ) {
+                return isset( $s['id'] ) ? (int) $s['id'] : null;
+            }, $data['seasons'] ) );
+            if ( ! empty( $ids ) ) {
+                return max( $ids );
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Unix-Timestamp aus Spieldaten extrahieren.
      * API liefert Datum und Zeit getrennt: date="YYYY-MM-DD", time="HH:MM"
      *

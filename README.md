@@ -51,7 +51,11 @@ wird über alle bekannten Spielbetriebsstellen hinweg, optional für eine
 bestimmte Saison-ID (leer = aktuelle Saison; nützlich für historische
 Team-IDs vergangener Saisons, da sich Team-IDs von Saison zu Saison ändern
 können). Das Ergebnis zeigt die gefundene Club-ID sowie alle Teams mit ihrer
-ID zum Reinkopieren.
+ID zum Reinkopieren. Die Buttons **"Aktuelle Saison"**/**"Vorsaison"** neben
+dem Saison-ID-Feld füllen die richtige Nummer automatisch aus (Saisons sind
+fortlaufend nummeriert) – so muss man die Saison-ID nicht selbst
+heraussuchen, um z. B. Team-IDs der Vorsaison für historische Ergebnisse in
+der Vereinsübersicht zu finden.
 
 ### Vereine & Teams
 

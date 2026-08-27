@@ -129,6 +129,33 @@
     }
 
     // ----------------------------------------------------------------
+    // Team-Finder: aktuelle Saison-ID ermitteln (Hilfe für "Vorsaison")
+    // ----------------------------------------------------------------
+
+    let currentSeasonId = null;
+
+    function loadCurrentSeason() {
+        const $hint = $('#smf-tf-season-hint');
+        if ( typeof smf_admin_data === 'undefined' || ! smf_admin_data.ajax_url ) {
+            return;
+        }
+
+        $.post(smf_admin_data.ajax_url, {
+            action: 'smf_current_season',
+            nonce:  smf_admin_data.nonce,
+        }).done(function (response) {
+            if ( response && response.success && response.data && response.data.current_season_id ) {
+                currentSeasonId = parseInt(response.data.current_season_id, 10);
+                $hint.text('Aktuelle Saison-ID: ' + currentSeasonId + ' (Vorsaison: ' + (currentSeasonId - 1) + ')');
+            } else {
+                $hint.text('Aktuelle Saison-ID konnte nicht ermittelt werden – bitte die Saison-ID bei Bedarf manuell im Saisonmanager-Frontend nachsehen.');
+            }
+        }).fail(function () {
+            $hint.text('Aktuelle Saison-ID konnte nicht ermittelt werden.');
+        });
+    }
+
+    // ----------------------------------------------------------------
     // Club-ID: Teams laden
     // ----------------------------------------------------------------
 
@@ -207,6 +234,19 @@
                 e.preventDefault();
                 runTeamFinderSearch();
             }
+        });
+
+        if ( $('#smf-tf-season-hint').length ) {
+            loadCurrentSeason();
+        }
+
+        $('#smf-tf-season-current').on('click', function () {
+            $('#smf-tf-season').val('');
+        });
+
+        $('#smf-tf-season-prev').on('click', function () {
+            if ( currentSeasonId === null ) return;
+            $('#smf-tf-season').val( currentSeasonId - 1 );
         });
 
         $(document).on('click', '.smf-sync-club-teams', function () {

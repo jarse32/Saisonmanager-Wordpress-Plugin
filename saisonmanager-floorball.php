@@ -132,6 +132,26 @@ function smf_ajax_find_teams() {
 add_action( 'wp_ajax_smf_find_teams', 'smf_ajax_find_teams' );
 
 /**
+ * AJAX (nur eingeloggte Admins): aktuelle Saison-ID ermitteln, damit man im
+ * Team-Finder nicht raten muss, welche Saison-ID "letzte Saison" ist
+ * (Saisons sind fortlaufend nummeriert, Vorsaison = aktuelle ID - 1).
+ */
+function smf_ajax_current_season() {
+    check_ajax_referer( 'smf_admin_nonce', 'nonce' );
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( 'Nicht erlaubt.' );
+    }
+
+    $season_id = ( new SMF_API() )->get_current_season_id();
+    if ( $season_id === null ) {
+        wp_send_json_error( 'Aktuelle Saison-ID konnte nicht ermittelt werden.' );
+    }
+
+    wp_send_json_success( array( 'current_season_id' => $season_id ) );
+}
+add_action( 'wp_ajax_smf_current_season', 'smf_ajax_current_season' );
+
+/**
  * AJAX (nur eingeloggte Admins): Teams + deren Liga-IDs für eine Club-ID
  * laden. Speichert das Ergebnis in smf_club_teams_cache (genutzt von
  * SMF_ClubOverview::get_games()) und gibt es zur Anzeige zurück, inkl. der

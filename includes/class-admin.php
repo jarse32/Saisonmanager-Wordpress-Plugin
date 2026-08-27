@@ -260,7 +260,12 @@ class SMF_Admin {
                         </tr>
                         <tr>
                             <th scope="row"><label for="smf-tf-season">Saison-ID <small>(optional)</small></label></th>
-                            <td><input type="number" id="smf-tf-season" class="small-text" placeholder="leer = aktuell"></td>
+                            <td>
+                                <input type="number" id="smf-tf-season" class="small-text" placeholder="leer = aktuell">
+                                <button type="button" class="button" id="smf-tf-season-current">Aktuelle Saison</button>
+                                <button type="button" class="button" id="smf-tf-season-prev">Vorsaison</button>
+                                <p class="description" id="smf-tf-season-hint">Aktuelle Saison-ID wird ermittelt…</p>
+                            </td>
                         </tr>
                     </table>
                     <p><button type="button" class="button button-primary" id="smf-tf-search">Suchen</button></p>
