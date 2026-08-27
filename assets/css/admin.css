@@ -113,3 +113,47 @@
         grid-column: 1;
     }
 }
+
+/* ------------------------------------------------------------------ */
+/*  Design-Unterseite                                                   */
+/* ------------------------------------------------------------------ */
+
+.smf-design-layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: flex-start;
+    max-width: 1300px;
+    margin-top: 1.5rem;
+}
+
+.smf-design-form-card {
+    flex: 1 1 480px;
+}
+
+.smf-design-preview-card {
+    flex: 1 1 420px;
+    position: sticky;
+    top: 32px;
+}
+
+.smf-design-preview-card #smf-design-preview-root {
+    margin: 1rem 0 0;
+}
+
+.smf-design-form-card h2:not(:first-child) {
+    margin-top: 1.75rem;
+}
+
+/*
+ * Die Schatten-Intensitätsstufen selbst stehen einmalig in style.css
+ * (--smf-shadow-step-*, immer geladen) und werden von der Live-Vorschau
+ * über assets/js/design-contrast.js (smfDesignPreview.applyShadowStep())
+ * per var()-Referenz gesetzt - keine eigene Kopie der Werte hier nötig.
+ */
+
+@media (max-width: 900px) {
+    .smf-design-preview-card {
+        position: static;
+    }
+}

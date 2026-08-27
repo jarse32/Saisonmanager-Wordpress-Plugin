@@ -6,6 +6,9 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  */
 class SMF_Admin {
 
+    /** @var string Hook-Suffix der Design-Unterseite, siehe register_menu()/enqueue_design_assets() */
+    private $design_hook = '';
+
     /**
      * Menüseite registrieren (auf admin_menu aufgerufen)
      */
@@ -20,7 +23,17 @@ class SMF_Admin {
             30
         );
 
+        $this->design_hook = add_submenu_page(
+            'smf-settings',
+            'SM Floorball – Design',
+            'Design',
+            'manage_options',
+            'smf-design',
+            array( $this, 'render_design_page' )
+        );
+
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+        add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_design_assets' ) );
     }
 
     /**
@@ -48,6 +61,12 @@ class SMF_Admin {
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ] );
+
+        register_setting( 'smf_design_group', 'smf_design', [
+            'type'              => 'array',
+            'sanitize_callback' => [ 'SMF_Design', 'sanitize' ],
+            'default'           => SMF_Design::get_defaults(),
+        ] );
     }
 
     public function enqueue_admin_assets( $hook ): void {
@@ -59,6 +78,42 @@ class SMF_Admin {
             'verein_count' => count( get_option( 'smf_vereine', array() ) ),
             'ajax_url'     => admin_url( 'admin-ajax.php' ),
             'nonce'        => wp_create_nonce( 'smf_admin_nonce' ),
+        ) );
+    }
+
+    /**
+     * Assets für die Design-Unterseite: Farb-Picker + das Frontend-
+     * Stylesheet selbst (für die Live-Vorschau, die dasselbe Markup wie
+     * dev/preview.html nutzt) + das gemeinsame Kontrast-Modul aus Phase 1b.
+     */
+    public function enqueue_design_assets( $hook ): void {
+        if ( $hook !== $this->design_hook ) return;
+
+        wp_enqueue_style( 'wp-color-picker' );
+        wp_enqueue_style( 'smf-admin', SMF_PLUGIN_URL . 'assets/css/admin.css', array(), SMF_VERSION );
+        wp_enqueue_style( 'smf-style', SMF_PLUGIN_URL . 'assets/css/style.css', array(), SMF_VERSION );
+
+        wp_enqueue_script(
+            'smf-design-contrast',
+            SMF_PLUGIN_URL . 'assets/js/design-contrast.js',
+            array(),
+            SMF_VERSION,
+            true
+        );
+        wp_enqueue_script(
+            'smf-admin-design',
+            SMF_PLUGIN_URL . 'assets/js/admin-design.js',
+            array( 'jquery', 'wp-color-picker', 'smf-design-contrast' ),
+            SMF_VERSION,
+            true
+        );
+
+        // Eichehorn/Neutral kommen aus SMF_Design, damit diese Werte nicht
+        // zusätzlich in JS gepflegt werden müssen. "Dark" ist ein reines
+        // UI-Preset ohne PHP-Pendant, siehe admin-design.js.
+        wp_localize_script( 'smf-admin-design', 'smf_design_presets', array(
+            'eichehorn' => SMF_Design::get_legacy_values(),
+            'neutral'   => SMF_Design::get_defaults(),
         ) );
     }
 
@@ -492,6 +547,291 @@ class SMF_Admin {
 
             </div>
         </div>
+        <?php
+    }
+
+    /**
+     * Design-Unterseite: Farben, Form und Schrift für die Frontend-Ausgabe
+     * dieser Installation. Ein Formular über die WordPress-Settings-API
+     * (register_setting mit SMF_Design::sanitize als Callback) - kein
+     * eigener admin_post-Handler, damit das Sanitizing nur an einer Stelle
+     * existiert.
+     */
+    public function render_design_page(): void {
+        $cfg = SMF_Design::get();
+        ?>
+        <div class="wrap smf-admin-wrap">
+            <h1>
+                <span class="smf-logo">🎨</span>
+                SM Floorball – Design
+            </h1>
+            <p class="description">
+                Farben, Formen und Schrift für die Shortcode-Ausgabe dieser Installation.
+                Gilt global für alle hier konfigurierten Vereine/Teams - für API-Key und
+                Vereine siehe <a href="<?php echo esc_url( admin_url( 'admin.php?page=smf-settings' ) ); ?>">Allgemeine Einstellungen</a>.
+            </p>
+
+            <?php settings_errors( 'smf_design_group' ); ?>
+
+            <div class="smf-design-layout">
+
+                <div class="smf-admin-card smf-design-form-card">
+
+                    <h2>Presets</h2>
+                    <p class="description">
+                        Befüllt die Felder unten mit Beispielwerten - wirksam erst nach dem
+                        Speichern, überschreibt ungespeicherte Eingaben in den Feldern darunter.
+                    </p>
+                    <p>
+                        <button type="button" class="button" data-smf-preset="eichehorn">Eichehorn</button>
+                        <button type="button" class="button" data-smf-preset="neutral">Neutral</button>
+                        <button type="button" class="button" data-smf-preset="dark">Dark</button>
+                    </p>
+
+                    <form method="post" action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>" id="smf-design-form">
+                        <?php settings_fields( 'smf_design_group' ); ?>
+
+                        <h2>Farben</h2>
+                        <table class="form-table">
+                            <?php
+                            $this->render_design_color_row( 'color_primary', 'Primary', $cfg['color_primary'] );
+                            $this->render_design_color_row( 'color_accent', 'Accent', $cfg['color_accent'] );
+                            $this->render_design_color_row( 'color_surface', 'Surface (Kartenhintergrund)', $cfg['color_surface'] );
+                            $this->render_design_color_row( 'color_surface_alt', 'Surface Alt (z.B. Zeilenwechsel)', $cfg['color_surface_alt'] );
+                            $this->render_design_color_row( 'color_border', 'Rahmen', $cfg['color_border'] );
+                            $this->render_design_color_row( 'color_border_strong', 'Rahmen (kräftig)', $cfg['color_border_strong'] );
+                            $this->render_design_color_row( 'color_text', 'Text', $cfg['color_text'] );
+                            $this->render_design_color_row( 'color_text_muted', 'Text (gedämpft)', $cfg['color_text_muted'] );
+                            ?>
+                        </table>
+
+                        <h2>Kontrast</h2>
+                        <table class="form-table">
+                            <?php
+                            $this->render_design_contrast_row( 'contrast_on_primary', 'Textfarbe auf Primary', $cfg['contrast_on_primary'] );
+                            $this->render_design_contrast_row( 'contrast_on_accent', 'Textfarbe auf Accent', $cfg['contrast_on_accent'] );
+                            ?>
+                        </table>
+                        <p class="description">
+                            "Automatisch" berechnet den Kontrast anhand der relativen Luminanz
+                            (WCAG) der jeweiligen Fläche und wählt hellen oder dunklen Text.
+                        </p>
+
+                        <h2>Form</h2>
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row"><label for="smf-design-radius">Eckenradius</label></th>
+                                <td>
+                                    <input type="number" id="smf-design-radius" name="smf_design[radius]"
+                                           value="<?php echo esc_attr( $cfg['radius'] ); ?>"
+                                           min="0" max="24" class="small-text"> px
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="smf-design-shadow">Schatten-Intensität</label></th>
+                                <td>
+                                    <select id="smf-design-shadow" name="smf_design[shadow_intensity]">
+                                        <?php foreach ( array( 'none' => 'Keine', 'soft' => 'Dezent', 'normal' => 'Normal', 'strong' => 'Stark' ) as $val => $label ) : ?>
+                                            <option value="<?php echo esc_attr( $val ); ?>" <?php selected( $cfg['shadow_intensity'], $val ); ?>><?php echo esc_html( $label ); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <h2>Schrift</h2>
+                        <table class="form-table">
+                            <?php
+                            $this->render_design_font_row( 'font_mode', 'font_custom', 'Fließtext', $cfg['font_mode'], $cfg['font_custom'] );
+                            $this->render_design_font_row( 'font_title_mode', 'font_title_custom', 'Titel', $cfg['font_title_mode'], $cfg['font_title_custom'] );
+                            ?>
+                            <tr>
+                                <th scope="row"><label for="smf-design-fontsize">Schriftgröße</label></th>
+                                <td>
+                                    <select id="smf-design-fontsize" name="smf_design[font_size]">
+                                        <?php foreach ( array( 14 => 'Klein (14px)', 16 => 'Normal (16px)', 18 => 'Groß (18px)', 20 => 'Sehr groß (20px)' ) as $val => $label ) : ?>
+                                            <option value="<?php echo esc_attr( $val ); ?>" <?php selected( (int) $cfg['font_size'], $val ); ?>><?php echo esc_html( $label ); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </td>
+                            </tr>
+                        </table>
+                        <p class="description">
+                            Es werden keine externen Schriften nachgeladen. "Theme-Schrift
+                            übernehmen" erbt die Schrift der restlichen Seite; die System-Optionen
+                            und ein eigener Font-Stack greifen nur auf Schriften zu, die das
+                            Theme oder Betriebssystem der Besucher:innen bereits mitbringt.
+                        </p>
+
+                        <?php submit_button( 'Design speichern' ); ?>
+                    </form>
+                </div>
+
+                <div class="smf-admin-card smf-design-preview-card">
+                    <h2>Live-Vorschau</h2>
+                    <p class="description">Reagiert sofort auf Änderungen oben, noch ungespeichert.</p>
+
+                    <div class="smf" id="smf-design-preview-root">
+
+                        <div class="smf-table-wrapper">
+                            <div class="smf-header">
+                                <h3 class="smf-title">Regionalliga Nord – Tabelle</h3>
+                            </div>
+                            <div class="smf-table-scroll">
+                                <table class="smf-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="smf-col-rank">#</th>
+                                            <th class="smf-col-team">Team</th>
+                                            <th class="smf-col-num">Sp</th>
+                                            <th class="smf-col-num smf-col-pts">Pkt</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="smf-table-row smf-row-even">
+                                            <td class="smf-col-rank">1</td>
+                                            <td class="smf-col-team smf-team-name">Beispiel SV Nord</td>
+                                            <td class="smf-col-num">18</td>
+                                            <td class="smf-col-num smf-col-pts"><strong>46</strong></td>
+                                        </tr>
+                                        <tr class="smf-table-row">
+                                            <td class="smf-col-rank">2</td>
+                                            <td class="smf-col-team smf-team-name">TSV Musterstadt</td>
+                                            <td class="smf-col-num">18</td>
+                                            <td class="smf-col-num smf-col-pts"><strong>37</strong></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="smf-games-list" style="margin-top:1rem;">
+                            <div class="smf-game-card smf-game--played" role="button" tabindex="0">
+                                <div class="smf-game-meta">
+                                    <span class="smf-game-date">14.09.2026</span>
+                                    <span class="smf-game-day">Spieltag 5</span>
+                                </div>
+                                <div class="smf-game-matchup">
+                                    <div class="smf-game-team smf-game-team--home">
+                                        <span class="smf-team-name">Beispiel SV Nord</span>
+                                    </div>
+                                    <div class="smf-game-score"><span class="smf-score">7 : 4</span></div>
+                                    <div class="smf-game-team smf-game-team--away">
+                                        <span class="smf-team-name">TSV Musterstadt</span>
+                                    </div>
+                                </div>
+                                <div class="smf-game-action">
+                                    <span class="smf-detail-link">Spielbericht</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="smf-single-game smf-game--upcoming" style="margin-top:1rem;" role="button" tabindex="0">
+                            <div class="smf-single-game__label">
+                                <span>Nächstes Spiel</span>
+                                <span class="smf-single-game__league">Regionalliga Nord</span>
+                            </div>
+                            <div class="smf-single-game__date-row">
+                                <span class="smf-single-game__date-day">Montag</span>
+                                <span class="smf-single-game__date-full">21. September 2026</span>
+                                <span class="smf-single-game__date-time">19:30 Uhr</span>
+                            </div>
+                            <div class="smf-single-game__matchup">
+                                <div class="smf-single-game__team smf-single-game__team--home">
+                                    <span class="smf-single-game__team-name">Beispielhausen</span>
+                                </div>
+                                <div class="smf-single-game__center">
+                                    <div class="smf-single-game__score smf-single-game__score--upcoming">vs.</div>
+                                </div>
+                                <div class="smf-single-game__team smf-single-game__team--away">
+                                    <span class="smf-single-game__team-name">Beispiel SV Nord</span>
+                                </div>
+                            </div>
+                            <div class="smf-single-game__action">
+                                <span class="smf-btn">Details ansehen</span>
+                            </div>
+                        </div>
+
+                        <p class="smf-attribution">Daten: Saisonmanager / Floorball Verband Deutschland e. V. – inoffizielles Community-Projekt.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Eine Farbfeld-Zeile (wp-color-picker) für die Design-Seite.
+     */
+    private function render_design_color_row( string $key, string $label, string $value ): void {
+        ?>
+        <tr>
+            <th scope="row"><label for="smf-design-<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></label></th>
+            <td>
+                <input type="text"
+                       id="smf-design-<?php echo esc_attr( $key ); ?>"
+                       name="smf_design[<?php echo esc_attr( $key ); ?>]"
+                       value="<?php echo esc_attr( $value ); ?>"
+                       class="smf-design-color-field"
+                       data-default-color="<?php echo esc_attr( $value ); ?>">
+            </td>
+        </tr>
+        <?php
+    }
+
+    /**
+     * Eine Kontrast-Radiogroup (Automatisch/Hell/Dunkel) für die Design-Seite.
+     */
+    private function render_design_contrast_row( string $key, string $label, string $value ): void {
+        ?>
+        <tr>
+            <th scope="row"><?php echo esc_html( $label ); ?></th>
+            <td>
+                <?php foreach ( array( 'auto' => 'Automatisch', 'light' => 'Hell', 'dark' => 'Dunkel' ) as $mode => $mode_label ) : ?>
+                    <label style="margin-right:1.25rem;">
+                        <input type="radio"
+                               name="smf_design[<?php echo esc_attr( $key ); ?>]"
+                               value="<?php echo esc_attr( $mode ); ?>"
+                               <?php checked( $value, $mode ); ?>>
+                        <?php echo esc_html( $mode_label ); ?>
+                    </label>
+                <?php endforeach; ?>
+            </td>
+        </tr>
+        <?php
+    }
+
+    /**
+     * Eine Schrift-Zeile (Modus-Select + optionales Freitextfeld für den
+     * eigenen Font-Stack) für die Design-Seite.
+     */
+    private function render_design_font_row( string $mode_key, string $custom_key, string $label, string $mode_value, string $custom_value ): void {
+        ?>
+        <tr>
+            <th scope="row"><label for="smf-design-<?php echo esc_attr( $mode_key ); ?>"><?php echo esc_html( $label ); ?></label></th>
+            <td>
+                <select id="smf-design-<?php echo esc_attr( $mode_key ); ?>"
+                        name="smf_design[<?php echo esc_attr( $mode_key ); ?>]"
+                        class="smf-design-font-mode"
+                        data-target="smf-design-<?php echo esc_attr( $custom_key ); ?>-row">
+                    <option value="inherit"      <?php selected( $mode_value, 'inherit' ); ?>>Theme-Schrift übernehmen</option>
+                    <option value="system-sans"  <?php selected( $mode_value, 'system-sans' ); ?>>System Sans</option>
+                    <option value="system-serif" <?php selected( $mode_value, 'system-serif' ); ?>>System Serif</option>
+                    <option value="custom"       <?php selected( $mode_value, 'custom' ); ?>>Eigener Font-Stack</option>
+                </select>
+                <div id="smf-design-<?php echo esc_attr( $custom_key ); ?>-row"
+                     class="smf-design-font-custom-row"
+                     style="margin-top:0.5rem;<?php echo $mode_value === 'custom' ? '' : ' display:none;'; ?>">
+                    <input type="text"
+                           id="smf-design-<?php echo esc_attr( $custom_key ); ?>"
+                           name="smf_design[<?php echo esc_attr( $custom_key ); ?>]"
+                           value="<?php echo esc_attr( $custom_value ); ?>"
+                           class="regular-text"
+                           placeholder='z.B. "Helvetica Neue", Arial, sans-serif'>
+                </div>
+            </td>
+        </tr>
         <?php
     }
 }
