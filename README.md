@@ -118,6 +118,16 @@ Pull Requests sind willkommen – insbesondere von anderen Floorball-Vereinen,
 die das Plugin für ihre eigene Website nutzen möchten. Jede Installation
 beantragt dabei einen eigenen Saisonmanager-API-Key.
 
+## Entwicklung
+
+`dev/preview.html` ist eine eigenständige HTML-Datei zum Ausprobieren des
+Vereinsdesigns (Farben, Eckenradius, Schatten) direkt im Browser – ganz ohne
+WordPress-Installation, einfach lokal öffnen. `dev/` ist reines
+Entwicklungswerkzeug und in `.distignore` als Auslieferungs-Ausschluss
+vermerkt. Achtung: GitHubs "Code → Download ZIP" wertet `.distignore` nicht
+aus – beim manuellen Erstellen einer Release-ZIP den Ordner `dev/` bitte von
+Hand weglassen.
+
 ## Für Plugin-Maintainer: neue Version veröffentlichen
 
 Der Update-Checker erkennt eine neue Version daran, dass der `Version`-Header

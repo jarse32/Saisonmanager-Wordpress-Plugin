@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>SM Floorball – Design-Vorschau</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+    /* Reine Vorschau-Chrome (Steuerleiste, Seitenlayout) - nicht Teil des
+       Plugins. Die Schatten-Intensitätsstufen selbst stehen einmalig in
+       style.css (--smf-shadow-step-*) und werden über
+       assets/js/design-contrast.js referenziert, nicht hier dupliziert. */
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #fafafa;
+        color: #1a1a1a;
+    }
+    .preview-bar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: #fff;
+        border-bottom: 1px solid #ddd;
+        padding: 0.75rem 1.25rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.25rem;
+        align-items: center;
+        font-size: 0.85rem;
+    }
+    .preview-bar h1 {
+        font-size: 0.95rem;
+        margin: 0;
+        flex-basis: 100%;
+    }
+    .preview-group {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .preview-group label { font-weight: 600; }
+    .preview-group button {
+        cursor: pointer;
+        border: 1px solid #ccc;
+        background: #f5f5f5;
+        border-radius: 4px;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.82rem;
+    }
+    .preview-group button:hover { background: #e9e9e9; }
+    .preview-wrap {
+        max-width: 900px;
+        margin: 1.5rem auto 4rem;
+        padding: 0 1rem;
+    }
+    .preview-section-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #888;
+        margin: 2rem 0 0.5rem;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 0.25rem;
+    }
+    .preview-two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+    }
+    @media (max-width: 640px) {
+        .preview-two-col { grid-template-columns: 1fr; }
+    }
+</style>
+</head>
+<body>
+
+<div class="preview-bar">
+    <h1>SM Floorball – Design-Vorschau (nur lokal, kein WordPress nötig)</h1>
+
+    <div class="preview-group">
+        <label>Paletten:</label>
+        <button type="button" data-preset="eichehorn">Eichehorn</button>
+        <button type="button" data-preset="gelb">Gelb (#ffdf26)</button>
+        <button type="button" data-preset="dunkel">Dunkel (#111)</button>
+        <button type="button" data-preset="hellgrau">Hellgrau (#dddddd)</button>
+    </div>
+
+    <div class="preview-group">
+        <label for="pv-primary">Primary</label>
+        <input type="color" id="pv-primary" value="#006045">
+    </div>
+
+    <div class="preview-group">
+        <label for="pv-accent">Accent</label>
+        <input type="color" id="pv-accent" value="#ffdf26">
+    </div>
+
+    <div class="preview-group">
+        <label for="pv-radius">Radius</label>
+        <select id="pv-radius">
+            <option value="0">0px</option>
+            <option value="4">4px</option>
+            <option value="8" selected>8px (Standard)</option>
+            <option value="12">12px</option>
+            <option value="16">16px</option>
+            <option value="24">24px</option>
+        </select>
+    </div>
+
+    <div class="preview-group">
+        <label for="pv-shadow">Schatten</label>
+        <select id="pv-shadow">
+            <option value="none">Keine</option>
+            <option value="soft">Dezent</option>
+            <option value="normal" selected>Normal (Standard)</option>
+            <option value="strong">Stark</option>
+        </select>
+    </div>
+
+    <div class="preview-group">
+        <label for="pv-fontsize">Schriftgröße</label>
+        <select id="pv-fontsize">
+            <option value="14">Klein (14px)</option>
+            <option value="16" selected>Normal (16px, Standard)</option>
+            <option value="18">Groß (18px)</option>
+            <option value="20">Sehr groß (20px)</option>
+        </select>
+    </div>
+</div>
+
+<div class="preview-wrap">
+
+<div class="smf" id="preview-root">
+
+    <!-- ============================================================ -->
+    <div class="preview-section-label">Shortcode: [sm_tabelle]</div>
+    <div class="smf-table-wrapper">
+        <div class="smf-header">
+            <h3 class="smf-title">Regionalliga Nord – Tabelle</h3>
+        </div>
+        <div class="smf-table-scroll">
+            <table class="smf-table">
+                <thead>
+                    <tr>
+                        <th class="smf-col-rank">#</th>
+                        <th class="smf-col-team">Team</th>
+                        <th class="smf-col-num" title="Spiele">Sp</th>
+                        <th class="smf-col-num" title="Siege">S</th>
+                        <th class="smf-col-num" title="Siege nach Verlängerung/Penalty">SV</th>
+                        <th class="smf-col-num" title="Niederlagen nach Verlängerung/Penalty">NV</th>
+                        <th class="smf-col-num" title="Niederlagen">N</th>
+                        <th class="smf-col-num" title="Tore">Tore</th>
+                        <th class="smf-col-num smf-col-pts" title="Punkte">Pkt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="smf-table-row smf-row-even">
+                        <td class="smf-col-rank">1</td>
+                        <td class="smf-col-team smf-team-name">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23999'/%3E%3C/svg%3E" alt="" class="smf-team-logo" width="20" height="20">
+                            Beispiel SV Nord
+                        </td>
+                        <td class="smf-col-num">18</td>
+                        <td class="smf-col-num">15</td>
+                        <td class="smf-col-num">1</td>
+                        <td class="smf-col-num">0</td>
+                        <td class="smf-col-num">2</td>
+                        <td class="smf-col-num">102:54</td>
+                        <td class="smf-col-num smf-col-pts"><strong>46</strong></td>
+                    </tr>
+                    <tr class="smf-table-row">
+                        <td class="smf-col-rank">2</td>
+                        <td class="smf-col-team smf-team-name">TSV Musterstadt</td>
+                        <td class="smf-col-num">18</td>
+                        <td class="smf-col-num">12</td>
+                        <td class="smf-col-num">0</td>
+                        <td class="smf-col-num">1</td>
+                        <td class="smf-col-num">5</td>
+                        <td class="smf-col-num">88:60</td>
+                        <td class="smf-col-num smf-col-pts"><strong>37</strong></td>
+                    </tr>
+                    <tr class="smf-table-row smf-row-even">
+                        <td class="smf-col-rank">3</td>
+                        <td class="smf-col-team smf-team-name">Floorball Beispielhausen</td>
+                        <td class="smf-col-num">18</td>
+                        <td class="smf-col-num">9</td>
+                        <td class="smf-col-num">2</td>
+                        <td class="smf-col-num">1</td>
+                        <td class="smf-col-num">6</td>
+                        <td class="smf-col-num">75:70</td>
+                        <td class="smf-col-num smf-col-pts"><strong>30</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <div class="preview-section-label">Shortcode: [sm_spiele] – Spielliste (gespielt + anstehend)</div>
+    <div class="smf-games-wrapper">
+        <div class="smf-header">
+            <h3 class="smf-title">Regionalliga Nord – Alle Spiele</h3>
+        </div>
+        <div class="smf-games-list">
+
+            <div class="smf-game-card smf-game--played" role="button" tabindex="0">
+                <div class="smf-game-meta">
+                    <span class="smf-game-date">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        14.09.2026
+                    </span>
+                    <span class="smf-game-day">Spieltag 5</span>
+                    <span class="smf-game-venue">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        Musterhalle
+                    </span>
+                </div>
+                <div class="smf-game-matchup">
+                    <div class="smf-game-team smf-game-team--home">
+                        <span class="smf-team-name">Beispiel SV Nord</span>
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23999'/%3E%3C/svg%3E" alt="" class="smf-game-team-logo">
+                    </div>
+                    <div class="smf-game-score">
+                        <span class="smf-score">7 : 4</span>
+                    </div>
+                    <div class="smf-game-team smf-game-team--away">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23bbb'/%3E%3C/svg%3E" alt="" class="smf-game-team-logo">
+                        <span class="smf-team-name">TSV Musterstadt</span>
+                    </div>
+                </div>
+                <div class="smf-game-action">
+                    <span class="smf-detail-link">
+                        Spielbericht
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
+                </div>
+            </div>
+
+            <div class="smf-game-card smf-game--upcoming" role="button" tabindex="0">
+                <div class="smf-game-meta">
+                    <span class="smf-game-date">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        21.09.2026
+                        <span class="smf-game-time">19:30 Uhr</span>
+                    </span>
+                    <span class="smf-game-day">Spieltag 6</span>
+                </div>
+                <div class="smf-game-matchup">
+                    <div class="smf-game-team smf-game-team--home">
+                        <span class="smf-team-name">Floorball Beispielhausen</span>
+                    </div>
+                    <div class="smf-game-score">
+                        <span class="smf-score-vs">vs.</span>
+                    </div>
+                    <div class="smf-game-team smf-game-team--away">
+                        <span class="smf-team-name">Beispiel SV Nord</span>
+                    </div>
+                </div>
+                <div class="smf-game-action">
+                    <span class="smf-detail-link">
+                        Details
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
+                </div>
+            </div>
+
+        </div>
+        <p class="smf-attribution">Daten: Saisonmanager / Floorball Verband Deutschland e. V. – inoffizielles Community-Projekt.</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <div class="preview-section-label">Shortcode: [sm_naechstes_spiel] / [sm_letztes_spiel]</div>
+    <div class="preview-two-col">
+
+        <div class="smf-single-game smf-game--upcoming smf-single-game--with-logos" role="button" tabindex="0">
+            <div class="smf-single-game__label">
+                <span>Nächstes Spiel</span>
+                <span class="smf-single-game__league">Regionalliga Nord</span>
+            </div>
+            <div class="smf-single-game__date-row">
+                <span class="smf-single-game__date-day">Montag</span>
+                <span class="smf-single-game__date-full">21. September 2026</span>
+                <span class="smf-single-game__date-time">19:30 Uhr</span>
+            </div>
+            <div class="smf-single-game__matchup">
+                <div class="smf-single-game__team smf-single-game__team--home">
+                    <div class="smf-single-game__logo-wrap">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23ffffff'/%3E%3C/svg%3E" alt="" class="smf-single-game__logo">
+                    </div>
+                    <span class="smf-single-game__team-name">Floorball Beispielhausen</span>
+                </div>
+                <div class="smf-single-game__center">
+                    <div class="smf-single-game__score smf-single-game__score--upcoming">vs.</div>
+                </div>
+                <div class="smf-single-game__team smf-single-game__team--away">
+                    <div class="smf-single-game__logo-wrap">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23ffffff'/%3E%3C/svg%3E" alt="" class="smf-single-game__logo">
+                    </div>
+                    <span class="smf-single-game__team-name">Beispiel SV Nord</span>
+                </div>
+            </div>
+            <div class="smf-single-game__footer">
+                <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    Musterhalle
+                </span>
+                <span>Spieltag 6</span>
+            </div>
+            <div class="smf-single-game__action">
+                <span class="smf-btn">Details ansehen</span>
+            </div>
+        </div>
+
+        <div class="smf-single-game smf-game--played smf-single-game--with-logos" role="button" tabindex="0">
+            <div class="smf-single-game__label">
+                <span>Letztes Spiel</span>
+                <span class="smf-single-game__league">Regionalliga Nord</span>
+            </div>
+            <div class="smf-single-game__date-row">
+                <span class="smf-single-game__date-day">Montag</span>
+                <span class="smf-single-game__date-full">14. September 2026</span>
+            </div>
+            <div class="smf-single-game__matchup">
+                <div class="smf-single-game__team smf-single-game__team--home">
+                    <div class="smf-single-game__logo-wrap">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23ffffff'/%3E%3C/svg%3E" alt="" class="smf-single-game__logo">
+                    </div>
+                    <span class="smf-single-game__team-name">Beispiel SV Nord</span>
+                </div>
+                <div class="smf-single-game__center">
+                    <div class="smf-single-game__score">7 : 4</div>
+                </div>
+                <div class="smf-single-game__team smf-single-game__team--away">
+                    <div class="smf-single-game__logo-wrap">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23ffffff'/%3E%3C/svg%3E" alt="" class="smf-single-game__logo">
+                    </div>
+                    <span class="smf-single-game__team-name">TSV Musterstadt</span>
+                </div>
+            </div>
+            <div class="smf-single-game__footer">
+                <span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    Musterhalle
+                </span>
+                <span>Spieltag 5</span>
+            </div>
+            <div class="smf-single-game__action">
+                <span class="smf-btn">Spielbericht ansehen</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ============================================================ -->
+    <div class="preview-section-label">Shortcode: [sm_vereinsuebersicht]</div>
+    <div class="smf-club-overview">
+        <div class="smf-header smf-co-header">
+            <h3 class="smf-title">Beispiel SV Nord</h3>
+        </div>
+        <div class="smf-co-grid">
+            <div class="smf-co-col smf-co-col--upcoming">
+                <div class="smf-co-col-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Anstehende Spiele
+                </div>
+                <div class="smf-co-games">
+                    <div class="smf-co-game smf-co-game--upcoming" role="button" tabindex="0">
+                        <div class="smf-co-game__top">
+                            <span class="smf-co-badge">Regionalliga Nord</span>
+                            <span class="smf-co-date">Mo, 21.09. <span class="smf-co-time">19:30</span></span>
+                        </div>
+                        <div class="smf-co-game__matchup">
+                            <div class="smf-co-game__team smf-co-game__team--home">
+                                <span class="smf-co-game__name">Beispielhausen</span>
+                            </div>
+                            <div class="smf-co-game__center"><span class="smf-co-vs">vs</span></div>
+                            <div class="smf-co-game__team smf-co-game__team--away">
+                                <span class="smf-co-game__name">Beispiel SV Nord</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="smf-co-col smf-co-col--played">
+                <div class="smf-co-col-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                    Letzte Ergebnisse
+                </div>
+                <div class="smf-co-games">
+                    <div class="smf-co-game smf-co-game--played" role="button" tabindex="0">
+                        <div class="smf-co-game__top">
+                            <span class="smf-co-badge">Regionalliga Nord</span>
+                            <span class="smf-co-date">Mo, 14.09.</span>
+                        </div>
+                        <div class="smf-co-game__matchup">
+                            <div class="smf-co-game__team smf-co-game__team--home">
+                                <span class="smf-co-game__name">Beispiel SV Nord</span>
+                            </div>
+                            <div class="smf-co-game__center"><span class="smf-co-score">7:4</span></div>
+                            <div class="smf-co-game__team smf-co-game__team--away">
+                                <span class="smf-co-game__name">TSV Musterstadt</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="smf-attribution">Daten: Saisonmanager / Floorball Verband Deutschland e. V. – inoffizielles Community-Projekt.</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <div class="preview-section-label">Modal-Struktur: Spieldetail mit Timeline (inline statt als Overlay, zur besseren Prüfbarkeit)</div>
+    <div class="smf-modal-content" style="position: static; max-width: 700px; margin: 0;">
+        <button class="smf-modal-close" aria-label="Schließen" style="position: static; float: right;">&times;</button>
+        <div class="smf-detail">
+            <div class="smf-detail__header">
+                <div class="smf-detail__league">Regionalliga Nord</div>
+                <div class="smf-detail__date">Montag, 14. September 2026 – 19:30 Uhr</div>
+                <div class="smf-detail__info-row">
+                    <span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        Musterhalle
+                    </span>
+                    <span>Spieltag 5</span>
+                </div>
+            </div>
+
+            <div class="smf-detail__result">
+                <div class="smf-detail__team smf-detail__team--home">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23999'/%3E%3C/svg%3E" alt="" class="smf-detail__team-logo">
+                    <span class="smf-detail__team-name">Beispiel SV Nord</span>
+                </div>
+                <div class="smf-detail__score-box">
+                    <div class="smf-detail__score">7 : 4</div>
+                    <div class="smf-detail__periods">
+                        <span>1. Drittel: 2:1</span>
+                        <span>2. Drittel: 3:2</span>
+                        <span>3. Drittel: 2:1</span>
+                    </div>
+                </div>
+                <div class="smf-detail__team smf-detail__team--away">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23bbb'/%3E%3C/svg%3E" alt="" class="smf-detail__team-logo">
+                    <span class="smf-detail__team-name">TSV Musterstadt</span>
+                </div>
+            </div>
+
+            <div class="smf-detail__section">
+                <h4 class="smf-detail__section-title">Spielverlauf</h4>
+                <div class="smf-timeline">
+                    <div class="smf-timeline__period">1. Drittel</div>
+
+                    <div class="smf-timeline__event smf-tl-goal smf-tl--home">
+                        <span class="smf-tl-time">04:12</span>
+                        <span class="smf-tl-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><ellipse cx="12" cy="12" rx="11" ry="7"/></svg>
+                        </span>
+                        <span class="smf-tl-team-badge smf-tl-team-badge--home">Heim</span>
+                        <div class="smf-tl-info">
+                            <span class="smf-tl-player">M. Mustermann</span>
+                            <span class="smf-tl-assist">(L. Beispiel)</span>
+                        </div>
+                        <span class="smf-tl-score">1:0</span>
+                    </div>
+
+                    <div class="smf-timeline__event smf-tl-penalty smf-tl--away">
+                        <span class="smf-tl-time">09:47</span>
+                        <span class="smf-tl-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
+                        </span>
+                        <span class="smf-tl-team-badge smf-tl-team-badge--away">Gast</span>
+                        <div class="smf-tl-info">
+                            <span class="smf-tl-player">T. Gastspieler</span>
+                            <span class="smf-tl-reason">Hoher Stock</span>
+                            <span class="smf-tl-tag smf-tl-tag--penalty">2 Min.</span>
+                        </div>
+                        <span class="smf-tl-score"></span>
+                    </div>
+
+                    <div class="smf-timeline__event smf-tl-goal smf-tl--away">
+                        <span class="smf-tl-time">14:33</span>
+                        <span class="smf-tl-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><ellipse cx="12" cy="12" rx="11" ry="7"/></svg>
+                        </span>
+                        <span class="smf-tl-team-badge smf-tl-team-badge--away">Gast</span>
+                        <div class="smf-tl-info">
+                            <span class="smf-tl-player">T. Gastspieler</span>
+                            <span class="smf-tl-tag">Powerplay</span>
+                        </div>
+                        <span class="smf-tl-score">1:1</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="smf-detail__section smf-detail__section--minor">
+                <h4 class="smf-detail__section-title">Schiedsrichter</h4>
+                <p class="smf-detail__referees">A. Schiri, B. Schiri</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <div class="preview-section-label">Fehler- und Hinweistexte</div>
+    <p class="smf-error">Bitte liga_id angeben, z.B. [sm_tabelle liga_id="123"]</p>
+    <p class="smf-notice">Keine Spiele gefunden.</p>
+
+</div>
+</div>
+
+<script src="../assets/js/design-contrast.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    var root      = document.getElementById( 'preview-root' );
+    var primaryEl = document.getElementById( 'pv-primary' );
+    var accentEl  = document.getElementById( 'pv-accent' );
+    var radiusEl  = document.getElementById( 'pv-radius' );
+    var shadowEl  = document.getElementById( 'pv-shadow' );
+    var fontSizeEl = document.getElementById( 'pv-fontsize' );
+
+    var presets = {
+        eichehorn: { primary: '#006045', accent: '#ffdf26', radius: '8',  shadow: 'normal' },
+        gelb:      { primary: '#ffdf26' },
+        dunkel:    { primary: '#111111' },
+        hellgrau:  { primary: '#dddddd' }
+    };
+
+    // Liefert den aktuellen Wert eines SMF_Design-Feldnamens aus der
+    // schlanken Steuerleiste hier - alles andere (Kontrastentscheidung,
+    // Schatten-Stufe, CSS-Variablen setzen) übernimmt die gemeinsame
+    // apply()-Funktion aus design-contrast.js, dieselbe wie im Backend.
+    function getValue( key ) {
+        switch ( key ) {
+            case 'color_primary':    return primaryEl.value;
+            case 'color_accent':     return accentEl.value;
+            case 'radius':           return radiusEl.value;
+            case 'shadow_intensity': return shadowEl.value;
+            case 'font_size':        return fontSizeEl.value;
+            default:                 return '';
+        }
+    }
+
+    function apply() {
+        smfDesignPreview.apply( root, getValue );
+    }
+
+    [ primaryEl, accentEl, radiusEl, shadowEl, fontSizeEl ].forEach( function ( el ) {
+        el.addEventListener( 'input', apply );
+        el.addEventListener( 'change', apply );
+    } );
+
+    document.querySelectorAll( '[data-preset]' ).forEach( function ( btn ) {
+        btn.addEventListener( 'click', function () {
+            var preset = presets[ btn.getAttribute( 'data-preset' ) ] || {};
+            if ( preset.primary ) primaryEl.value = preset.primary;
+            if ( preset.accent )  accentEl.value  = preset.accent;
+            if ( preset.radius )  radiusEl.value  = preset.radius;
+            if ( preset.shadow )  shadowEl.value  = preset.shadow;
+            apply();
+        } );
+    } );
+
+    apply();
+})();
+</script>
+
+</body>
+</html>
