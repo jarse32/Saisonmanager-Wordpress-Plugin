@@ -28,10 +28,26 @@ WordPress-Seiten an – per Shortcode, ohne eigene Programmierung.
 
 ## Installation
 
-1. Plugin-Ordner nach `wp-content/plugins/` kopieren (oder als ZIP über
-   *Plugins → Installieren → Plugin hochladen* einspielen).
-2. Im WordPress-Adminmenü unter **Plugins** aktivieren.
+Dieses Plugin wird nicht über das offizielle WordPress-Plugin-Verzeichnis
+vertrieben, lässt sich aber direkt von GitHub installieren und danach ganz
+normal über WordPress aktualisieren.
+
+1. Auf der [GitHub-Seite des Projekts](https://github.com/jarse32/Saisonmanager-Wordpress-Plugin)
+   auf **Code → Download ZIP** klicken.
+2. In WordPress: **Plugins → Installieren → Plugin hochladen**, die
+   heruntergeladene ZIP-Datei auswählen, hochladen, aktivieren.
+   (Alternativ: Ordner per SFTP nach `wp-content/plugins/` kopieren.)
 3. Unter **SM Floorball** (linkes Adminmenü) konfigurieren, siehe unten.
+
+### Updates
+
+Das Plugin bringt einen [Update-Checker](https://github.com/YahnisElsts/plugin-update-checker)
+mit, der WordPress direkt gegen den `main`-Branch dieses Repositories prüfen
+lässt (MIT-lizenziert, liegt in `vendor/plugin-update-checker/`). Sobald hier
+eine neue Version veröffentlicht wird, zeigt WordPress ganz normal unter
+**Plugins** ein "Update verfügbar" an – kein manuelles Neu-Herunterladen
+nötig. Ein Update-Check lässt sich über den Link *"Nach Updates suchen"* auf
+der Plugins-Seite jederzeit sofort auslösen (sonst alle 12 Std. automatisch).
 
 ## Konfiguration
 
@@ -101,3 +117,19 @@ GPL-2.0+
 Pull Requests sind willkommen – insbesondere von anderen Floorball-Vereinen,
 die das Plugin für ihre eigene Website nutzen möchten. Jede Installation
 beantragt dabei einen eigenen Saisonmanager-API-Key.
+
+## Für Plugin-Maintainer: neue Version veröffentlichen
+
+Der Update-Checker erkennt eine neue Version daran, dass der `Version`-Header
+in `saisonmanager-floorball.php` höher ist als die installierte Version. Beim
+Veröffentlichen eines Updates:
+
+1. `Version:` im Datei-Header **und** die Konstante `SMF_VERSION` in
+   `saisonmanager-floorball.php` erhöhen.
+2. `Stable tag:` in `readme.txt` auf denselben Wert setzen und einen
+   `== Changelog ==`-Eintrag ergänzen (wird Nutzer:innen beim Update
+   angezeigt).
+3. Nach `main` pushen.
+
+WordPress-Installationen mit dem Plugin zeigen daraufhin (spätestens nach
+12 Std., sofort über "Nach Updates suchen") ein reguläres Update an.

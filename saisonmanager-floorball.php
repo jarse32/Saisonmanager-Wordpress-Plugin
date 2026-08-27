@@ -25,6 +25,22 @@ require_once SMF_PLUGIN_DIR . 'includes/class-shortcodes.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-admin.php';
 
 /**
+ * Update-Checker: lässt WordPress "Update verfügbar" direkt gegen den
+ * main-Branch dieses GitHub-Repos prüfen (kein WordPress.org-Eintrag nötig).
+ * Neue Version ausliefern = Version-Header oben + SMF_VERSION erhöhen und
+ * nach main pushen, siehe README "Für Plugin-Maintainer".
+ */
+require_once SMF_PLUGIN_DIR . 'vendor/plugin-update-checker/plugin-update-checker.php';
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+
+$smf_update_checker = PucFactory::buildUpdateChecker(
+    'https://github.com/jarse32/Saisonmanager-Wordpress-Plugin/',
+    __FILE__,
+    'saisonmanager-floorball'
+);
+$smf_update_checker->setBranch( 'main' );
+
+/**
  * Shortcodes registrieren
  */
 function smf_init() {
