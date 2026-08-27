@@ -13,8 +13,9 @@ WordPress-Seiten an – per Shortcode, ohne eigene Programmierung.
 - Liga-Tabelle, Spielplan, nächstes/letztes Spiel per Shortcode einbinden
 - Vereinsübersicht: alle anstehenden und gespielten Spiele **aller Teams
   eines Vereins** auf einen Blick, über alle Wettbewerbe (Liga, Pokal,
-  Relegation, …) hinweg
-- Mehrere Verbände/Landesverbände gleichzeitig konfigurierbar
+  Relegation, …) hinweg – automatisch ermittelt über die Club-ID
+- Team-Finder: Club-IDs, Team-IDs und Liga-IDs finden, ohne im
+  Saisonmanager-Frontend danach suchen zu müssen
 - Klick auf ein Spiel öffnet ein Modal mit Details (Ereignisse, Spielstand)
 - Serverseitiges Caching, um API-Anfragen gering zu halten
 
@@ -41,46 +42,43 @@ Saisonmanager-API-Key eintragen. Der Key wird ausschließlich serverseitig als
 `X-Api-Key`-Header verwendet – er erscheint nie im Seitenquelltext oder im
 Browser der Besucher:innen.
 
-### Verbände (optional)
-
-Unter **SM Floorball → Verbände** lassen sich mehrere Landesverbände mit
-eigener API-Basis-URL hinterlegen (Slug, Name, URL, optional ein
-abweichender API-Key). Ohne eigenen Verbands-Key gilt der globale Key aus den
-Allgemeinen Einstellungen.
-
 ### Team-Finder
 
-Team-IDs kennt man selten auswendig. Unter **SM Floorball → Team-Finder**
-lässt sich nach Vereinsname (Teilstring reicht, z. B. "Eiche Horn") oder
-Saisonmanager-Club-ID suchen – durchsucht wird über alle bekannten
-Spielbetriebsstellen hinweg, optional für eine bestimmte Saison-ID (leer =
-aktuelle Saison; nützlich für historische Team-IDs vergangener Saisons, da
-sich Team-IDs von Saison zu Saison ändern können). Das Ergebnis zeigt alle
-gefundenen Teams mit ihrer ID zum Reinkopieren in die Vereinskonfiguration.
+Club-IDs und Team-IDs kennt man selten auswendig. Unter
+**SM Floorball → Team-Finder** lässt sich nach Vereinsname (Teilstring
+reicht, z. B. "Eiche Horn") oder Saisonmanager-Club-ID suchen – durchsucht
+wird über alle bekannten Spielbetriebsstellen hinweg, optional für eine
+bestimmte Saison-ID (leer = aktuelle Saison; nützlich für historische
+Team-IDs vergangener Saisons, da sich Team-IDs von Saison zu Saison ändern
+können). Das Ergebnis zeigt die gefundene Club-ID sowie alle Teams mit ihrer
+ID zum Reinkopieren.
 
 ### Vereine & Teams
 
-Unter **SM Floorball → Vereine** einen Verein anlegen und seine Teams
-zuordnen:
+Unter **SM Floorball → Vereine** einen Verein anlegen und die per
+Team-Finder gefundene **Club-ID** eintragen. Auf "Teams laden" klicken –
+das ermittelt automatisch alle Teams dieses Vereins der aktuellen Saison
+inkl. ihrer Liga-IDs (praktisch, um diese direkt in `[sm_tabelle liga_id="…"]`
+o. ä. auf anderen Seiten zu verwenden). Kein Zeitplan, keine automatische
+Aktualisierung im Hintergrund – bei Bedarf (z. B. zu Saisonbeginn oder wenn
+ein neues Team gemeldet wurde) einfach erneut klicken.
 
-- **Team-ID** (empfohlen): die Saisonmanager-Team-ID. Ein einziger Aufruf
-  deckt alle Wettbewerbe der Saison ab (Liga, Pokal, Relegation, …).
-- **Liga-ID** (Legacy): eine Zeile pro Wettbewerb, Zuordnung über einen
-  Team-Namens-Filter. Nur nutzen, wenn keine Team-ID verfügbar ist.
-
-Pro Zeile nur eines von beidem ausfüllen.
+Zusätzlich lassen sich einzelne **Team-IDs manuell** ergänzen – als Fallback
+für Sonderfälle, die die Club-ID-Erkennung nicht abdeckt (z. B.
+Spielgemeinschaften).
 
 ## Shortcodes
 
 | Shortcode | Beschreibung | Wichtigste Parameter |
 |---|---|---|
-| `[sm_tabelle liga_id="123"]` | Liga-Tabelle | `liga_id`, `verband`, `titel`, `logos` |
-| `[sm_spiele liga_id="123"]` | Spielplan einer Liga | `liga_id`, `verband`, `anzahl`, `team`, `modus` (`alle`/`vergangen`/`kommend`), `titel`, `logos` |
-| `[sm_naechstes_spiel liga_id="123"]` | Nächstes kommendes Spiel | `liga_id`, `verband`, `team`, `logos` |
-| `[sm_letztes_spiel liga_id="123"]` | Letztes gespieltes Spiel | `liga_id`, `verband`, `team`, `logos` |
+| `[sm_tabelle liga_id="123"]` | Liga-Tabelle | `liga_id`, `titel`, `logos` |
+| `[sm_spiele liga_id="123"]` | Spielplan einer Liga | `liga_id`, `anzahl`, `team`, `modus` (`alle`/`vergangen`/`kommend`), `titel`, `logos` |
+| `[sm_naechstes_spiel liga_id="123"]` | Nächstes kommendes Spiel | `liga_id`, `team`, `logos` |
+| `[sm_letztes_spiel liga_id="123"]` | Letztes gespieltes Spiel | `liga_id`, `team`, `logos` |
 | `[sm_vereinsuebersicht verein="hannover"]` | Alle Spiele aller Teams eines Vereins | `verein` (Slug oder Name), `anzahl` |
 
-Vollständige Beispiele inkl. Mehrfach-Verband-Nutzung stehen direkt in der
+Die `liga_id` findest du über den Team-Finder oder den "Teams laden"-Button
+bei einem Verein (Spalte "Liga(en)"). Vollständige Referenz direkt in der
 Admin-Oberfläche unter **SM Floorball → Shortcode-Referenz**.
 
 ## Sicherheit & Datenschutz

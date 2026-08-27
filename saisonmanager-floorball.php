@@ -3,7 +3,7 @@
  * Plugin Name: SM Floorball
  * Plugin URI:  https://github.com/jarse32/Saisonmanager-Wordpress-Plugin
  * Description: Zeigt Floorball-Spiele, Tabellen und Ligen aus der Saisonmanager-API via Shortcodes an. Inoffizielles Community-Projekt, nicht von Saisonmanager/FVD betrieben.
- * Version:     1.2.0
+ * Version:     1.3.0
  * Author:      Kasche
  * Text Domain: saisonmanager-floorball
  * License:     GPL-2.0+
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'SMF_VERSION', '1.2.0' );
+define( 'SMF_VERSION', '1.3.0' );
 define( 'SMF_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SMF_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -90,20 +90,7 @@ function smf_ajax_game_detail() {
         wp_send_json_error( 'Ungültige Spiel-ID' );
     }
 
-    // Optionaler Verbands-Slug (für Spiele aus Verbands-spezifischen Endpunkten).
-    // Bewusst NUR ein Slug, keine rohe URL: der Slug wird gegen die serverseitig
-    // konfigurierten Verbände geprüft (SMF_API::is_known_verband). Eine frühere
-    // Version akzeptierte hier eine vom Client mitgeschickte api_url direkt -
-    // das wäre mit einem echten API-Key eine SSRF-/Key-Exfiltrationslücke
-    // (Angreifer könnte per DevTools eine beliebige Ziel-URL einschleusen und
-    // sich den serverseitigen X-Api-Key-Header dorthin zustellen lassen).
-    $verband = isset( $_POST['verband'] ) ? sanitize_key( wp_unslash( $_POST['verband'] ) ) : '';
-    if ( $verband && SMF_API::is_known_verband( $verband ) ) {
-        $api = new SMF_API( SMF_API::url_for_verband( $verband ), SMF_API::api_key_for_verband( $verband ) );
-    } else {
-        $api = new SMF_API();
-    }
-
+    $api  = new SMF_API();
     $game = $api->get_game( $game_id );
 
     if ( is_wp_error( $game ) ) {
@@ -136,20 +123,44 @@ function smf_ajax_find_teams() {
         wp_send_json_error( 'Bitte einen Vereinsnamen oder eine Club-ID angeben.' );
     }
 
-    $verband_slug = isset( $_POST['verband'] ) ? sanitize_key( wp_unslash( $_POST['verband'] ) ) : '';
-    $season_id    = isset( $_POST['season_id'] ) ? absint( $_POST['season_id'] ) : 0;
+    $season_id = isset( $_POST['season_id'] ) ? absint( $_POST['season_id'] ) : 0;
 
-    if ( $verband_slug && SMF_API::is_known_verband( $verband_slug ) ) {
-        $api = new SMF_API( SMF_API::url_for_verband( $verband_slug ), SMF_API::api_key_for_verband( $verband_slug ) );
-    } else {
-        $api = new SMF_API();
-    }
-
-    $results = SMF_TeamFinder::search( $api, $query, $season_id ?: null );
+    $results = SMF_TeamFinder::search( new SMF_API(), $query, $season_id ?: null );
 
     wp_send_json_success( array( 'results' => $results ) );
 }
 add_action( 'wp_ajax_smf_find_teams', 'smf_ajax_find_teams' );
+
+/**
+ * AJAX (nur eingeloggte Admins): Teams + deren Liga-IDs für eine Club-ID
+ * laden. Speichert das Ergebnis in smf_club_teams_cache (genutzt von
+ * SMF_ClubOverview::get_games()) und gibt es zur Anzeige zurück, inkl. der
+ * Liga-IDs jedes Teams - praktisch zum direkten Übernehmen in andere
+ * Shortcodes ([sm_tabelle liga_id="…"], [sm_spiele liga_id="…"]).
+ */
+function smf_ajax_sync_club_teams() {
+    check_ajax_referer( 'smf_admin_nonce', 'nonce' );
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( 'Nicht erlaubt.' );
+    }
+
+    $club_id = isset( $_POST['club_id'] ) ? absint( $_POST['club_id'] ) : 0;
+    if ( ! $club_id ) {
+        wp_send_json_error( 'Bitte eine gültige Club-ID angeben.' );
+    }
+
+    $teams = SMF_TeamFinder::teams_for_club( new SMF_API(), $club_id );
+
+    $cache = get_option( 'smf_club_teams_cache', array() );
+    $cache[ $club_id ] = array(
+        'teams'      => $teams,
+        'updated_at' => time(),
+    );
+    update_option( 'smf_club_teams_cache', $cache );
+
+    wp_send_json_success( array( 'teams' => $teams, 'updated_at' => $cache[ $club_id ]['updated_at'] ) );
+}
+add_action( 'wp_ajax_smf_sync_club_teams', 'smf_ajax_sync_club_teams' );
 
 /**
  * Template rendern

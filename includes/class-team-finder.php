@@ -84,4 +84,43 @@ class SMF_TeamFinder {
 
         return $results;
     }
+
+    /**
+     * Alle Teams einer Club-ID ermitteln (über alle Spielbetriebsstellen
+     * gemergt und nach Team-ID dedupliziert), jeweils angereichert mit den
+     * Liga-IDs, in denen das Team aktuell spielt - praktisch, um diese
+     * direkt in andere Shortcodes ([sm_tabelle liga_id="…"]) zu übernehmen.
+     * Ein zusätzlicher Request pro gefundenem Team (get_team_matches) - in
+     * Ordnung, da diese Methode nur bei manuellem Admin-Klick läuft, nicht
+     * bei jedem Seitenaufruf.
+     *
+     * @param SMF_API $api
+     * @param int     $club_id
+     * @return array[] Liste von { id, name, leagues: [{id, name, short_name}] }
+     */
+    public static function teams_for_club( SMF_API $api, $club_id ) {
+        $club_id = absint( $club_id );
+        if ( ! $club_id ) {
+            return array();
+        }
+
+        $found = self::search( $api, (string) $club_id );
+
+        $teams = array();
+        foreach ( $found as $club ) {
+            foreach ( $club['teams'] as $team ) {
+                $teams[ $team['id'] ] = $team; // nach Team-ID deduplizieren
+            }
+        }
+
+        foreach ( $teams as $team_id => &$team ) {
+            $matches = $api->get_team_matches( $team_id );
+            $team['leagues'] = ( ! is_wp_error( $matches ) && isset( $matches['leagues'] ) && is_array( $matches['leagues'] ) )
+                ? $matches['leagues']
+                : array();
+        }
+        unset( $team );
+
+        return array_values( $teams );
+    }
 }

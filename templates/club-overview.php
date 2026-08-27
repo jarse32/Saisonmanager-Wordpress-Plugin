@@ -18,23 +18,20 @@ $render_game = function ( array $game ) use ( $api ) {
     $has_result = $api->has_result( $game );
     $date_ts    = $api->parse_game_date( $game );
     $liga_name  = isset( $game['_liga_name'] )           ? $game['_liga_name']           : '';
-    $api_url    = isset( $game['_api_url'] )             ? $game['_api_url']             : '';
-    $verband    = isset( $game['_verband'] )             ? $game['_verband']             : '';
 
     $home_name  = isset( $game['home_team_name'] )       ? $game['home_team_name']       : '?';
     $away_name  = isset( $game['guest_team_name'] )      ? $game['guest_team_name']      : '?';
     $home_score = isset( $game['result']['home_goals'] ) ? $game['result']['home_goals'] : null;
     $away_score = isset( $game['result']['guest_goals'] )? $game['result']['guest_goals']: null;
 
-    $home_logo = SMF_API::get_logo_url( isset( $game['home_team_small_logo'] )  ? $game['home_team_small_logo']  : '', $api_url );
-    $away_logo = SMF_API::get_logo_url( isset( $game['guest_team_small_logo'] ) ? $game['guest_team_small_logo'] : '', $api_url );
+    $home_logo = SMF_API::get_logo_url( isset( $game['home_team_small_logo'] )  ? $game['home_team_small_logo']  : '' );
+    $away_logo = SMF_API::get_logo_url( isset( $game['guest_team_small_logo'] ) ? $game['guest_team_small_logo'] : '' );
 
     $card_class = 'smf-co-game' . ( $has_result ? ' smf-co-game--played' : ' smf-co-game--upcoming' );
     ?>
     <div class="<?php echo esc_attr( $card_class ); ?>"
          <?php if ( $game_id ) : ?>
              data-game-id="<?php echo esc_attr( $game_id ); ?>"
-             <?php if ( $verband ) : ?>data-verband="<?php echo esc_attr( $verband ); ?>"<?php endif; ?>
              role="button"
              tabindex="0"
              aria-label="Spieldetails: <?php echo esc_attr( $home_name . ' vs ' . $away_name ); ?>"

@@ -26,8 +26,7 @@
                 const gameId = $(this).data('game-id');
                 if (!gameId) return;
 
-                const verband = $(this).data('verband') || '';
-                SMF.openModal(gameId, verband);
+                SMF.openModal(gameId);
             });
 
             // Modal schließen – Close-Button
@@ -52,9 +51,8 @@
          * Modal öffnen und Spieldetails laden
          *
          * @param {number} gameId
-         * @param {string} verband  Optionaler Verbands-Slug für Verbands-spezifische Anfragen
          */
-        openModal(gameId, verband) {
+        openModal(gameId) {
             // Prüfen ob ein Modal auf der Seite existiert
             let $modal = $('#smf-modal');
             if (!$modal.length) return;
@@ -89,7 +87,6 @@
                     action:   'smf_game_detail',
                     nonce:    smf_ajax.nonce,
                     game_id:  gameId,
-                    verband:  verband || '',
                 },
                 success: (response) => {
                     if (response.success && response.data && response.data.html) {

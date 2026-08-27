@@ -16,17 +16,14 @@ class SMF_API {
     private $cache;
 
     /**
-     * @param string|null $base_url Optionale URL-Überschreibung (z.B. für einen bestimmten Verband)
-     * @param string|null $api_key  Optionaler API-Key (z.B. für einen bestimmten Verband); fällt sonst auf den globalen Key zurück
+     * @param string|null $base_url Optionale URL-Überschreibung (Sonderfälle/Tests)
      */
-    public function __construct( $base_url = null, $api_key = null ) {
+    public function __construct( $base_url = null ) {
         $this->base_url = $base_url
             ? rtrim( $base_url, '/' )
             : rtrim( get_option( 'smf_api_base_url', 'https://saisonmanager.de/api/v2' ), '/' );
 
-        $this->api_key = $api_key !== null && $api_key !== ''
-            ? $api_key
-            : trim( get_option( 'smf_api_key', '' ) );
+        $this->api_key = trim( get_option( 'smf_api_key', '' ) );
 
         $this->cache = new SMF_Cache();
     }
@@ -51,54 +48,6 @@ class SMF_API {
         $domain = $parsed['scheme'] . '://' . $parsed['host'];
 
         return $domain . '/' . ltrim( $path, '/' );
-    }
-
-    /**
-     * API-URL für einen Verbands-Slug ermitteln.
-     *
-     * @param string $slug
-     * @return string|null
-     */
-    public static function url_for_verband( $slug ) {
-        $verbaende = get_option( 'smf_verbaende', array() );
-        foreach ( $verbaende as $v ) {
-            if ( isset( $v['slug'] ) && $v['slug'] === $slug && ! empty( $v['url'] ) ) {
-                return rtrim( $v['url'], '/' );
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Ob ein Slug ein bekannter, konfigurierter Verband ist. Wird u.a. von
-     * der AJAX-Spieldetail-Route genutzt, um einen vom Client mitgeschickten
-     * Slug gegen eine Allowlist zu prüfen, statt eine rohe URL entgegenzunehmen
-     * (siehe smf_ajax_game_detail() in saisonmanager-floorball.php - eine
-     * frühere Version akzeptierte dort eine beliebige api_url, was eine
-     * SSRF-/Key-Exfiltrationslücke war).
-     *
-     * @param string $slug
-     * @return bool
-     */
-    public static function is_known_verband( $slug ) {
-        return $slug !== '' && self::url_for_verband( $slug ) !== null;
-    }
-
-    /**
-     * Optionalen, Verbands-spezifischen API-Key ermitteln (überschreibt den
-     * globalen Key nur, wenn für diesen Verband explizit einer hinterlegt ist).
-     *
-     * @param string $slug
-     * @return string|null
-     */
-    public static function api_key_for_verband( $slug ) {
-        $verbaende = get_option( 'smf_verbaende', array() );
-        foreach ( $verbaende as $v ) {
-            if ( isset( $v['slug'] ) && $v['slug'] === $slug && ! empty( $v['api_key'] ) ) {
-                return $v['api_key'];
-            }
-        }
-        return null;
     }
 
     /**
@@ -141,7 +90,7 @@ class SMF_API {
         if ( strpos( $content_type, 'json' ) === false ) {
             return new WP_Error(
                 'invalid_response',
-                "Die URL liefert kein JSON (Content-Type: {$content_type}). Bitte API-URL im Verband prüfen – z.B. ist die korrekte FVD-URL: https://saisonmanager.de/api/v2"
+                "Die URL liefert kein JSON (Content-Type: {$content_type}). Bitte die Standard-API-URL in den Einstellungen prüfen – korrekt ist https://saisonmanager.de/api/v2"
             );
         }
 

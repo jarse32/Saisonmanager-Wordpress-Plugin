@@ -59,13 +59,15 @@
     white-space: pre-wrap;
 }
 
-/* Team-Finder */
-#smf-tf-results .smf-notice {
+/* Team-Finder + Club-ID-Teams (gleiches Antwortmuster: Notiz/Fehler/Liste) */
+#smf-tf-results .smf-notice,
+.smf-club-teams-results .smf-notice {
     color: #646970;
     font-style: italic;
 }
 
-#smf-tf-results .smf-error {
+#smf-tf-results .smf-error,
+.smf-club-teams-results .smf-error {
     color: #cc0000;
     background: #fff3f3;
     border-left: 4px solid #cc0000;
@@ -82,15 +84,25 @@
     border-bottom: none;
 }
 
-.smf-tf-teams {
+.smf-tf-teams,
+.smf-club-teams {
     margin: 0.4rem 0 0 1.2rem;
     list-style: disc;
 }
 
-.smf-tf-teams code {
+.smf-tf-teams code,
+.smf-club-teams code {
     background: #f0f0f1;
     padding: 0.1rem 0.4rem;
     border-radius: 3px;
+}
+
+.smf-club-teams li {
+    margin-bottom: 0.5rem;
+}
+
+.smf-club-teams-results {
+    margin-top: 0.5rem;
 }
 
 @media (max-width: 900px) {

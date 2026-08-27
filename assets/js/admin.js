@@ -1,23 +1,10 @@
 /**
- * Saisonmanager Floorball – Admin JS
- * Dynamisches Hinzufügen/Entfernen von Verbands-Zeilen und Verein/Team-Konfiguration
+ * SM Floorball – Admin JS
+ * Dynamisches Hinzufügen/Entfernen von Verein/Team-Konfiguration, Team-Finder
+ * und Club-ID-basiertes Team-Laden.
  */
 (function ($) {
     'use strict';
-
-    // ----------------------------------------------------------------
-    // Verbände-Tabelle
-    // ----------------------------------------------------------------
-
-    const verbandRowTemplate = `
-        <tr class="smf-verband-row">
-            <td><input type="text" name="smf_v_slug[]" class="regular-text" placeholder="z.B. fvd"
-                       pattern="[a-z0-9\\-]+" title="Nur Kleinbuchstaben, Zahlen und Bindestriche"></td>
-            <td><input type="text" name="smf_v_name[]" class="regular-text" placeholder="z.B. Floorball Verband Deutschland"></td>
-            <td><input type="url"  name="smf_v_url[]"  class="regular-text" placeholder="https://fvd.saisonmanager.de/api/v2"></td>
-            <td><input type="text" name="smf_v_api_key[]" class="regular-text" autocomplete="off" placeholder="(Standard-Key)"></td>
-            <td><button type="button" class="button smf-remove-row">&#10005; Entfernen</button></td>
-        </tr>`;
 
     // ----------------------------------------------------------------
     // Vereine – Zähler für neue Indizes
@@ -29,22 +16,7 @@
         : 0;
 
     /**
-     * Verbands-Optionen als HTML-String generieren
-     * (für dynamisch hinzugefügte Select-Elemente)
-     */
-    function buildVerbandOptions() {
-        if ( typeof smf_admin_data === 'undefined' || ! smf_admin_data.verbaende ) {
-            return '<option value="">(Standard-URL)</option>';
-        }
-        let opts = '<option value="">(Standard-URL)</option>';
-        smf_admin_data.verbaende.forEach(function (v) {
-            opts += '<option value="' + escAttr(v.slug) + '">' + escHtml(v.name || v.slug) + '</option>';
-        });
-        return opts;
-    }
-
-    /**
-     * Neue Team-Zeile für einen Verein generieren
+     * Neue Team-ID-Zeile für einen Verein generieren
      */
     function buildTeamRow( vi ) {
         const template = document.getElementById('smf-team-row-template');
@@ -54,13 +26,10 @@
         const $row = $(template).find('tr.smf-team-row').clone();
 
         // Verein-Index im Field-Namen ersetzen
-        $row.find('input, select').each(function () {
+        $row.find('input').each(function () {
             const name = $(this).attr('name') || '';
             $(this).attr('name', name.replace(/__VI__/g, vi));
         });
-
-        // Verbands-Optionen befüllen (select ist bereits im Template vorhanden)
-        $row.find('select').html( buildVerbandOptions() );
 
         return $row;
     }
@@ -101,10 +70,6 @@
             .replace(/"/g, '&quot;');
     }
 
-    function escAttr( str ) {
-        return escHtml( str );
-    }
-
     // ----------------------------------------------------------------
     // Team-Finder
     // ----------------------------------------------------------------
@@ -127,7 +92,6 @@
             action:    'smf_find_teams',
             nonce:     smf_admin_data.nonce,
             query:     query,
-            verband:   $('#smf-tf-verband').val(),
             season_id: $('#smf-tf-season').val(),
         }).done(function (response) {
             if ( ! response || ! response.success ) {
@@ -165,6 +129,73 @@
     }
 
     // ----------------------------------------------------------------
+    // Club-ID: Teams laden
+    // ----------------------------------------------------------------
+
+    /**
+     * Gleiche Darstellung wie SMF_Admin::render_club_teams_list() (PHP),
+     * damit initialer (Cache-)Zustand und AJAX-Ergebnis identisch aussehen.
+     */
+    function renderClubTeamsList( teams ) {
+        if ( ! teams || ! teams.length ) {
+            return '<p class="smf-notice">Noch keine Teams geladen.</p>';
+        }
+
+        let html = '<ul class="smf-club-teams">';
+        teams.forEach(function (team) {
+            html += '<li><strong>' + escHtml(team.name || '(ohne Namen)') + '</strong> ';
+            html += '<code>' + escHtml(team.id) + '</code>';
+
+            if ( team.leagues && team.leagues.length ) {
+                const parts = team.leagues.map(function (l) {
+                    const label = l.name || l.short_name || 'Liga';
+                    const id    = (l.id !== undefined && l.id !== null) ? l.id : '?';
+                    return escHtml(label + ' (' + id + ')');
+                });
+                html += '<br><small>Liga(en): ' + parts.join(', ') + '</small>';
+            }
+            html += '</li>';
+        });
+        html += '</ul>';
+
+        return html;
+    }
+
+    function runClubTeamsSync( $btn ) {
+        const $block   = $btn.closest('.smf-verein-block');
+        const $results = $block.find('.smf-club-teams-results');
+        const clubId   = $block.find('.smf-club-id-input').val();
+
+        if ( ! clubId ) {
+            $results.html('<p class="smf-notice">Bitte zuerst eine Club-ID eintragen.</p>');
+            return;
+        }
+        if ( typeof smf_admin_data === 'undefined' || ! smf_admin_data.ajax_url ) {
+            return;
+        }
+
+        $results.html('<p>Lade Teams…</p>');
+        $btn.prop('disabled', true);
+
+        $.post(smf_admin_data.ajax_url, {
+            action:  'smf_sync_club_teams',
+            nonce:   smf_admin_data.nonce,
+            club_id: clubId,
+        }).done(function (response) {
+            if ( ! response || ! response.success ) {
+                const msg = (response && response.data) ? response.data : 'Unbekannter Fehler';
+                $results.html('<p class="smf-error">' + escHtml(msg) + '</p>');
+                return;
+            }
+            $results.html( renderClubTeamsList( response.data.teams || [] ) );
+        }).fail(function () {
+            $results.html('<p class="smf-error">Anfrage fehlgeschlagen. Bitte erneut versuchen.</p>');
+        }).always(function () {
+            $btn.prop('disabled', false);
+        });
+    }
+
+    // ----------------------------------------------------------------
     // Event-Binding
     // ----------------------------------------------------------------
 
@@ -178,14 +209,8 @@
             }
         });
 
-        // --- Verbände ---
-
-        $('#smf-add-verband').on('click', function () {
-            $('#smf-verbaende-body').append( verbandRowTemplate );
-        });
-
-        $(document).on('click', '.smf-remove-row', function () {
-            $(this).closest('tr').remove();
+        $(document).on('click', '.smf-sync-club-teams', function () {
+            runClubTeamsSync( $(this) );
         });
 
         // --- Vereine ---
@@ -206,7 +231,7 @@
             }
         });
 
-        // Team/Liga-Zeile hinzufügen (delegiert, da Vereine dynamisch hinzugefügt werden)
+        // Team-ID-Zeile hinzufügen (delegiert, da Vereine dynamisch hinzugefügt werden)
         $(document).on('click', '.smf-add-team', function () {
             const vi = $(this).data('verein-index');
             const $row = buildTeamRow( vi );

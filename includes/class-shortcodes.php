@@ -4,10 +4,10 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 /**
  * Alle Shortcodes des Plugins
  *
- * [sm_tabelle liga_id="123" verband="fvd"]
- * [sm_spiele liga_id="123" anzahl="10" team="Eichehorn" verband="flv-sh"]
- * [sm_naechstes_spiel liga_id="123" team="Eichehorn" verband="fvd"]
- * [sm_letztes_spiel liga_id="123" team="Eichehorn"]
+ * [sm_tabelle liga_id="123"]
+ * [sm_spiele liga_id="123" anzahl="10" team="Eichehorn"]
+ * [sm_naechstes_spiel liga_id="123" team="Eichehorn"]
+ * [sm_letztes_spiel liga_id="123"]
  */
 class SMF_Shortcodes {
 
@@ -20,12 +20,11 @@ class SMF_Shortcodes {
     }
 
     // ----------------------------------------------------------------
-    // [sm_tabelle liga_id="123" verband="fvd" titel="true"]
+    // [sm_tabelle liga_id="123" titel="true"]
     // ----------------------------------------------------------------
     public function shortcode_tabelle( $atts ) {
         $atts = shortcode_atts( array(
             'liga_id' => get_option( 'smf_default_league_id', '' ),
-            'verband' => '',
             'titel'   => 'true',
             'logos'   => 'false',
         ), $atts, 'sm_tabelle' );
@@ -35,8 +34,7 @@ class SMF_Shortcodes {
             return $this->error( 'Bitte liga_id angeben, z.B. [sm_tabelle liga_id="123"]' );
         }
 
-        $api = $this->make_api( $atts['verband'] );
-        if ( is_string( $api ) ) return $api;
+        $api = new SMF_API();
 
         $table = $api->get_table( $liga_id );
         if ( is_wp_error( $table ) ) {
@@ -57,12 +55,11 @@ class SMF_Shortcodes {
     }
 
     // ----------------------------------------------------------------
-    // [sm_spiele liga_id="123" verband="fvd" anzahl="10" team="Eichehorn" modus="alle|vergangen|kommend"]
+    // [sm_spiele liga_id="123" anzahl="10" team="Eichehorn" modus="alle|vergangen|kommend"]
     // ----------------------------------------------------------------
     public function shortcode_spiele( $atts ) {
         $atts = shortcode_atts( array(
             'liga_id' => get_option( 'smf_default_league_id', '' ),
-            'verband' => '',
             'anzahl'  => 0,
             'team'    => '',
             'modus'   => 'alle',
@@ -75,8 +72,7 @@ class SMF_Shortcodes {
             return $this->error( 'Bitte liga_id angeben, z.B. [sm_spiele liga_id="123"]' );
         }
 
-        $api = $this->make_api( $atts['verband'] );
-        if ( is_string( $api ) ) return $api;
+        $api = new SMF_API();
 
         $schedule = $api->get_schedule( $liga_id );
         if ( is_wp_error( $schedule ) ) {
@@ -89,7 +85,6 @@ class SMF_Shortcodes {
             $games = $api->filter_by_team( $games, $atts['team'] );
         }
 
-        $self = $this;
         if ( $atts['modus'] === 'vergangen' ) {
             $games = $api->filter_past_games( $games );
             usort( $games, function( $a, $b ) use ( $api ) {
@@ -122,12 +117,11 @@ class SMF_Shortcodes {
     }
 
     // ----------------------------------------------------------------
-    // [sm_naechstes_spiel liga_id="123" verband="fvd" team="Eichehorn"]
+    // [sm_naechstes_spiel liga_id="123" team="Eichehorn"]
     // ----------------------------------------------------------------
     public function shortcode_naechstes_spiel( $atts ) {
         $atts = shortcode_atts( array(
             'liga_id' => get_option( 'smf_default_league_id', '' ),
-            'verband' => '',
             'team'    => '',
             'logos'   => 'true',
         ), $atts, 'sm_naechstes_spiel' );
@@ -137,8 +131,7 @@ class SMF_Shortcodes {
             return $this->error( 'Bitte liga_id angeben.' );
         }
 
-        $api = $this->make_api( $atts['verband'] );
-        if ( is_string( $api ) ) return $api;
+        $api = new SMF_API();
 
         $schedule = $api->get_schedule( $liga_id );
         if ( is_wp_error( $schedule ) ) {
@@ -170,12 +163,11 @@ class SMF_Shortcodes {
     }
 
     // ----------------------------------------------------------------
-    // [sm_letztes_spiel liga_id="123" verband="fvd" team="Eichehorn"]
+    // [sm_letztes_spiel liga_id="123" team="Eichehorn"]
     // ----------------------------------------------------------------
     public function shortcode_letztes_spiel( $atts ) {
         $atts = shortcode_atts( array(
             'liga_id' => get_option( 'smf_default_league_id', '' ),
-            'verband' => '',
             'team'    => '',
             'logos'   => 'true',
         ), $atts, 'sm_letztes_spiel' );
@@ -185,8 +177,7 @@ class SMF_Shortcodes {
             return $this->error( 'Bitte liga_id angeben.' );
         }
 
-        $api = $this->make_api( $atts['verband'] );
-        if ( is_string( $api ) ) return $api;
+        $api = new SMF_API();
 
         $schedule = $api->get_schedule( $liga_id );
         if ( is_wp_error( $schedule ) ) {
@@ -257,28 +248,6 @@ class SMF_Shortcodes {
     // ----------------------------------------------------------------
     // Hilfsfunktionen
     // ----------------------------------------------------------------
-
-    /**
-     * SMF_API-Instanz für den angegebenen Verbands-Slug erstellen.
-     * Gibt einen HTML-Fehlerstring zurück wenn der Slug unbekannt ist.
-     *
-     * @param string $slug
-     * @return SMF_API|string
-     */
-    private function make_api( $slug ) {
-        if ( $slug === '' ) {
-            return new SMF_API();
-        }
-
-        $url = SMF_API::url_for_verband( $slug );
-        if ( $url === null ) {
-            return $this->error(
-                "Unbekannter Verband \"{$slug}\". Bitte zuerst unter SM Floorball \xe2\x86\x92 Verb\xc3\xa4nde anlegen."
-            );
-        }
-
-        return new SMF_API( $url, SMF_API::api_key_for_verband( $slug ) );
-    }
 
     /**
      * Spielplan normalisieren (API kann verschiedene Strukturen liefern)
