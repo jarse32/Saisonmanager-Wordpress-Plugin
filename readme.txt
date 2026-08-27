@@ -4,7 +4,7 @@ Tags: floorball, sport, spielplan, ergebnisse, tabelle
 Requires at least: 5.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -49,6 +49,20 @@ Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren
 
 == Changelog ==
 
+= 1.4.0 =
+* Neuer Menüpunkt "SM Floorball -> Design": Farben, Eckenradius,
+  Schatten-Intensität, Schrift und Schriftgröße im Frontend ohne eigenes
+  CSS anpassbar, mit Live-Vorschau und Presets (Eichehorn/Neutral/Dark)
+* Bestehende Installationen sehen nach dem Update keine optische Änderung
+  (die bisherigen Werte werden automatisch als Design übernommen)
+* Templates lassen sich jetzt per Child-/Parent-Theme überschreiben
+  (Unterordner "saisonmanager-floorball"), zusätzlich Filter
+  smf_template_path
+* UI-Texte ("Details", "Spielbericht", "Heim"/"Gast", "vs." usw.) über
+  den neuen Filter smf_labels anpassbar, ohne Templates zu kopieren
+* Programmatischer Filter smf_design_vars für Design-Werte, die die
+  UI nicht abdeckt
+
 = 1.3.0 =
 * Verbände-Konfiguration entfernt (nur noch eine API-URL/ein Key nötig)
 * Club-ID-basierte automatische Team-Erkennung inkl. Liga-IDs ("Teams laden")
@@ -64,6 +78,10 @@ Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren
 * Vereinsübersicht (alle Teams eines Vereins)
 
 == Upgrade Notice ==
+
+= 1.4.0 =
+Keine Aktion nötig - das Erscheinungsbild bleibt unverändert. Neu:
+SM Floorball -> Design zum Anpassen von Farben/Schrift ohne eigenes CSS.
 
 = 1.3.0 =
 Verbände-Konfiguration entfällt. Bitte nach dem Update unter SM Floorball ->

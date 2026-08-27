@@ -51,6 +51,36 @@ function smf_init() {
 add_action( 'init', 'smf_init' );
 
 /**
+ * Migrations-Routine für die Design-Einstellungen (smf_design). Läuft bei
+ * jedem Request, bricht aber sofort ab, sobald smf_version = SMF_VERSION
+ * ist - macht also nur nach einer Versionsänderung tatsächlich etwas.
+ *
+ * Erkennt anhand von smf_verbaende (vor 1.3.0 genutzt) oder smf_vereine,
+ * ob es sich um eine bestehende Installation handelt: dann werden die
+ * heutigen Eichehorn-Werte übernommen, damit sich am Erscheinungsbild
+ * nichts ändert. Ansonsten (Neuinstallation) greifen die neutralen
+ * Defaults aus SMF_Design::get_defaults().
+ */
+function smf_maybe_migrate_design() {
+    if ( get_option( 'smf_version', '' ) === SMF_VERSION ) {
+        return;
+    }
+
+    if ( get_option( 'smf_design', false ) === false ) {
+        $is_existing_install = get_option( 'smf_verbaende', false ) !== false
+            || get_option( 'smf_vereine', false ) !== false;
+
+        update_option(
+            'smf_design',
+            $is_existing_install ? SMF_Design::get_legacy_values() : SMF_Design::get_defaults()
+        );
+    }
+
+    update_option( 'smf_version', SMF_VERSION );
+}
+add_action( 'plugins_loaded', 'smf_maybe_migrate_design' );
+
+/**
  * Admin-Einstellungen + POST-Handler registrieren.
  * Läuft auf admin_init, damit admin_post_* Actions rechtzeitig verfügbar sind.
  */
