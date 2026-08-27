@@ -232,8 +232,18 @@ Vereinsdesigns (Farben, Eckenradius, Schatten) direkt im Browser – ganz ohne
 WordPress-Installation, einfach lokal öffnen. `dev/` ist reines
 Entwicklungswerkzeug und in `.distignore` als Auslieferungs-Ausschluss
 vermerkt. Achtung: GitHubs "Code → Download ZIP" wertet `.distignore` nicht
-aus – beim manuellen Erstellen einer Release-ZIP den Ordner `dev/` bitte von
-Hand weglassen.
+aus – beim manuellen Erstellen einer Release-ZIP die Ordner `dev/` und
+`tests/` bitte von Hand weglassen.
+
+`tests/test-design-sanitize.php` ist ein eigenständiger PHP-Test (keine
+WordPress-Installation, kein Composer/PHPUnit nötig) für
+`SMF_Design::sanitize()`, insbesondere dass unvollständige oder ungültige
+Formular-Einsendungen die gespeicherte Konfiguration nicht stillschweigend
+auf die Neutral-Defaults zurücksetzen:
+
+```
+php tests/test-design-sanitize.php
+```
 
 ## Für Plugin-Maintainer: neue Version veröffentlichen
 

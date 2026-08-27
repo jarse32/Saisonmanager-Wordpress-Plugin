@@ -106,42 +106,58 @@ class SMF_Design {
      * @return array
      */
     public static function sanitize( $input ): array {
-        $defaults = self::get_defaults();
-        $input    = is_array( $input ) ? $input : array();
-        $out      = array();
+        /*
+         * Basis für alle Felder, die im POST fehlen oder ungültig sind, ist
+         * die gespeicherte (bereits mit den Defaults gemergte) Konfiguration
+         * - NICHT get_defaults(). Sonst würde ein einzelnes fehlendes oder
+         * ungültiges Feld (klassischer Fall: eine Radiogroup, bei der aus
+         * irgendeinem Grund keine Option "checked" gerendert wurde und die
+         * deshalb beim Absenden gar nicht im POST auftaucht) die komplette
+         * gespeicherte Konfiguration auf die neutralen Defaults zurückwerfen,
+         * statt nur dieses eine Feld unverändert zu lassen.
+         */
+        $base  = self::get();
+        $input = is_array( $input ) ? $input : array();
+        $out   = array();
 
         $color_fields = array(
             'color_primary', 'color_accent', 'color_surface', 'color_surface_alt',
             'color_border', 'color_border_strong', 'color_text', 'color_text_muted',
         );
         foreach ( $color_fields as $field ) {
-            $val           = isset( $input[ $field ] ) ? sanitize_hex_color( $input[ $field ] ) : '';
-            $out[ $field ] = $val ? $val : $defaults[ $field ];
+            $val           = array_key_exists( $field, $input ) ? sanitize_hex_color( $input[ $field ] ) : '';
+            $out[ $field ] = $val ? $val : $base[ $field ];
         }
 
         foreach ( array( 'contrast_on_primary', 'contrast_on_accent' ) as $field ) {
             $val           = isset( $input[ $field ] ) ? $input[ $field ] : '';
-            $out[ $field ] = in_array( $val, array( 'auto', 'light', 'dark' ), true ) ? $val : $defaults[ $field ];
+            $out[ $field ] = in_array( $val, array( 'auto', 'light', 'dark' ), true ) ? $val : $base[ $field ];
         }
 
-        $radius          = isset( $input['radius'] ) ? absint( $input['radius'] ) : $defaults['radius'];
-        $out['radius']   = max( 0, min( 24, $radius ) );
+        $out['radius'] = array_key_exists( 'radius', $input )
+            ? max( 0, min( 24, absint( $input['radius'] ) ) )
+            : $base['radius'];
 
-        $font_size          = isset( $input['font_size'] ) ? absint( $input['font_size'] ) : 0;
-        $out['font_size']   = in_array( $font_size, self::FONT_SIZES, true ) ? $font_size : $defaults['font_size'];
+        $out['font_size'] = array_key_exists( 'font_size', $input ) && in_array( absint( $input['font_size'] ), self::FONT_SIZES, true )
+            ? absint( $input['font_size'] )
+            : $base['font_size'];
 
-        $shadow                    = isset( $input['shadow_intensity'] ) ? $input['shadow_intensity'] : '';
-        $out['shadow_intensity']   = in_array( $shadow, array( 'none', 'soft', 'normal', 'strong' ), true )
-            ? $shadow : $defaults['shadow_intensity'];
+        $out['shadow_intensity'] = isset( $input['shadow_intensity'] ) && in_array( $input['shadow_intensity'], array( 'none', 'soft', 'normal', 'strong' ), true )
+            ? $input['shadow_intensity']
+            : $base['shadow_intensity'];
 
         foreach ( array( 'font_mode', 'font_title_mode' ) as $field ) {
             $val           = isset( $input[ $field ] ) ? $input[ $field ] : '';
             $out[ $field ] = in_array( $val, array( 'inherit', 'system-sans', 'system-serif', 'custom' ), true )
-                ? $val : $defaults[ $field ];
+                ? $val : $base[ $field ];
         }
 
-        $out['font_custom']       = self::sanitize_font_stack( $input['font_custom'] ?? '' );
-        $out['font_title_custom'] = self::sanitize_font_stack( $input['font_title_custom'] ?? '' );
+        $out['font_custom'] = array_key_exists( 'font_custom', $input )
+            ? self::sanitize_font_stack_with_base( $input['font_custom'], $base['font_custom'] )
+            : $base['font_custom'];
+        $out['font_title_custom'] = array_key_exists( 'font_title_custom', $input )
+            ? self::sanitize_font_stack_with_base( $input['font_title_custom'], $base['font_title_custom'] )
+            : $base['font_title_custom'];
 
         return $out;
     }
@@ -169,6 +185,25 @@ class SMF_Design {
     }
 
     /**
+     * Wie sanitize_font_stack(), unterscheidet aber bewusstes Leeren (leere
+     * Eingabe -> gültiges Ergebnis "") von ungültiger Eingabe (nicht-leerer
+     * Rohwert, der die Whitelist nicht besteht -> alter Wert bleibt
+     * erhalten, statt die Eingabe stillschweigend zu verwerfen).
+     *
+     * @param mixed  $raw
+     * @param string $base_value bisher gespeicherter Wert
+     * @return string
+     */
+    private static function sanitize_font_stack_with_base( $raw, string $base_value ): string {
+        $raw = is_string( $raw ) ? trim( $raw ) : '';
+        if ( $raw === '' ) {
+            return '';
+        }
+        $clean = self::sanitize_font_stack( $raw );
+        return $clean !== '' ? $clean : $base_value;
+    }
+
+    /**
      * Font-Modus + optionalen Freitext zu einem CSS font-family-Wert auflösen.
      *
      * @param string $mode
@@ -182,6 +217,9 @@ class SMF_Design {
             case 'system-serif':
                 return self::FONT_STACK_SYSTEM_SERIF;
             case 'custom':
+                // Erneute Validierung statt blindem Vertrauen auf den
+                // gespeicherten Wert (Defense in Depth, siehe build_css()).
+                $custom = self::sanitize_font_stack( $custom );
                 return $custom !== '' ? $custom : 'inherit';
             default:
                 return 'inherit';
@@ -277,21 +315,37 @@ class SMF_Design {
      * @return string
      */
     public static function build_css(): string {
-        $cfg = self::get();
+        $cfg      = self::get();
+        $defaults = self::get_defaults();
+
+        /*
+         * self::get() liest die Option ungeprüft (nur wp_parse_args gegen
+         * die Defaults) - die eigentliche Validierung passiert normalerweise
+         * einmalig beim Speichern in sanitize(). Hier, am Ausgabeort ins
+         * <head>, werden die sicherheitsrelevanten Felder (Farben, Font-
+         * Stacks, Radius, Schriftgröße) trotzdem defensiv erneut geprüft:
+         * falls die Option jemals auf einem anderen Weg als über sanitize()
+         * geschrieben wurde (Fremdcode, fehlerhafte Migration, direkter
+         * DB-Zugriff), verhindert das, dass z.B. ein url(...)-Wert in einer
+         * Farbvariable ausgegeben wird, die an anderer Stelle im Stylesheet
+         * als background genutzt wird.
+         */
+        $primary = self::safe_hex( $cfg['color_primary'], $defaults['color_primary'] );
+        $accent  = self::safe_hex( $cfg['color_accent'], $defaults['color_accent'] );
 
         $vars = array(
-            '--smf-color-primary'       => $cfg['color_primary'],
-            '--smf-color-accent'        => $cfg['color_accent'],
-            '--smf-color-surface'       => $cfg['color_surface'],
-            '--smf-color-surface-alt'   => $cfg['color_surface_alt'],
-            '--smf-color-border'        => $cfg['color_border'],
-            '--smf-color-border-strong' => $cfg['color_border_strong'],
-            '--smf-color-text'          => $cfg['color_text'],
-            '--smf-color-text-muted'    => $cfg['color_text_muted'],
-            '--smf-color-on-primary'    => self::contrast_var( $cfg['color_primary'], $cfg['contrast_on_primary'] ),
-            '--smf-color-on-accent'     => self::contrast_var( $cfg['color_accent'], $cfg['contrast_on_accent'] ),
-            '--smf-radius'              => $cfg['radius'] . 'px',
-            '--smf-fs-base'             => $cfg['font_size'] . 'px',
+            '--smf-color-primary'       => $primary,
+            '--smf-color-accent'        => $accent,
+            '--smf-color-surface'       => self::safe_hex( $cfg['color_surface'], $defaults['color_surface'] ),
+            '--smf-color-surface-alt'   => self::safe_hex( $cfg['color_surface_alt'], $defaults['color_surface_alt'] ),
+            '--smf-color-border'        => self::safe_hex( $cfg['color_border'], $defaults['color_border'] ),
+            '--smf-color-border-strong' => self::safe_hex( $cfg['color_border_strong'], $defaults['color_border_strong'] ),
+            '--smf-color-text'          => self::safe_hex( $cfg['color_text'], $defaults['color_text'] ),
+            '--smf-color-text-muted'    => self::safe_hex( $cfg['color_text_muted'], $defaults['color_text_muted'] ),
+            '--smf-color-on-primary'    => self::contrast_var( $primary, $cfg['contrast_on_primary'] ),
+            '--smf-color-on-accent'     => self::contrast_var( $accent, $cfg['contrast_on_accent'] ),
+            '--smf-radius'              => self::safe_radius( $cfg['radius'], $defaults['radius'] ) . 'px',
+            '--smf-fs-base'             => self::safe_font_size( $cfg['font_size'], $defaults['font_size'] ) . 'px',
             '--smf-font'                => self::resolve_font( $cfg['font_mode'], $cfg['font_custom'] ),
             '--smf-font-title'          => self::resolve_font( $cfg['font_title_mode'], $cfg['font_title_custom'] ),
         );
@@ -313,6 +367,42 @@ class SMF_Design {
         }
 
         return '.smf, .smf-modal {' . $decls . '}';
+    }
+
+    /**
+     * Erneute Validierung eines Hex-Farbwerts beim Auslesen, siehe
+     * build_css(). Ein bereits gültiger Wert kommt unverändert zurück
+     * (idempotent) - kein Effekt auf den Normalfall.
+     *
+     * @param mixed  $value
+     * @param string $fallback
+     * @return string
+     */
+    private static function safe_hex( $value, string $fallback ): string {
+        $clean = is_string( $value ) ? sanitize_hex_color( $value ) : '';
+        return $clean !== '' ? $clean : $fallback;
+    }
+
+    /**
+     * @param mixed $value
+     * @param int   $fallback
+     * @return int
+     */
+    private static function safe_radius( $value, int $fallback ): int {
+        if ( ! is_numeric( $value ) ) {
+            return $fallback;
+        }
+        return max( 0, min( 24, (int) $value ) );
+    }
+
+    /**
+     * @param mixed $value
+     * @param int   $fallback
+     * @return int
+     */
+    private static function safe_font_size( $value, int $fallback ): int {
+        $value = is_numeric( $value ) ? (int) $value : 0;
+        return in_array( $value, self::FONT_SIZES, true ) ? $value : $fallback;
     }
 
     /**

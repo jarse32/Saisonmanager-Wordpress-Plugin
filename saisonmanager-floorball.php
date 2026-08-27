@@ -217,6 +217,13 @@ add_action( 'wp_ajax_smf_sync_club_teams', 'smf_ajax_sync_club_teams' );
  * @param array  $data     Variablen, die dem Template zur Verfügung stehen
  */
 function smf_render_template( $template, $data = array() ) {
+    // Nur einfache Slugs zulassen (Templates heißen z.B. "table",
+    // "games-list") - verhindert Path-Traversal (../), falls diese
+    // global aufrufbare Funktion jemals mit nicht vertrauenswürdiger
+    // Eingabe aufgerufen wird. Alle aktuellen Aufrufstellen im Plugin
+    // übergeben ohnehin feste Literale.
+    $template = preg_replace( '/[^a-z0-9\-]/', '', (string) $template );
+
     $file = SMF_PLUGIN_DIR . 'templates/' . $template . '.php';
 
     $child_file = get_stylesheet_directory() . '/saisonmanager-floorball/' . $template . '.php';
