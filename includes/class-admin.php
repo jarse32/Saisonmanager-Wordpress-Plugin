@@ -134,12 +134,12 @@ class SMF_Admin {
         check_admin_referer( 'smf_save_vereine' );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Nicht erlaubt.' );
 
-        $names    = isset( $_POST['smf_v_name'] )    ? (array) $_POST['smf_v_name']    : array();
-        $slugs    = isset( $_POST['smf_v_slug'] )    ? (array) $_POST['smf_v_slug']    : array();
-        $anzahls  = isset( $_POST['smf_v_anzahl'] )  ? (array) $_POST['smf_v_anzahl']  : array();
-        $club_ids = isset( $_POST['smf_v_club_id'] ) ? (array) $_POST['smf_v_club_id'] : array();
+        $names    = isset( $_POST['smf_v_name'] )    ? (array) wp_unslash( $_POST['smf_v_name'] )    : array();
+        $slugs    = isset( $_POST['smf_v_slug'] )    ? (array) wp_unslash( $_POST['smf_v_slug'] )    : array();
+        $anzahls  = isset( $_POST['smf_v_anzahl'] )  ? (array) wp_unslash( $_POST['smf_v_anzahl'] )  : array();
+        $club_ids = isset( $_POST['smf_v_club_id'] ) ? (array) wp_unslash( $_POST['smf_v_club_id'] ) : array();
 
-        $t_team_ids = isset( $_POST['smf_v_t_team_id'] ) ? (array) $_POST['smf_v_t_team_id'] : array();
+        $t_team_ids = isset( $_POST['smf_v_t_team_id'] ) ? (array) wp_unslash( $_POST['smf_v_t_team_id'] ) : array();
 
         $vereine = array();
         foreach ( $names as $i => $name ) {
