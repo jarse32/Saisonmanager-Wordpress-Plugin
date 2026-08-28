@@ -44,7 +44,7 @@ class SMF_API {
             $base_url = get_option( 'smf_api_base_url', 'https://saisonmanager.de/api/v2' );
         }
 
-        $parsed = parse_url( $base_url );
+        $parsed = wp_parse_url( $base_url );
         $domain = $parsed['scheme'] . '://' . $parsed['host'];
 
         return $domain . '/' . ltrim( $path, '/' );

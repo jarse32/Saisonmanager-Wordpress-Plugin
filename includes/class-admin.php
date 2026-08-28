@@ -123,7 +123,7 @@ class SMF_Admin {
 
         ( new SMF_API() )->flush_cache();
 
-        wp_redirect( add_query_arg( [ 'page' => 'smf-settings', 'flushed' => '1' ], admin_url( 'admin.php' ) ) );
+        wp_safe_redirect( add_query_arg( [ 'page' => 'smf-settings', 'flushed' => '1' ], admin_url( 'admin.php' ) ) );
         exit;
     }
 
@@ -175,7 +175,7 @@ class SMF_Admin {
 
         update_option( 'smf_vereine', $vereine );
 
-        wp_redirect( add_query_arg( array( 'page' => 'smf-settings', 'saved_verein' => '1' ), admin_url( 'admin.php' ) ) );
+        wp_safe_redirect( add_query_arg( array( 'page' => 'smf-settings', 'saved_verein' => '1' ), admin_url( 'admin.php' ) ) );
         exit;
     }
 
@@ -214,7 +214,9 @@ class SMF_Admin {
     }
 
     public function render_settings_page(): void {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display flags (presence check only, no form data processed); the actual actions (flush_cache(), save_vereine()) are nonce-checked in their own handlers.
         $flushed      = isset( $_GET['flushed'] );
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- same as above, read-only display flag.
         $saved_verein = isset( $_GET['saved_verein'] );
         $vereine      = get_option( 'smf_vereine', array() );
         $teams_cache  = get_option( 'smf_club_teams_cache', array() );
@@ -403,7 +405,7 @@ class SMF_Admin {
                                                         Zuletzt geladen: <?php echo esc_html( date_i18n( 'd.m.Y H:i', $updated_at ) ); ?>.
                                                     <?php endif; ?>
                                                 </p>
-                                                <div class="smf-club-teams-results"><?php echo self::render_club_teams_list( $cached_teams ); ?></div>
+                                                <div class="smf-club-teams-results"><?php echo self::render_club_teams_list( $cached_teams ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_club_teams_list() escapes all dynamic values internally (esc_html()); echoing its return value here would double-encode nothing but wrapping it in esc_html() would destroy the returned markup. ?></div>
                                             </td>
                                         </tr>
                                     </table>

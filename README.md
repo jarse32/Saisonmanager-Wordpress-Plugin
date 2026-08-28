@@ -245,6 +245,33 @@ auf die Neutral-Defaults zurücksetzen:
 php tests/test-design-sanitize.php
 ```
 
+### Plugin Check: bewusst akzeptierte Findings
+
+Das Plugin geht **nicht** ins WordPress.org-Verzeichnis, sondern wird über
+GitHub per Plugin Update Checker (PUC) ausgeliefert (siehe unten). Ein Teil
+der [Plugin Check](https://wordpress.org/plugins/plugin-check/)-Regeln passt
+deshalb nicht auf dieses Projekt. Bei einem erneuten Plugin-Check-Lauf bitte
+folgende Findings **nicht** erneut bewerten oder "vorsichtshalber" anfassen:
+
+- **`plugin_updater_detected`** (2×): PUC ist unser Auslieferungsweg – auf
+  wp.org verboten, für uns essenziell.
+- **`readme_short_description_non_official_language`,
+  `readme_description_non_official_language`**: `readme.txt` ist bewusst auf
+  Deutsch verfasst, die Zielgruppe sind deutsche Floorball-Vereine.
+- **Alle Findings unter `tests/`** (echo, `var_export`, fehlender
+  Direktzugriffs-Schutz): reine CLI-Testskripte, die WordPress nie lädt.
+- **`hidden_files`** für `.gitignore`/`.distignore`.
+
+Die letzten beiden Punkte tauchen nur auf, weil `dev/`, `tests/`,
+`.gitignore` und `.distignore` über den GitHub-Zipball auch in einer
+produktiven Installation landen (siehe Hinweis zu `.distignore` oben) – der
+Plugin-Check-Scanner sieht dieselben Dateien wie im Repo.
+
+Alle anderen Findings (z.B. Escaping, Nonce-Verification, `wp_unslash()`,
+direkte DB-Queries) werden regulär behoben oder – falls ein False Positive
+vorliegt – mit einem begründeten `phpcs:ignore`-Kommentar an der jeweiligen
+Stelle im Code versehen, nicht pauschal unterdrückt.
+
 ## Für Plugin-Maintainer: neue Version veröffentlichen
 
 Der Update-Checker erkennt eine neue Version daran, dass der `Version`-Header
