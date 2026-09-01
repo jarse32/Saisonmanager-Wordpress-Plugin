@@ -96,10 +96,15 @@ Spielgemeinschaften).
 | `[sm_naechstes_spiel liga_id="123"]` | Nächstes kommendes Spiel | `liga_id`, `team`, `logos` |
 | `[sm_letztes_spiel liga_id="123"]` | Letztes gespieltes Spiel | `liga_id`, `team`, `logos` |
 | `[sm_vereinsuebersicht verein="hannover"]` | Alle Spiele aller Teams eines Vereins | `verein` (Slug oder Name), `anzahl` |
+| `[sm_scorer team_id="6754"]` | Scorerliste (Punkteliste) eines Teams | `team_id` (Pflicht), `anzahl`, `spalten` (`voll`/`kompakt`), `namen` (`voll`/`abgekuerzt`), `titel`, `summe` |
 
-Die `liga_id` findest du über den Team-Finder oder den "Teams laden"-Button
-bei einem Verein (Spalte "Liga(en)"). Vollständige Referenz direkt in der
-Admin-Oberfläche unter **SM Floorball → Shortcode-Referenz**.
+Die `liga_id`/`team_id` findest du über den Team-Finder oder den "Teams
+laden"-Button bei einem Verein (Spalte "Liga(en)" bzw. Team-ID).
+Vollständige Referenz direkt in der Admin-Oberfläche unter
+**SM Floorball → Shortcode-Referenz**. `[sm_scorer]` zeigt dauerhaft
+Klarnamen von Spieler:innen an – siehe
+[Personenbezogene Daten](#personenbezogene-daten) weiter unten, bevor du
+den Shortcode einsetzt.
 
 ## Hooks für Theme-Entwickler:innen
 
@@ -119,7 +124,7 @@ und erst danach im Plugin selbst:
 
 Die Template-Namen (ohne `.php`) entsprechen den Dateinamen in
 `templates/`: `table`, `games-list`, `single-game`, `club-overview`,
-`game-detail`. Am einfachsten kopierst du die Plugin-Datei als
+`game-detail`, `scorer`. Am einfachsten kopierst du die Plugin-Datei als
 Ausgangspunkt in dein Theme.
 
 Für Sonderfälle (z.B. Templates aus einem anderen Plugin laden) gibt es
@@ -175,6 +180,11 @@ Verfügbare Schlüssel und ihre Standardtexte:
 | `team_side_away` | Gast |
 | `vs_label` | vs. |
 | `vs_label_compact` | vs |
+| `scorer_list_title` | Scorerliste |
+| `scorer_no_data` | Für dieses Team liegen noch keine Scorerpunkte vor. |
+| `scorer_not_visible` | Die Scorerliste ist für dieses Team nicht verfügbar. |
+| `scorer_names_hidden` | Die Scorerliste mit Personennamen ist in den Einstellungen deaktiviert. |
+| `scorer_totals_label` | Team gesamt |
 
 `team_side_away` z.B. auf "Auswärts" umstellen, ohne Template-Override:
 
@@ -212,8 +222,76 @@ Seitenaufruf, sollte also keine teuren Berechnungen enthalten.
 
 - Der API-Key verlässt den Server nie – alle Anfragen laufen serverseitig
   über `wp_remote_get()`.
-- Es werden keine personenbezogenen Daten (Spielernamen, Kontaktdaten)
-  dargestellt, nur Team-/Vereinsdaten, Spielpläne und Ergebnisse.
+- Keine Weitergabe an Dritte: Das Plugin ruft ausschließlich die
+  konfigurierte Saisonmanager-API-URL auf, es gibt keine weiteren
+  Aufrufe an Drittanbieter (Tracking, Werbung o.ä.).
+- Keine externen Schriften oder sonstigen Fremd-Assets – Design und
+  Schrift werden aus dem Plugin bzw. dem Theme der Installation
+  bedient (siehe *SM Floorball → Design* im Adminmenü).
+
+### Personenbezogene Daten
+
+Das Plugin kann an zwei Stellen **Namen** von Spieler:innen und
+Schiedsrichter:innen anzeigen:
+
+- **Spieldetail** (Modal, öffnet sich beim Klick auf eine Spielkarte): in
+  der Ereignis-Chronik ("Spielverlauf") Torschütz:innen und
+  Vorlagengeber:innen bei Toren, die bestrafte Person bei Strafzeiten,
+  ggf. die eingesetzten Schiedsrichter:innen. Diese Namen stammen
+  unverändert aus der Saisonmanager-API zu einem einzelnen Spiel.
+- **Scorerliste** (`[sm_scorer]`, siehe Shortcode-Tabelle oben): eine
+  **dauerhafte, nach Saisonleistung sortierte Liste** aller Spieler:innen
+  eines Teams mit Namen. Anders als beim Spieldetail ist das keine
+  beiläufige Erwähnung in einem Ereignisprotokoll, sondern eine gezielte
+  Zusammenstellung – datenschutzrechtlich entsprechend gewichtiger.
+
+Diese Namen sind personenbezogene Daten im Sinne von Art. 4 DSGVO und
+können auch minderjährige Spieler:innen betreffen, z.B. in Jugendligen.
+Wichtig dazu:
+
+- Das Plugin **erhebt diese Daten nicht selbst** und speichert sie nicht
+  dauerhaft. Sie stammen unverändert aus der Saisonmanager-API und werden
+  bei Abruf lediglich kurzzeitig serverseitig zwischengespeichert
+  (WordPress-Transient-Cache, Standarddauer 5 Minuten, unter
+  *SM Floorball → Einstellungen* von 1 Minute bis 24 Stunden
+  konfigurierbar) und danach automatisch verworfen.
+- Die Einstellung **"Personennamen anzeigen"** unter
+  *SM Floorball → Einstellungen* steuert **beide** Stellen gemeinsam
+  (Spieldetail-Modal **und** `[sm_scorer]`) – ein einzelner Schalter, damit
+  eine Vereinsentscheidung nicht versehentlich nur an einer Stelle greift.
+  **Standard: aus.** Ist die Option deaktiviert, gelangen keine Namen ins
+  ausgelieferte HTML: Im Spieldetail erscheint stattdessen die
+  Trikotnummer, `[sm_scorer]` zeigt einen Hinweis statt der Liste.
+  Dieser Schalter ist bewusst **nicht per Shortcode-Attribut
+  übersteuerbar** – nur die Vereinsseite (Backend) darf entscheiden, ob
+  Namen überhaupt erscheinen.
+  - *Bestandsinstallationen* (Update von einer Version vor diesem
+    Feature): Migration setzt die Option einmalig auf "an", damit sich am
+    bisherigen Verhalten des Spieldetail-Modals nichts ändert. Wer die
+    Scorerliste neu einsetzt, sollte an dieser Stelle bewusst
+    entscheiden, ob das weiterhin gewünscht ist.
+  - *Neuinstallationen* starten mit "aus" (datensparsamer Default).
+- Die Einstellung **"Format der Personennamen"** (`voll` oder
+  `abgekuerzt`, z.B. "Max M.", Standard: `abgekuerzt`) reduziert den
+  Personenbezug, sofern Namen angezeigt werden. Im Shortcode
+  `[sm_scorer]` lässt sich dieses Format pro Einbindung über
+  `namen="voll"`/`namen="abgekuerzt"` überschreiben – der Schalter
+  "Personennamen anzeigen" selbst bleibt davon unberührt.
+- Alle übrigen vom Plugin dargestellten Daten (Team-/Vereinsnamen,
+  Spielpläne, Ergebnisse, Tabellen) sind keine personenbezogenen Daten.
+
+**Verantwortung der nachnutzenden Vereine:** Wer dieses Plugin einsetzt,
+insbesondere den Shortcode `[sm_scorer]`, muss die Anzeige von Spieler-
+und Schiedsrichternamen in der eigenen Datenschutzerklärung
+berücksichtigen (z.B. Datenquelle, Umgang mit Betroffenenanfragen) und
+braucht dafür eine eigene Rechtsgrundlage (Art. 6 DSGVO). Dieser
+Abschnitt ist keine Rechtsberatung und trifft keine Aussage darüber, auf
+welcher Rechtsgrundlage die Veröffentlichung dieser Daten zulässig ist –
+das zu bewerten liegt bei den Website-Betreiber:innen, ggf. in
+Abstimmung mit dem eigenen Datenschutzbeauftragten. Die Optionen
+"Personennamen anzeigen" (aus) und "Format der Personennamen"
+(abgekürzt) machen die datensparsame Nutzung zum Standard, ersetzen aber
+keine eigene Prüfung.
 
 ## Lizenz
 

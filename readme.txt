@@ -31,6 +31,17 @@ Verband Deutschland e. V.
 Ein eigener Saisonmanager-API-Key ist erforderlich (kostenlos, nicht-kommerzielle
 Nutzung) - Details siehe `README.md` im Repository.
 
+Hinweis zu personenbezogenen Daten: Im Spieldetail sowie im Shortcode
+[sm_scorer] (Scorerliste) kann das Plugin Namen von Spieler:innen und
+Schiedsrichter:innen anzeigen (Quelle: Saisonmanager-API, keine Speicherung
+durch das Plugin außer kurzzeitigem Cache). Die Anzeige ist standardmäßig
+deaktiviert und lässt sich unter SM Floorball -> Einstellungen ("Personennamen
+anzeigen") gemeinsam für beide Stellen ein-/ausschalten, wahlweise mit
+abgekürztem Namensformat. Bestandsinstallationen behalten nach dem Update
+automatisch das bisherige (aktivierte) Verhalten im Spieldetail. Details und
+Hinweise zur eigenen Datenschutzerklärung siehe Abschnitt "Sicherheit &
+Datenschutz" in `README.md`.
+
 == Installation ==
 
 Dieses Plugin wird nicht über das offizielle WordPress-Plugin-Verzeichnis
