@@ -1231,6 +1231,47 @@
 }
 
 /* ------------------------------------------------------------------ */
+/*  Scorerliste ([sm_scorer])                                           */
+/* ------------------------------------------------------------------ */
+
+.smf-scorer-wrapper {
+    box-shadow: var(--smf-shadow);
+    border-radius: var(--smf-radius);
+    overflow: hidden;
+}
+
+.smf .smf-scorer-table {
+    min-width: 360px;
+}
+
+.smf .smf-scorer-table .smf-scorer-col-name,
+.smf .smf-scorer-table td.smf-scorer-name {
+    text-align: left;
+}
+
+.smf-scorer-name {
+    font-weight: 600;
+    font-size: calc(var(--smf-fs-base) * 0.97);
+}
+
+.smf .smf-scorer-table tfoot .smf-scorer-total td {
+    padding: 10px 14px;
+    border: none;
+    border-top: 2px solid var(--smf-color-border-strong);
+    background: var(--smf-color-surface-alt);
+    font-size: calc(var(--smf-fs-base) * 0.9375);
+}
+
+.smf .smf-scorer-table tfoot .smf-scorer-total-label {
+    text-align: left;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: calc(var(--smf-fs-base) * 0.78);
+    color: var(--smf-color-text-muted);
+}
+
+/* ------------------------------------------------------------------ */
 /*  Responsive                                                          */
 /* ------------------------------------------------------------------ */
 

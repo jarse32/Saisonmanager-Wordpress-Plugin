@@ -143,6 +143,22 @@ class SMF_API {
     }
 
     /**
+     * Team-Statistik (u.a. Scorerliste) - Rohantwort von teams/{id}/stats.
+     * Enthält neben "scorer" auch "team", "recent_games", "upcoming_games"
+     * und "totals"; die Auswertung übernimmt SMF_Scorer.
+     *
+     * Der Endpunktpfad ist über den Filter 'smf_scorer_endpoint' an dieser
+     * einen Stelle austauschbar.
+     *
+     * @param int $team_id
+     * @return array|WP_Error
+     */
+    public function get_scorer( $team_id ) {
+        $endpoint = apply_filters( 'smf_scorer_endpoint', "teams/{$team_id}/stats", (int) $team_id );
+        return $this->request( $endpoint );
+    }
+
+    /**
      * Generischer, öffentlicher Zugriff auf beliebige (bekannte) Endpunkte -
      * für Hilfswerkzeuge wie SMF_TeamFinder, die keine eigene Wrapper-Methode
      * rechtfertigen.

@@ -36,31 +36,37 @@ $events   = isset( $game['events'] ) ? $game['events'] : array();
 $referees = isset( $game['referees'] ) ? $game['referees'] : array();
 $nom_refs = isset( $game['nominated_referees'] ) ? $game['nominated_referees'] : '';
 
-// Spieler-Lookup: Trikotnummer -> Name
-$player_map = array( 'home' => array(), 'guest' => array() );
-foreach ( array( 'home', 'guest' ) as $side ) {
-    if ( isset( $game['players'][ $side ] ) && is_array( $game['players'][ $side ] ) ) {
-        foreach ( $game['players'][ $side ] as $p ) {
-            $nr = '';
-            if ( isset( $p['trikot_number'] ) && $p['trikot_number'] !== '' ) {
-                $nr = (string) $p['trikot_number'];
-            } elseif ( isset( $p['number'] ) && $p['number'] !== '' ) {
-                $nr = (string) $p['number'];
-            }
-            if ( $nr === '' ) continue;
+// Spieler-Lookup: Trikotnummer -> Name. Nur befüllt, wenn Personennamen
+// global aktiviert sind (SM Floorball -> Einstellungen) - sonst greift
+// unten der Rückfall auf die Trikotnummer ("#12").
+$smf_show_names = SMF_Scorer::player_names_enabled();
 
-            if ( isset( $p['player_firstname'] ) || isset( $p['player_name'] ) ) {
-                $player_map[ $side ][ $nr ] = trim(
-                    ( isset( $p['player_firstname'] ) ? $p['player_firstname'] : '' ) . ' ' .
-                    ( isset( $p['player_name'] )      ? $p['player_name']      : '' )
-                );
-            } elseif ( isset( $p['first_name'] ) || isset( $p['last_name'] ) ) {
-                $player_map[ $side ][ $nr ] = trim(
-                    ( isset( $p['first_name'] ) ? $p['first_name'] : '' ) . ' ' .
-                    ( isset( $p['last_name'] )  ? $p['last_name']  : '' )
-                );
-            } elseif ( isset( $p['name'] ) ) {
-                $player_map[ $side ][ $nr ] = $p['name'];
+$player_map = array( 'home' => array(), 'guest' => array() );
+if ( $smf_show_names ) {
+    foreach ( array( 'home', 'guest' ) as $side ) {
+        if ( isset( $game['players'][ $side ] ) && is_array( $game['players'][ $side ] ) ) {
+            foreach ( $game['players'][ $side ] as $p ) {
+                $nr = '';
+                if ( isset( $p['trikot_number'] ) && $p['trikot_number'] !== '' ) {
+                    $nr = (string) $p['trikot_number'];
+                } elseif ( isset( $p['number'] ) && $p['number'] !== '' ) {
+                    $nr = (string) $p['number'];
+                }
+                if ( $nr === '' ) continue;
+
+                if ( isset( $p['player_firstname'] ) || isset( $p['player_name'] ) ) {
+                    $player_map[ $side ][ $nr ] = SMF_Scorer::format_player_name(
+                        isset( $p['player_firstname'] ) ? $p['player_firstname'] : '',
+                        isset( $p['player_name'] )      ? $p['player_name']      : ''
+                    );
+                } elseif ( isset( $p['first_name'] ) || isset( $p['last_name'] ) ) {
+                    $player_map[ $side ][ $nr ] = SMF_Scorer::format_player_name(
+                        isset( $p['first_name'] ) ? $p['first_name'] : '',
+                        isset( $p['last_name'] )  ? $p['last_name']  : ''
+                    );
+                } elseif ( isset( $p['name'] ) ) {
+                    $player_map[ $side ][ $nr ] = $p['name'];
+                }
             }
         }
     }
@@ -92,21 +98,20 @@ foreach ( $timeline as $ev ) {
 }
 ksort( $by_period );
 
-// Schiedsrichter-String
+// Schiedsrichter-String (ebenfalls nur bei aktivierten Personennamen)
 $ref_string = '';
-if ( ! empty( $referees ) ) {
+if ( $smf_show_names && ! empty( $referees ) ) {
     $names = array();
     foreach ( $referees as $r ) {
-        if ( isset( $r['first_name'] ) || isset( $r['last_name'] ) ) {
-            $names[] = trim(
-                ( isset( $r['first_name'] ) ? $r['first_name'] : '' ) . ' ' .
-                ( isset( $r['last_name'] )  ? $r['last_name']  : '' )
-            );
+        $first = isset( $r['first_name'] ) ? trim( (string) $r['first_name'] ) : '';
+        $last  = isset( $r['last_name'] )  ? trim( (string) $r['last_name'] )  : '';
+        if ( $first !== '' || $last !== '' ) {
+            $names[] = SMF_Scorer::format_player_name( $first, $last );
         }
     }
     $ref_string = implode( ', ', array_filter( $names ) );
 }
-if ( ! $ref_string && $nom_refs ) {
+if ( $smf_show_names && ! $ref_string && $nom_refs ) {
     $ref_string = $nom_refs;
 }
 ?>

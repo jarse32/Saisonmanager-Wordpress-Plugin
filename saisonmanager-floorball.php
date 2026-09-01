@@ -22,6 +22,7 @@ require_once SMF_PLUGIN_DIR . 'includes/class-api.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-design.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-team-finder.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-club-overview.php';
+require_once SMF_PLUGIN_DIR . 'includes/class-scorer.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-shortcodes.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-admin.php';
 
@@ -79,6 +80,35 @@ function smf_maybe_migrate_design() {
     update_option( 'smf_version', SMF_VERSION );
 }
 add_action( 'plugins_loaded', 'smf_maybe_migrate_design' );
+
+/**
+ * Einmalige Migration für die neue Option "Personennamen anzeigen"
+ * (smf_show_player_names, siehe SMF_Scorer::player_names_enabled()).
+ * Bestandsinstallationen zeigten Spielernamen im Spieldetail-Modal bisher
+ * immer an - für sie bleibt dieses Verhalten erhalten. Neuinstallationen
+ * starten mit ausgeschalteter Option (datensparsamer Default).
+ *
+ * Nutzt dieselbe Erkennung wie smf_maybe_migrate_design() (vorhandene
+ * Vereins-/Verbandskonfiguration = Bestandsinstallation), unabhängig von
+ * smf_version, damit die Reihenfolge der beiden plugins_loaded-Hooks keine
+ * Rolle spielt. Läuft dank eigenem Merker (smf_player_names_migrated) nur
+ * einmal, nicht bei jeder Versionsänderung.
+ */
+function smf_maybe_migrate_player_names() {
+    if ( get_option( 'smf_player_names_migrated', false ) ) {
+        return;
+    }
+
+    $is_existing_install = get_option( 'smf_verbaende', false ) !== false
+        || get_option( 'smf_vereine', false ) !== false;
+
+    if ( $is_existing_install ) {
+        update_option( 'smf_show_player_names', '1' );
+    }
+
+    update_option( 'smf_player_names_migrated', '1' );
+}
+add_action( 'plugins_loaded', 'smf_maybe_migrate_player_names' );
 
 /**
  * Admin-Einstellungen + POST-Handler registrieren.

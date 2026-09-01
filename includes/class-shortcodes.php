@@ -8,6 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  * [sm_spiele liga_id="123" anzahl="10" team="Eichehorn"]
  * [sm_naechstes_spiel liga_id="123" team="Eichehorn"]
  * [sm_letztes_spiel liga_id="123"]
+ * [sm_scorer team_id="6754" anzahl="10"]
  */
 class SMF_Shortcodes {
 
@@ -17,6 +18,7 @@ class SMF_Shortcodes {
         add_shortcode( 'sm_naechstes_spiel',    array( $this, 'shortcode_naechstes_spiel' ) );
         add_shortcode( 'sm_letztes_spiel',      array( $this, 'shortcode_letztes_spiel' ) );
         add_shortcode( 'sm_vereinsuebersicht',  array( $this, 'shortcode_vereinsuebersicht' ) );
+        add_shortcode( 'sm_scorer',             array( $this, 'shortcode_scorer' ) );
     }
 
     // ----------------------------------------------------------------
@@ -241,6 +243,57 @@ class SMF_Shortcodes {
             'club_name' => isset( $club['name'] ) ? $club['name'] : '',
             'upcoming'  => $games['upcoming'],
             'played'    => $games['played'],
+        ) );
+        return ob_get_clean();
+    }
+
+    // ----------------------------------------------------------------
+    // [sm_scorer team_id="6754" anzahl="10" spalten="voll|kompakt" namen="voll|abgekuerzt" titel="true" summe="false"]
+    // ----------------------------------------------------------------
+    public function shortcode_scorer( $atts ) {
+        $atts = shortcode_atts( array(
+            'team_id' => '',
+            'anzahl'  => 0,
+            'titel'   => 'true',
+            'spalten' => 'voll',
+            'namen'   => '',
+            'summe'   => 'false',
+        ), $atts, 'sm_scorer' );
+
+        $team_id = (int) $atts['team_id'];
+        if ( ! $team_id ) {
+            return $this->error( 'Bitte team_id angeben, z.B. [sm_scorer team_id="6754"]' );
+        }
+
+        // Enums strikt: unbekannte Werte fallen auf den Standard zurück,
+        // statt sie unverändert ins Template durchzureichen.
+        $spalten = ( $atts['spalten'] === 'kompakt' ) ? 'kompakt' : 'voll';
+        $namen   = in_array( $atts['namen'], array( 'voll', 'abgekuerzt' ), true ) ? $atts['namen'] : '';
+
+        // Globaler Schalter "Personennamen anzeigen" ist eine
+        // Vereinsentscheidung und per Shortcode nicht übersteuerbar - ist
+        // er aus, wird kein API-Request für die Liste ausgelöst.
+        $names_disabled = ! SMF_Scorer::player_names_enabled();
+
+        $result = array( 'status' => 'empty', 'error' => '', 'rows' => array(), 'columns' => array(), 'totals' => null );
+        if ( ! $names_disabled ) {
+            $result = SMF_Scorer::get( $team_id, array(
+                'anzahl' => (int) $atts['anzahl'],
+            ) );
+
+            if ( $result['status'] === 'error' ) {
+                return $this->error( $result['error'] );
+            }
+        }
+
+        ob_start();
+        smf_render_template( 'scorer', array(
+            'result'         => $result,
+            'show_title'     => $atts['titel'] !== 'false',
+            'namen'          => $namen,
+            'spalten'        => $spalten,
+            'show_totals'    => $atts['summe'] === 'true',
+            'names_disabled' => $names_disabled,
         ) );
         return ob_get_clean();
     }

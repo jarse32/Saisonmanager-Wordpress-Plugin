@@ -61,6 +61,18 @@ class SMF_Admin {
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ] );
+        register_setting( 'smf_settings_group', 'smf_show_player_names', [
+            'sanitize_callback' => static function ( $val ) {
+                return ! empty( $val ) ? '1' : '';
+            },
+            'default'           => '',
+        ] );
+        register_setting( 'smf_settings_group', 'smf_player_name_format', [
+            'sanitize_callback' => static function ( $val ) {
+                return in_array( $val, array( 'voll', 'abgekuerzt' ), true ) ? $val : 'abgekuerzt';
+            },
+            'default'           => 'abgekuerzt',
+        ] );
 
         register_setting( 'smf_design_group', 'smf_design', [
             'type'              => 'array',
@@ -283,6 +295,38 @@ class SMF_Admin {
                                            value="<?php echo esc_attr( get_option( 'smf_cache_duration', 300 ) ); ?>"
                                            class="small-text" min="60" max="86400">
                                     <p class="description">300 = 5 Min., 3600 = 1 Std.</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Personennamen anzeigen</th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" name="smf_show_player_names" value="1"
+                                               <?php checked( get_option( 'smf_show_player_names', '' ), '1' ); ?>>
+                                        Namen von Spieler:innen und Schiedsrichter:innen anzeigen
+                                    </label>
+                                    <p class="description">
+                                        Betrifft das Spieldetail-Modal (Spielverlauf) <strong>und</strong> den
+                                        Shortcode <code>[sm_scorer]</code>. Standard: aus. Der Verein ist für die
+                                        Veröffentlichung dieser personenbezogenen Daten selbst verantwortlich und
+                                        benötigt dafür eine Rechtsgrundlage (Art. 6 DSGVO) – das kann auch
+                                        minderjährige Spieler:innen betreffen.
+                                    </p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="smf_player_name_format">Format der Personennamen</label></th>
+                                <td>
+                                    <select id="smf_player_name_format" name="smf_player_name_format">
+                                        <option value="abgekuerzt" <?php selected( get_option( 'smf_player_name_format', 'abgekuerzt' ), 'abgekuerzt' ); ?>>Abgekürzt (z.&nbsp;B. „Max M.“)</option>
+                                        <option value="voll" <?php selected( get_option( 'smf_player_name_format', 'abgekuerzt' ), 'voll' ); ?>>Voller Name</option>
+                                    </select>
+                                    <p class="description">
+                                        Greift, sobald „Personennamen anzeigen“ oben aktiviert ist. Im Shortcode
+                                        <code>[sm_scorer]</code> pro Einbindung über <code>namen="voll"</code> bzw.
+                                        <code>namen="abgekuerzt"</code> übersteuerbar – der Schalter „Personennamen
+                                        anzeigen“ selbst nicht.
+                                    </p>
                                 </td>
                             </tr>
                         </table>
@@ -538,12 +582,35 @@ class SMF_Admin {
                                 <td>Vereinsübersicht: anstehende &amp; gespielte Spiele aller Teams</td>
                                 <td><code>verein</code> (Slug oder Name, Standard: erster Verein), <code>anzahl</code> (überschreibt Backend-Einstellung)</td>
                             </tr>
+                            <tr>
+                                <td><code>[sm_scorer team_id="6754"]</code></td>
+                                <td>Scorerliste (Punkteliste) eines Teams, über alle Wettbewerbe der Saison</td>
+                                <td>
+                                    <code>team_id</code> (Pflicht), <code>anzahl</code> (0 = alle), <code>spalten</code>
+                                    (voll/kompakt), <code>namen</code> (voll/abgekuerzt, überschreibt nur das Format,
+                                    nicht ob Namen überhaupt erscheinen), <code>titel</code>, <code>summe</code>
+                                    (true/false, Summenzeile aus Team-Gesamtwerten)
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                     <p class="description">
                         Die <code>liga_id</code> für <code>sm_tabelle</code>/<code>sm_spiele</code>/etc. findest du
                         über den Team-Finder oben (Spalte "Liga(en)" bei den gefundenen Teams) oder über den
-                        "Teams laden"-Button bei einem Verein.
+                        "Teams laden"-Button bei einem Verein. Die <code>team_id</code> für
+                        <code>[sm_scorer]</code>/<code>[sm_vereinsuebersicht]</code> findest du an derselben Stelle.
+                    </p>
+                    <p class="description">
+                        Beispiel: <code>[sm_scorer team_id="6754" anzahl="10" spalten="kompakt" namen="abgekuerzt"]</code>
+                    </p>
+                    <p class="description">
+                        <strong>Datenschutz:</strong> <code>[sm_scorer]</code> zeigt – anders als die übrigen
+                        Shortcodes – dauerhaft die Klarnamen von Spieler:innen an, ggf. auch von Minderjährigen. Die
+                        Liste erscheint nur, wenn oben unter "Allgemeine Einstellungen" die Option "Personennamen
+                        anzeigen" aktiviert ist. Der jeweilige Verein ist für die Veröffentlichung dieser
+                        personenbezogenen Daten selbst verantwortlich und benötigt dafür eine Rechtsgrundlage;
+                        <code>namen="abgekuerzt"</code> bzw. die Einstellung "Format der Personennamen" reduzieren den
+                        Personenbezug, ersetzen aber keine eigene rechtliche Prüfung.
                     </p>
                 </div>
 
