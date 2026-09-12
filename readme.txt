@@ -4,7 +4,7 @@ Tags: floorball, sport, spielplan, ergebnisse, tabelle
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,6 +27,9 @@ Verband Deutschland e. V.
   Vereins, automatisch über die Saisonmanager-Club-ID ermittelt
 * Team-Finder: Club-IDs, Team-IDs und Liga-IDs im Adminbereich finden
 * Serverseitiges Caching, ein eigener Saisonmanager-API-Key pro Installation
+* Ausfallsicher: Ist der Verbandsserver nicht erreichbar, lädt die Seite
+  trotzdem schnell weiter und zeigt wo möglich zuletzt bekannte Tabellen/
+  Spielpläne mit Stand-Hinweis (siehe "Ausfallverhalten" in `README.md`)
 
 Ein eigener Saisonmanager-API-Key ist erforderlich (kostenlos, nicht-kommerzielle
 Nutzung) - Details siehe `README.md` im Repository.
@@ -34,8 +37,9 @@ Nutzung) - Details siehe `README.md` im Repository.
 Hinweis zu personenbezogenen Daten: Im Spieldetail sowie im Shortcode
 [sm_scorer] (Scorerliste) kann das Plugin Namen von Spieler:innen und
 Schiedsrichter:innen anzeigen (Quelle: Saisonmanager-API, keine Speicherung
-durch das Plugin außer kurzzeitigem Cache). Die Anzeige ist standardmäßig
-deaktiviert und lässt sich unter SM Floorball -> Einstellungen ("Personennamen
+durch das Plugin außer kurzzeitigem Cache - diese beiden Endpunkte sind
+bewusst vom Langzeit-Spiegel für den Ausfallfall ausgeschlossen). Die Anzeige
+ist standardmäßig deaktiviert und lässt sich unter SM Floorball -> Einstellungen ("Personennamen
 anzeigen") gemeinsam für beide Stellen ein-/ausschalten, wahlweise mit
 abgekürztem Namensformat. Bestandsinstallationen behalten nach dem Update
 automatisch das bisherige (aktivierte) Verhalten im Spieldetail. Details und
@@ -59,6 +63,29 @@ im `main`-Branch des Repositories eine neue Version veröffentlicht wird -
 Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren*.
 
 == Changelog ==
+
+= 1.5.0 =
+* Ausfallsicherheit gegen einen nicht erreichbaren Verbandsserver: kurzer,
+  konfigurierbarer Timeout (Standard 6s statt bisher 15s) statt langem
+  Warten, ein Circuit Breaker pro Host unterbricht nach 3 Fehlversuchen in
+  Folge für 2 Minuten alle weiteren Verbindungsversuche, HTTP 429 wartet
+  die vom Server vorgegebene Zeit ab
+* Zusätzlicher Langzeit-Spiegel (bis zu 7 Tage) für Tabellen, Spielpläne,
+  Liganamen und Team-Spielpläne: Ist der Server nicht erreichbar, wird die
+  zuletzt bekannte Antwort mit einem Stand-Hinweis angezeigt statt einer
+  leeren Seite. Bewusst ausgeschlossen: Spieldetails und die Scorerliste,
+  da diese personenbezogene Daten (Spieler-/Schiedsrichternamen) enthalten
+  können - hier bleibt es bei der bisherigen kurzzeitigen Zwischenspeicherung
+* Fehlermeldungen jetzt rollengetrennt: Administrator:innen sehen technische
+  Details (HTTP-Code, URL, Breaker-Status), Besucher:innen einen
+  freundlichen, allgemeinen Hinweis
+* Neue Einstellungen "Timeout" und "Cache-Dauer" (jetzt als Auswahlliste,
+  neuer Standard 10 statt 5 Minuten - der API-Key hat serverseitig ohnehin
+  diese Verzögerung, kürzeres Cachen liefert keine aktuelleren Daten)
+* Neue Statusanzeige (Verbandsserver erreichbar/gesperrt, letzter Ausfall,
+  Größe der Notreserve) sowie zwei getrennte Cache-Knöpfe: "Frische-Cache
+  leeren" und "Cache vollständig zurücksetzen" (löscht auch die Notreserve,
+  mit Sicherheitsabfrage)
 
 = 1.4.0 =
 * Neuer Menüpunkt "SM Floorball -> Design": Farben, Eckenradius,
@@ -89,6 +116,11 @@ Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren
 * Vereinsübersicht (alle Teams eines Vereins)
 
 == Upgrade Notice ==
+
+= 1.5.0 =
+Keine Aktion nötig. Neu: Die Seite bleibt bei einem nicht erreichbaren
+Verbandsserver nutzbar (kurzer Timeout, Circuit Breaker, Notreserve mit
+Stand-Hinweis). Cache-Dauer wurde auf 10 Minuten Standard umgestellt.
 
 = 1.4.0 =
 Keine Aktion nötig - das Erscheinungsbild bleibt unverändert. Neu:

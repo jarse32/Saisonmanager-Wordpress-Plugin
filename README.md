@@ -87,6 +87,57 @@ Zusätzlich lassen sich einzelne **Team-IDs manuell** ergänzen – als Fallback
 für Sonderfälle, die die Club-ID-Erkennung nicht abdeckt (z. B.
 Spielgemeinschaften).
 
+## Ausfallverhalten
+
+Ist `saisonmanager.de` nicht erreichbar, soll die eigene Seite trotzdem
+vollständig und schnell laden – dafür sorgen drei Mechanismen, die
+zusammenspielen:
+
+1. **Kurzer Timeout** statt langem Warten: Unter **SM Floorball →
+   Allgemeine Einstellungen** einstellbar (3/5/6/8/10 Sekunden, Standard 6).
+   Ein einzelner hängender Request blockiert den Seitenaufbau also nur
+   wenige Sekunden, nicht 15 wie in älteren Versionen.
+2. **Circuit Breaker pro Verbandsserver**: Nach 3 Fehlversuchen in Folge
+   (Netzwerkfehler, Timeout, HTTP ≥ 500) wird für 2 Minuten gar nicht mehr
+   versucht, eine Verbindung aufzubauen – jeder weitere Shortcode auf
+   derselben Seite kostet dann keine zusätzliche Zeit mehr. HTTP 429
+   (Ratelimit) öffnet den Breaker sofort für die vom Server vorgegebene
+   Zeit (`Retry-After`, gedeckelt auf 15 Minuten). Eine einzelne falsche
+   Liga-/Team-ID (HTTP 4xx) löst den Breaker bewusst **nicht** aus – sonst
+   würde ein Tippfehler alle anderen Shortcodes mit ausbremsen.
+3. **Notreserve (Langzeit-Spiegel)**: Jede erfolgreiche Antwort von Tabellen,
+   Spielplänen, Liganamen und Team-Spielplänen wird zusätzlich bis zu 7 Tage
+   gespeichert. Ist der Server nicht erreichbar, wird diese zuletzt bekannte
+   Antwort ausgeliefert, mit einem dezenten Hinweis auf den Stand ("Stand:
+   Freitag, 11.09.2026, 18:30 Uhr – der Verbandsserver liefert gerade keine
+   aktuellen Daten."). Bewusst **ausgeschlossen** sind Spieldetails
+   (`[sm_naechstes_spiel]`/`[sm_letztes_spiel]`/Spieldetail-Modal beim Klick
+   auf ein Spiel) und die Scorerliste (`[sm_scorer]`), da diese
+   personenbezogene Daten (Spieler-/Schiedsrichternamen) enthalten können –
+   hier bleibt es bei der bisherigen kurzzeitigen Zwischenspeicherung
+   (Cache-Dauer, siehe unten), nichts davon liegt länger als nötig in der
+   Datenbank.
+
+Sind weder frische noch gespiegelte Daten vorhanden, erscheint statt einer
+leeren Tabelle/eines leeren Spielplans nur ein freundlicher Hinweis.
+Administrator:innen sehen zusätzlich die technischen Details (HTTP-Code,
+URL, Breaker-Status) – für alle anderen bleibt es bei einem allgemeinen
+Satz, ohne Serverinterna preiszugeben.
+
+Unter **SM Floorball → Allgemeine Einstellungen** zeigt der Block "Status"
+den aktuellen Zustand (Verbandsserver erreichbar/gesperrt, letzter Ausfall,
+Anzahl und Alter der Notreserve-Einträge). Zwei getrennte Knöpfe im
+Cache-Bereich: **"Frische-Cache leeren"** (wie bisher) und **"Cache
+vollständig zurücksetzen"** (löscht zusätzlich die Notreserve – mit
+Sicherheitsabfrage, da damit die Ausfallabsicherung bis zum nächsten
+erfolgreichen Abruf entfällt).
+
+Die **Cache-Dauer** (Stufe 1, "frischer" Cache) ist ebenfalls eine
+Auswahlliste (5/10/15/30/60 Minuten, neuer Standard 10 Minuten statt bisher
+5) – der Saisonmanager-API-Key hat serverseitig ohnehin rund 10 Minuten
+Verzögerung, kürzeres Cachen liefert also keine aktuelleren Daten, nur mehr
+Anfragen an den Verbandsserver.
+
 ## Shortcodes
 
 | Shortcode | Beschreibung | Wichtigste Parameter |
@@ -252,9 +303,14 @@ Wichtig dazu:
 - Das Plugin **erhebt diese Daten nicht selbst** und speichert sie nicht
   dauerhaft. Sie stammen unverändert aus der Saisonmanager-API und werden
   bei Abruf lediglich kurzzeitig serverseitig zwischengespeichert
-  (WordPress-Transient-Cache, Standarddauer 5 Minuten, unter
-  *SM Floorball → Einstellungen* von 1 Minute bis 24 Stunden
-  konfigurierbar) und danach automatisch verworfen.
+  (WordPress-Transient-Cache, Standarddauer 10 Minuten, unter
+  *SM Floorball → Einstellungen* als Auswahlliste von 5 bis 60 Minuten
+  konfigurierbar) und danach automatisch verworfen. Anders als Tabellen,
+  Spielpläne und Liganamen landen Spieldetails und die Scorerliste
+  **bewusst nicht** im zusätzlichen 7-Tage-Langzeit-Spiegel für den
+  Ausfallfall (siehe Abschnitt "Ausfallverhalten") – bei einem Ausfall des
+  Verbandsservers zeigt `[sm_scorer]` dann einen Hinweis statt einer
+  veralteten Namensliste.
 - Die Einstellung **"Personennamen anzeigen"** unter
   *SM Floorball → Einstellungen* steuert **beide** Stellen gemeinsam
   (Spieldetail-Modal **und** `[sm_scorer]`) – ein einzelner Schalter, damit
