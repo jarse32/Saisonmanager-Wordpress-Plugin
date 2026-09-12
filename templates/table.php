@@ -2,7 +2,9 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 /**
  * Template: Liga-Tabelle
- * Variablen: $table (array), $league_name (string), $show_title (bool)
+ * Variablen: $table (array), $league_name (string), $show_title (bool),
+ *            $stale_since (int|null - Zeitstempel, wenn $table aus der
+ *            Notreserve kommt, siehe SMF_API::stale_since())
  *
  * Saisonmanager API Feldnamen:
  *   position, team_name, games, won, won_ot, lost_ot, lost,
@@ -26,6 +28,8 @@ if ( isset( $table['teams'] ) ) {
             <h3 class="smf-title"><?php echo esc_html( $league_name ); ?> – Tabelle</h3>
         </div>
     <?php endif; ?>
+
+    <?php echo SMF_Shortcodes::stale_notice( $stale_since ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- stale_notice() escapt bereits intern ?>
 
     <?php if ( empty( $rows ) ) : ?>
         <p class="smf-notice"><?php echo esc_html( smf_label( 'no_table_data', 'Keine Tabellendaten verfügbar.' ) ); ?></p>

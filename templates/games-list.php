@@ -2,7 +2,8 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 /**
  * Template: Spielliste
- * Variablen: $games (array), $league_name (string), $show_title (bool), $modus (string)
+ * Variablen: $games (array), $league_name (string), $show_title (bool), $modus (string),
+ *            $stale_since (int|null - siehe SMF_API::stale_since())
  *
  * Saisonmanager API Feldnamen:
  *   game_id, date (YYYY-MM-DD), time (HH:MM), game_day,
@@ -33,6 +34,8 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : smf_labe
             </h3>
         </div>
     <?php endif; ?>
+
+    <?php echo SMF_Shortcodes::stale_notice( $stale_since ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- stale_notice() escapt bereits intern ?>
 
     <?php if ( empty( $games ) ) : ?>
         <p class="smf-notice"><?php echo esc_html( smf_label( 'no_games_found', 'Keine Spiele gefunden.' ) ); ?></p>

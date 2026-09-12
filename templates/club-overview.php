@@ -2,7 +2,9 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 /**
  * Template: Vereinsübersicht
- * Variablen: $club_name (string), $upcoming (array), $played (array)
+ * Variablen: $club_name (string), $upcoming (array), $played (array),
+ *            $stale_since (int|null), $partial_error_count (int) - siehe
+ *            SMF_ClubOverview::get_games()
  */
 
 $api = new SMF_API();
@@ -93,6 +95,18 @@ $render_game = function ( array $game ) use ( $api ) {
     <div class="smf-header smf-co-header">
         <h3 class="smf-title"><?php echo esc_html( $club_name ); ?></h3>
     </div>
+
+    <?php echo SMF_Shortcodes::stale_notice( $stale_since ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- stale_notice() escapt bereits intern ?>
+
+    <?php if ( $partial_error_count > 0 ) : ?>
+        <p class="smf-notice">
+            <?php echo esc_html( sprintf(
+                /* translators: %d: Anzahl der Teams, für die aktuell keine Daten geladen werden konnten */
+                smf_label( 'club_overview_partial_error', 'Für %d Team(s) konnten aktuell keine Daten geladen werden.' ),
+                $partial_error_count
+            ) ); ?>
+        </p>
+    <?php endif; ?>
 
     <div class="smf-co-grid">
 

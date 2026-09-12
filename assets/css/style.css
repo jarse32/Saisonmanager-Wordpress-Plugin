@@ -188,6 +188,17 @@
     font-size: calc(var(--smf-fs-base) * 0.95);
 }
 
+/* Hinweis auf den Stand von Notreserve-Daten (Verbandsserver aktuell nicht
+   erreichbar) - bewusst zurückhaltend, kein Fehlerzustand. */
+.smf-notice--stale {
+    font-style: normal;
+    background: var(--smf-color-surface-alt);
+    border-left: 3px solid var(--smf-color-border-strong);
+    border-radius: var(--smf-radius);
+    padding: 0.5rem 0.75rem;
+    margin: 0 0 0.75rem;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Tabelle                                                             */
 /* ------------------------------------------------------------------ */

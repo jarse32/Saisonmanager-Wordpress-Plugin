@@ -41,8 +41,57 @@ class SMF_Admin {
      * damit sie bei admin-post.php-Requests rechtzeitig verfügbar sind)
      */
     public function register_post_handlers() {
-        add_action( 'admin_post_smf_flush_cache',  array( $this, 'flush_cache' ) );
-        add_action( 'admin_post_smf_save_vereine', array( $this, 'save_vereine' ) );
+        add_action( 'admin_post_smf_flush_cache',     array( $this, 'flush_cache' ) );
+        add_action( 'admin_post_smf_flush_all_cache', array( $this, 'flush_all_cache' ) );
+        add_action( 'admin_post_smf_save_vereine',    array( $this, 'save_vereine' ) );
+    }
+
+    /**
+     * Erlaubte Werte für die Cache-Dauer (Sekunden => Anzeige-Label).
+     * 10 Minuten Standard: der Saisonmanager-API-Key hat serverseitig
+     * ohnehin ~10 Minuten Verzögerung, kürzer zu cachen liefert keine
+     * aktuelleren Daten, nur mehr Anfragen an den Verbandsserver.
+     *
+     * @return array<int,string>
+     */
+    public static function cache_duration_options() {
+        return array(
+            300  => '5 Minuten',
+            600  => '10 Minuten',
+            900  => '15 Minuten',
+            1800 => '30 Minuten',
+            3600 => '60 Minuten',
+        );
+    }
+
+    /**
+     * Rundet einen Wert auf die nächstgelegene erlaubte Option. Wichtig für
+     * Bestandsinstallationen: War smf_cache_duration vor der Umstellung auf
+     * ein <select> ein freier Zahlenwert außerhalb der neuen Liste, würde
+     * ohne diese Rundung beim ersten Speichern des Formulars stillschweigend
+     * der Browser-Default (erste <option>) greifen, statt einer sinnvollen
+     * Näherung an den bisherigen Wert.
+     *
+     * @param mixed $value
+     * @param int[] $allowed
+     * @return int
+     */
+    public static function round_to_nearest( $value, array $allowed ) {
+        $value = (int) $value;
+        if ( in_array( $value, $allowed, true ) ) {
+            return $value;
+        }
+
+        $closest = $allowed[0];
+        $diff    = abs( $value - $closest );
+        foreach ( $allowed as $candidate ) {
+            $d = abs( $value - $candidate );
+            if ( $d < $diff ) {
+                $diff    = $d;
+                $closest = $candidate;
+            }
+        }
+        return $closest;
     }
 
     public function register_settings() {
@@ -54,8 +103,18 @@ class SMF_Admin {
             'sanitize_callback' => 'absint',
         ] );
         register_setting( 'smf_settings_group', 'smf_cache_duration', [
-            'sanitize_callback' => 'absint',
-            'default'           => 300,
+            'sanitize_callback' => static function ( $val ) {
+                return SMF_Admin::round_to_nearest( $val, array_keys( SMF_Admin::cache_duration_options() ) );
+            },
+            'default'           => 600,
+        ] );
+        register_setting( 'smf_settings_group', 'smf_api_timeout', [
+            'sanitize_callback' => static function ( $val ) {
+                $allowed = array( 3, 5, 6, 8, 10 );
+                $val     = (int) $val;
+                return in_array( $val, $allowed, true ) ? $val : 6;
+            },
+            'default'           => 6,
         ] );
         register_setting( 'smf_settings_group', 'smf_api_key', [
             'sanitize_callback' => 'sanitize_text_field',
@@ -136,6 +195,21 @@ class SMF_Admin {
         ( new SMF_API() )->flush_cache();
 
         wp_safe_redirect( add_query_arg( [ 'page' => 'smf-settings', 'flushed' => '1' ], admin_url( 'admin.php' ) ) );
+        exit;
+    }
+
+    /**
+     * Löscht zusätzlich die Notreserve (Langzeit-Spiegel) - eigener,
+     * bewusst getrennter Knopf, damit ein alltägliches "Cache leeren" die
+     * Versicherung gegen einen Serverausfall nicht versehentlich mitreißt.
+     */
+    public function flush_all_cache(): void {
+        check_admin_referer( 'smf_flush_all_cache' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Nicht erlaubt.' );
+
+        ( new SMF_API() )->flush_all_cache();
+
+        wp_safe_redirect( add_query_arg( [ 'page' => 'smf-settings', 'flushed_all' => '1' ], admin_url( 'admin.php' ) ) );
         exit;
     }
 
@@ -229,6 +303,8 @@ class SMF_Admin {
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display flags (presence check only, no form data processed); the actual actions (flush_cache(), save_vereine()) are nonce-checked in their own handlers.
         $flushed      = isset( $_GET['flushed'] );
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- same as above, read-only display flag.
+        $flushed_all  = isset( $_GET['flushed_all'] );
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- same as above, read-only display flag.
         $saved_verein = isset( $_GET['saved_verein'] );
         $vereine      = get_option( 'smf_vereine', array() );
         $teams_cache  = get_option( 'smf_club_teams_cache', array() );
@@ -240,7 +316,10 @@ class SMF_Admin {
             </h1>
 
             <?php if ( $flushed ) : ?>
-                <div class="notice notice-success is-dismissible"><p>Cache wurde erfolgreich geleert.</p></div>
+                <div class="notice notice-success is-dismissible"><p>Frische-Cache wurde erfolgreich geleert.</p></div>
+            <?php endif; ?>
+            <?php if ( $flushed_all ) : ?>
+                <div class="notice notice-success is-dismissible"><p>Cache inklusive Notreserve wurde vollständig zurückgesetzt.</p></div>
             <?php endif; ?>
             <?php if ( $saved_verein ) : ?>
                 <div class="notice notice-success is-dismissible"><p>Vereine gespeichert.</p></div>
@@ -289,12 +368,40 @@ class SMF_Admin {
                                 </td>
                             </tr>
                             <tr>
-                                <th scope="row"><label for="smf_cache_duration">Cache-Dauer (Sekunden)</label></th>
+                                <th scope="row"><label for="smf_cache_duration">Cache-Dauer</label></th>
                                 <td>
-                                    <input type="number" id="smf_cache_duration" name="smf_cache_duration"
-                                           value="<?php echo esc_attr( get_option( 'smf_cache_duration', 300 ) ); ?>"
-                                           class="small-text" min="60" max="86400">
-                                    <p class="description">300 = 5 Min., 3600 = 1 Std.</p>
+                                    <?php
+                                    $cache_options  = self::cache_duration_options();
+                                    $current_cache  = self::round_to_nearest( get_option( 'smf_cache_duration', 600 ), array_keys( $cache_options ) );
+                                    ?>
+                                    <select id="smf_cache_duration" name="smf_cache_duration">
+                                        <?php foreach ( $cache_options as $val => $label ) : ?>
+                                            <option value="<?php echo esc_attr( $val ); ?>" <?php selected( $current_cache, $val ); ?>><?php echo esc_html( $label ); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <p class="description">
+                                        Der Saisonmanager-API-Key hat serverseitig ohnehin ~10 Minuten
+                                        Verzögerung – kürzer zu cachen liefert keine aktuelleren Daten, nur
+                                        mehr Anfragen an den Verbandsserver.
+                                    </p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="smf_api_timeout">Timeout</label></th>
+                                <td>
+                                    <?php $current_timeout = (int) get_option( 'smf_api_timeout', 6 ); ?>
+                                    <select id="smf_api_timeout" name="smf_api_timeout">
+                                        <?php foreach ( array( 3, 5, 6, 8, 10 ) as $val ) : ?>
+                                            <option value="<?php echo esc_attr( $val ); ?>" <?php selected( $current_timeout, $val ); ?>><?php echo esc_html( $val ); ?> Sekunden</option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <p class="description">
+                                        Wie lange auf eine Antwort des Verbandsservers gewartet wird, bevor
+                                        abgebrochen wird. Bewusst kurz halten: Ist der Server nicht
+                                        erreichbar, soll die eigene Seite trotzdem schnell laden – bei
+                                        mehreren Shortcodes auf einer Seite summiert sich sonst die
+                                        Wartezeit, bis die Seite selbst in ein Timeout läuft.
+                                    </p>
                                 </td>
                             </tr>
                             <tr>
@@ -334,14 +441,65 @@ class SMF_Admin {
                     </form>
                 </div>
 
+                <!-- Status -->
+                <div class="smf-admin-card">
+                    <h2>Status</h2>
+                    <?php
+                    $breaker      = SMF_API::get_breaker_status();
+                    $last_outage  = (int) get_option( 'smf_api_last_outage', 0 );
+                    $stale_stats  = ( new SMF_Cache() )->get_stale_stats();
+                    ?>
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">Verbandsserver</th>
+                            <td>
+                                <?php if ( $breaker['open'] ) : ?>
+                                    🔴 Gesperrt (<code><?php echo esc_html( $breaker['host'] ); ?></code>) –
+                                    nächster Versuch ab <?php echo esc_html( date_i18n( 'd.m.Y H:i', $breaker['open_until'] ) ); ?> Uhr.
+                                <?php else : ?>
+                                    🟢 Erreichbar
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Letzter Ausfall</th>
+                            <td>
+                                <?php echo $last_outage ? esc_html( date_i18n( 'd.m.Y H:i', $last_outage ) . ' Uhr' ) : 'Bisher keiner erfasst.'; ?>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Notreserve</th>
+                            <td>
+                                <?php echo esc_html( $stale_stats['count'] ); ?> Einträge
+                                <?php if ( $stale_stats['oldest_age'] !== null ) : ?>
+                                    , ältester Stand vor <?php echo esc_html( human_time_diff( time() - $stale_stats['oldest_age'], time() ) ); ?>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
                 <!-- Cache -->
                 <div class="smf-admin-card">
                     <h2>Cache</h2>
-                    <p>API-Antworten werden gecacht, um Server-Last zu reduzieren. Nach Änderungen an der API-Konfiguration den Cache leeren.</p>
+                    <p>API-Antworten werden gecacht, um Server-Last zu reduzieren. Nach Änderungen an der API-Konfiguration den Frische-Cache leeren.</p>
                     <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
                         <input type="hidden" name="action" value="smf_flush_cache">
                         <?php wp_nonce_field( 'smf_flush_cache' ); ?>
-                        <?php submit_button( 'Cache leeren', 'secondary' ); ?>
+                        <?php submit_button( 'Frische-Cache leeren', 'secondary' ); ?>
+                    </form>
+
+                    <p style="margin-top:1.5rem;">
+                        <strong>Cache vollständig zurücksetzen</strong> löscht zusätzlich die Notreserve
+                        (Langzeit-Spiegel) – die Versicherung gegen einen Ausfall des Verbandsservers.
+                        Danach gibt es bis zum nächsten erfolgreichen Abruf keine Ersatzdaten mehr. Nur
+                        nutzen, wenn der Verbandsserver aktuell sicher erreichbar ist.
+                    </p>
+                    <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"
+                          onsubmit="return confirm('Wirklich den kompletten Cache inkl. Notreserve löschen? Bei einem Ausfall des Verbandsservers gibt es bis zum nächsten erfolgreichen Abruf dann keine Ersatzdaten mehr.');">
+                        <input type="hidden" name="action" value="smf_flush_all_cache">
+                        <?php wp_nonce_field( 'smf_flush_all_cache' ); ?>
+                        <?php submit_button( 'Cache vollständig zurücksetzen', 'secondary' ); ?>
                     </form>
                 </div>
 

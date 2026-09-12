@@ -3,7 +3,7 @@
  * Plugin Name: SM Floorball
  * Plugin URI:  https://github.com/jarse32/Saisonmanager-Wordpress-Plugin
  * Description: Zeigt Floorball-Spiele, Tabellen und Ligen aus der Saisonmanager-API via Shortcodes an. Inoffizielles Community-Projekt, nicht von Saisonmanager/FVD betrieben.
- * Version:     1.4.0
+ * Version:     1.5.0
  * Author:      Kasche
  * Text Domain: saisonmanager-floorball
  * License:     GPL-2.0+
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'SMF_VERSION', '1.4.0' );
+define( 'SMF_VERSION', '1.5.0' );
 define( 'SMF_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SMF_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -118,8 +118,26 @@ function smf_admin_setup() {
     $admin = new SMF_Admin();
     $admin->register_settings();
     $admin->register_post_handlers();
+
+    smf_maybe_cleanup_stale_cache();
 }
 add_action( 'admin_init', 'smf_admin_setup' );
+
+/**
+ * Räumt abgelaufene Notreserve-Einträge (SMF_Cache::cleanup_stale()) auf -
+ * gedrosselt auf einmal pro Tag, damit nicht bei jedem Admin-Seitenaufruf
+ * ein voller Table-Scan über wp_options läuft. Bewusst kein eigener
+ * Cron-Job, sondern an den ohnehin auf admin_init laufenden Hook gehängt.
+ */
+function smf_maybe_cleanup_stale_cache() {
+    $last = (int) get_option( 'smf_stale_cleanup_last_run', 0 );
+    if ( ( time() - $last ) < DAY_IN_SECONDS ) {
+        return;
+    }
+
+    ( new SMF_Cache() )->cleanup_stale();
+    update_option( 'smf_stale_cleanup_last_run', time(), false );
+}
 
 /**
  * Admin-Menü registrieren (separater Hook)
@@ -177,7 +195,7 @@ function smf_ajax_game_detail() {
     $game = $api->get_game( $game_id );
 
     if ( is_wp_error( $game ) ) {
-        wp_send_json_error( $game->get_error_message() );
+        wp_send_json_error( SMF_Shortcodes::error_message_for_current_user( $game ) );
     }
 
     ob_start();
@@ -377,7 +395,7 @@ function smf_activate() {
         update_option( 'smf_api_base_url', 'https://saisonmanager.de/api/v2' );
     }
     if ( ! get_option( 'smf_cache_duration' ) ) {
-        update_option( 'smf_cache_duration', 300 );
+        update_option( 'smf_cache_duration', 600 );
     }
 }
 register_activation_hook( __FILE__, 'smf_activate' );

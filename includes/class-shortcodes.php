@@ -40,11 +40,16 @@ class SMF_Shortcodes {
 
         $table = $api->get_table( $liga_id );
         if ( is_wp_error( $table ) ) {
-            return $this->error( $table->get_error_message() );
+            return $this->error( $table );
         }
 
         $league      = $api->get_league( $liga_id );
         $league_name = is_wp_error( $league ) ? '' : ( isset( $league['name'] ) ? $league['name'] : '' );
+
+        // Erst nach dem letzten API-Aufruf lesen, direkt vor dem Rendern -
+        // ein Shortcode macht hier zwei Requests (Tabelle + Liganame), der
+        // Hinweis soll den konservativeren (älteren) Stand zeigen.
+        $stale_since = $api->stale_since();
 
         ob_start();
         smf_render_template( 'table', array(
@@ -52,6 +57,7 @@ class SMF_Shortcodes {
             'league_name' => $league_name,
             'show_title'  => $atts['titel'] !== 'false',
             'show_logos'  => $atts['logos'] === 'true',
+            'stale_since' => $stale_since,
         ) );
         return ob_get_clean();
     }
@@ -78,7 +84,7 @@ class SMF_Shortcodes {
 
         $schedule = $api->get_schedule( $liga_id );
         if ( is_wp_error( $schedule ) ) {
-            return $this->error( $schedule->get_error_message() );
+            return $this->error( $schedule );
         }
 
         $games = $this->normalize_schedule( $schedule );
@@ -107,6 +113,9 @@ class SMF_Shortcodes {
         $league      = $api->get_league( $liga_id );
         $league_name = is_wp_error( $league ) ? '' : ( isset( $league['name'] ) ? $league['name'] : '' );
 
+        // Erst nach dem letzten API-Aufruf lesen, direkt vor dem Rendern.
+        $stale_since = $api->stale_since();
+
         ob_start();
         smf_render_template( 'games-list', array(
             'games'       => $games,
@@ -114,6 +123,7 @@ class SMF_Shortcodes {
             'show_title'  => $atts['titel'] !== 'false',
             'modus'       => $atts['modus'],
             'show_logos'  => $atts['logos'] === 'true',
+            'stale_since' => $stale_since,
         ) );
         return ob_get_clean();
     }
@@ -137,7 +147,7 @@ class SMF_Shortcodes {
 
         $schedule = $api->get_schedule( $liga_id );
         if ( is_wp_error( $schedule ) ) {
-            return $this->error( $schedule->get_error_message() );
+            return $this->error( $schedule );
         }
 
         $games = $this->normalize_schedule( $schedule );
@@ -148,11 +158,14 @@ class SMF_Shortcodes {
 
         $game = $api->get_next_game( $games );
         if ( ! $game ) {
-            return '<div class="smf-notice">Kein kommendes Spiel gefunden.</div>';
+            return '<div class="smf-notice">Kein kommendes Spiel gefunden.</div>' . self::stale_notice( $api->stale_since() );
         }
 
         $league      = $api->get_league( $liga_id );
         $league_name = is_wp_error( $league ) ? '' : ( isset( $league['name'] ) ? $league['name'] : '' );
+
+        // Erst nach dem letzten API-Aufruf lesen, direkt vor dem Rendern.
+        $stale_since = $api->stale_since();
 
         ob_start();
         smf_render_template( 'single-game', array(
@@ -160,6 +173,7 @@ class SMF_Shortcodes {
             'league_name' => $league_name,
             'label'       => smf_label( 'next_game_label', 'Nächstes Spiel' ),
             'show_logos'  => $atts['logos'] === 'true',
+            'stale_since' => $stale_since,
         ) );
         return ob_get_clean();
     }
@@ -183,7 +197,7 @@ class SMF_Shortcodes {
 
         $schedule = $api->get_schedule( $liga_id );
         if ( is_wp_error( $schedule ) ) {
-            return $this->error( $schedule->get_error_message() );
+            return $this->error( $schedule );
         }
 
         $games = $this->normalize_schedule( $schedule );
@@ -194,11 +208,14 @@ class SMF_Shortcodes {
 
         $game = $api->get_last_game( $games );
         if ( ! $game ) {
-            return '<div class="smf-notice">Kein gespieltes Spiel gefunden.</div>';
+            return '<div class="smf-notice">Kein gespieltes Spiel gefunden.</div>' . self::stale_notice( $api->stale_since() );
         }
 
         $league      = $api->get_league( $liga_id );
         $league_name = is_wp_error( $league ) ? '' : ( isset( $league['name'] ) ? $league['name'] : '' );
+
+        // Erst nach dem letzten API-Aufruf lesen, direkt vor dem Rendern.
+        $stale_since = $api->stale_since();
 
         ob_start();
         smf_render_template( 'single-game', array(
@@ -206,6 +223,7 @@ class SMF_Shortcodes {
             'league_name' => $league_name,
             'label'       => smf_label( 'last_game_label', 'Letztes Spiel' ),
             'show_logos'  => $atts['logos'] === 'true',
+            'stale_since' => $stale_since,
         ) );
         return ob_get_clean();
     }
@@ -238,11 +256,19 @@ class SMF_Shortcodes {
 
         $games = SMF_ClubOverview::get_games( $club, $anzahl );
 
+        // "Alle Teams gescheitert": keine Daten vorhanden, weder frisch
+        // noch aus der Notreserve - Hinweis statt leerer Spalten.
+        if ( is_wp_error( $games['error'] ) ) {
+            return $this->error( $games['error'] );
+        }
+
         ob_start();
         smf_render_template( 'club-overview', array(
-            'club_name' => isset( $club['name'] ) ? $club['name'] : '',
-            'upcoming'  => $games['upcoming'],
-            'played'    => $games['played'],
+            'club_name'            => isset( $club['name'] ) ? $club['name'] : '',
+            'upcoming'             => $games['upcoming'],
+            'played'               => $games['played'],
+            'stale_since'          => $games['stale_since'],
+            'partial_error_count'  => $games['partial_error_count'],
         ) );
         return ob_get_clean();
     }
@@ -282,7 +308,7 @@ class SMF_Shortcodes {
             ) );
 
             if ( $result['status'] === 'error' ) {
-                return $this->error( $result['error'] );
+                return $this->error( $result['error'] ); // WP_Error, siehe SMF_Scorer::get()
             }
         }
 
@@ -318,10 +344,82 @@ class SMF_Shortcodes {
     }
 
     /**
-     * @param string $msg
+     * Fehlerausgabe, rollengetrennt: Administrator:innen sehen die
+     * technischen Details (HTTP-Code, URL, Breaker-/Rate-Limit-Status aus
+     * den WP_Error-Daten), alle anderen einen freundlichen, allgemeinen
+     * Hinweis ohne technische Interna.
+     *
+     * @param string|WP_Error $error Einfache Validierungsmeldung (String,
+     *                                z.B. fehlende liga_id) oder ein
+     *                                WP_Error aus SMF_API (API-/Ausfall-Fehler).
      * @return string
      */
-    private function error( $msg ) {
-        return '<div class="smf-error"><strong>Saisonmanager Fehler:</strong> ' . esc_html( $msg ) . '</div>';
+    private function error( $error ) {
+        if ( $error instanceof WP_Error ) {
+            if ( ! current_user_can( 'manage_options' ) ) {
+                return '<div class="smf-notice">' . esc_html( self::error_message_for_current_user( $error ) ) . '</div>';
+            }
+            return '<div class="smf-error"><strong>Saisonmanager Fehler (nur für Administrator:innen sichtbar):</strong> '
+                . esc_html( self::error_message_for_current_user( $error ) ) . '</div>';
+        }
+
+        // Einfache Validierungsmeldung (Shortcode-Attribute) - unkritisch,
+        // enthält keine Serverdetails, darf also für alle sichtbar bleiben.
+        return '<div class="smf-error"><strong>Saisonmanager Fehler:</strong> ' . esc_html( $error ) . '</div>';
+    }
+
+    /**
+     * Baut aus einem WP_Error die für die aktuelle Rolle passende
+     * Fehlermeldung. Wird auch außerhalb dieser Klasse genutzt (AJAX-Route
+     * smf_ajax_game_detail() im Hauptplugin), deshalb public/static.
+     *
+     * @param WP_Error $error
+     * @return string
+     */
+    public static function error_message_for_current_user( WP_Error $error ) {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return smf_label(
+                'api_unavailable_visitor',
+                'Aktuell sind keine aktuellen Daten verfügbar. Bitte versuche es in Kürze erneut.'
+            );
+        }
+
+        $message = $error->get_error_message();
+        $data    = $error->get_error_data();
+
+        $parts = array();
+        if ( is_array( $data ) ) {
+            if ( ! empty( $data['http_code'] ) ) $parts[] = 'HTTP ' . $data['http_code'];
+            if ( ! empty( $data['url'] ) )       $parts[] = $data['url'];
+            if ( ! empty( $data['detail'] ) )    $parts[] = $data['detail'];
+        }
+
+        return $parts ? ( $message . ' (' . implode( ' · ', $parts ) . ')' ) : $message;
+    }
+
+    /**
+     * Dezenter Hinweis auf den Stand der Notreserve-Daten, gemeinsam
+     * genutzt von den Templates (table, games-list, single-game,
+     * club-overview) und den Inline-Ausgaben oben (kein kommendes/
+     * gespieltes Spiel gefunden) - damit die Formatierung nicht an
+     * mehreren Stellen dupliziert wird.
+     *
+     * @param int|null $timestamp Rückgabe von SMF_API::stale_since()
+     * @return string Leerstring, wenn $timestamp null ist
+     */
+    public static function stale_notice( $timestamp ) {
+        if ( ! $timestamp ) {
+            return '';
+        }
+
+        $date = date_i18n( 'l, d.m.Y', $timestamp ) . ', ' . date_i18n( 'H:i', $timestamp ) . ' ' . smf_label( 'time_suffix', 'Uhr' );
+
+        $text = sprintf(
+            /* translators: %s: Datum/Uhrzeit des letzten erfolgreichen Datenabrufs */
+            smf_label( 'stale_notice', 'Stand: %s – der Verbandsserver liefert gerade keine aktuellen Daten.' ),
+            $date
+        );
+
+        return '<p class="smf-notice smf-notice--stale">' . esc_html( $text ) . '</p>';
     }
 }

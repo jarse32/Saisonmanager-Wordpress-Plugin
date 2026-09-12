@@ -6,6 +6,18 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  */
 class SMF_API {
 
+    /** Aufeinanderfolgende Fehler, nach denen der Breaker für einen Host öffnet. */
+    const BREAKER_THRESHOLD = 3;
+
+    /** Sekunden, die der Breaker nach dem Auslösen geschlossen bleibt (Ausnahme: 429, siehe request()). */
+    const BREAKER_COOLDOWN = 120;
+
+    /** Obergrenze für eine vom Server per Retry-After vorgegebene Sperrzeit (Sekunden). */
+    const BREAKER_MAX_RETRY_AFTER = 900;
+
+    /** Fallback-Sperrzeit bei 429 ohne Retry-After-Header (Sekunden). */
+    const BREAKER_DEFAULT_RETRY_AFTER = 60;
+
     /** @var string */
     private $base_url;
 
@@ -14,6 +26,16 @@ class SMF_API {
 
     /** @var SMF_Cache */
     private $cache;
+
+    /**
+     * Ältester Zeitstempel, aus dem diese Instanz bereits Notreserve-Daten
+     * ausgeliefert hat - siehe stale_since(). Ein Shortcode macht oft
+     * mehrere Requests (z.B. Tabelle + Liganame); der Hinweis im Frontend
+     * soll den konservativsten (ältesten) Stand zeigen.
+     *
+     * @var int|null
+     */
+    private $stale_since = null;
 
     /**
      * @param string|null $base_url Optionale URL-Überschreibung (Sonderfälle/Tests)
@@ -51,12 +73,17 @@ class SMF_API {
     }
 
     /**
-     * Generischer GET-Request mit Caching
+     * Generischer GET-Request mit Caching, Fail-Fast-Timeout, Circuit
+     * Breaker und Stale-Fallback.
      *
      * @param string $endpoint
+     * @param bool   $mirror   Antwort zusätzlich in die Notreserve spiegeln
+     *                         (SMF_Cache::set()) - false bei Endpunkten mit
+     *                         personenbezogenen Daten oder unverhältnis-
+     *                         mäßig großen Antworten, siehe Aufrufstellen.
      * @return array|WP_Error
      */
-    private function request( $endpoint ) {
+    private function request( $endpoint, $mirror = true ) {
         $url    = $this->base_url . '/' . ltrim( $endpoint, '/' );
         $cached = $this->cache->get( $url );
 
@@ -64,8 +91,29 @@ class SMF_API {
             return $cached;
         }
 
+        $host = $this->get_host();
+
+        // Kern der Ausfallsicherheit: Ist der Breaker für diesen Host offen,
+        // wird gar nicht erst versucht, eine Verbindung aufzubauen. Nur der
+        // erste Request während eines Ausfalls kostet Zeit, alle folgenden
+        // Shortcodes auf derselben Seite kosten nichts.
+        if ( $this->breaker_is_open( $host ) ) {
+            return $this->stale_or_error( $url, 0, 'Breaker offen für ' . $host );
+        }
+
+        // Nur zum Testen des Ausfallverhaltens (siehe README/CHANGELOG),
+        // bewusst keine Backend-Option: greift ausschließlich bei
+        // WP_DEBUG === true und einer ausdrücklichen Konstante bzw. einem
+        // Filter, damit niemand versehentlich einen echten Ausfall simuliert.
+        if ( self::is_outage_simulated() ) {
+            $this->breaker_record_failure( $host );
+            return $this->stale_or_error( $url, 0, 'Simulierter Ausfall (SMF_SIMULATE_OUTAGE)' );
+        }
+
+        $timeout = max( 2, (int) get_option( 'smf_api_timeout', 6 ) );
+
         $args = array(
-            'timeout'    => 15,
+            'timeout'    => $timeout,
             'user-agent' => 'WordPress/SMF-Plugin ' . SMF_VERSION,
         );
 
@@ -78,11 +126,36 @@ class SMF_API {
         $response = wp_remote_get( $url, $args );
 
         if ( is_wp_error( $response ) ) {
-            return $response;
+            $this->breaker_record_failure( $host );
+            return $this->stale_or_error( $url, 0, $response->get_error_message() );
         }
 
         $code = wp_remote_retrieve_response_code( $response );
+
+        if ( $code === 429 ) {
+            // Ratelimit hängt an unserem Key - abwarten statt sofort erneut
+            // zu versuchen. Retry-After ist serverseitig vorgegeben, wird
+            // aber gegen Missbrauch/fehlerhafte Header begrenzt.
+            $retry_after = (int) wp_remote_retrieve_header( $response, 'retry-after' );
+            $retry_after = $retry_after > 0
+                ? min( self::BREAKER_MAX_RETRY_AFTER, $retry_after )
+                : self::BREAKER_DEFAULT_RETRY_AFTER;
+
+            $this->breaker_record_failure( $host, $retry_after );
+            return $this->stale_or_error( $url, 429, "HTTP 429 für $url, Sperre für {$retry_after}s" );
+        }
+
+        if ( $code >= 500 ) {
+            $this->breaker_record_failure( $host );
+            return $this->stale_or_error( $url, $code );
+        }
+
         if ( $code !== 200 ) {
+            // 4xx außer 429: Konfigurationsfehler (z.B. falsche Liga-ID,
+            // fehlender Key). Löst den Breaker bewusst NICHT aus, sonst
+            // blockiert eine einzelne falsche ID alle anderen Abfragen
+            // über denselben Host. Kein Stale-Fallback - eine falsche ID
+            // bleibt falsch, egal wie alt die gespiegelten Daten sind.
             return new WP_Error( 'api_error', "API Fehler: HTTP $code für $url" );
         }
 
@@ -101,8 +174,169 @@ class SMF_API {
             return new WP_Error( 'json_error', 'Ungültige JSON-Antwort von: ' . $url );
         }
 
-        $this->cache->set( $url, $data );
+        $this->breaker_reset( $host );
+        $this->cache->set( $url, $data, $mirror );
         return $data;
+    }
+
+    /**
+     * Host der Basis-URL für den Circuit Breaker. Bewusst der Host und
+     * nicht die volle URL - sonst würde der Breaker pro Endpunkt greifen
+     * und nie tatsächlich einen ganzen Ausfall abdecken.
+     *
+     * @return string
+     */
+    private function get_host() {
+        $parsed = wp_parse_url( $this->base_url );
+        return isset( $parsed['host'] ) && $parsed['host'] !== '' ? $parsed['host'] : $this->base_url;
+    }
+
+    /**
+     * @param string $host
+     * @return string
+     */
+    private function breaker_key( $host ) {
+        return 'smf_breaker_' . md5( $host );
+    }
+
+    /**
+     * @param string $host
+     * @return bool
+     */
+    private function breaker_is_open( $host ) {
+        $state = get_transient( $this->breaker_key( $host ) );
+        if ( ! is_array( $state ) || empty( $state['open_until'] ) ) {
+            return false;
+        }
+        return time() < (int) $state['open_until'];
+    }
+
+    /**
+     * Fehler für einen Host zählen und den Breaker ggf. öffnen.
+     *
+     * @param string   $host
+     * @param int|null $force_open_seconds Bei 429 direkt für diese Dauer öffnen
+     *                                     (Retry-After), statt erst nach
+     *                                     BREAKER_THRESHOLD Fehlern in Folge.
+     */
+    private function breaker_record_failure( $host, $force_open_seconds = null ) {
+        $key   = $this->breaker_key( $host );
+        $state = get_transient( $key );
+        if ( ! is_array( $state ) ) {
+            $state = array( 'failures' => 0, 'open_until' => 0 );
+        }
+
+        if ( $force_open_seconds !== null ) {
+            $state['failures']   = self::BREAKER_THRESHOLD;
+            $state['open_until'] = time() + $force_open_seconds;
+        } else {
+            $state['failures']++;
+            if ( $state['failures'] >= self::BREAKER_THRESHOLD ) {
+                $state['open_until'] = time() + self::BREAKER_COOLDOWN;
+            }
+        }
+
+        $ttl = max( self::BREAKER_COOLDOWN, $state['open_until'] - time() );
+        set_transient( $key, $state, $ttl );
+
+        update_option( 'smf_api_last_outage', time(), false );
+    }
+
+    /**
+     * @param string $host
+     */
+    private function breaker_reset( $host ) {
+        delete_transient( $this->breaker_key( $host ) );
+    }
+
+    /**
+     * Testschalter für Phase 5 (Verifikation): true, wenn ein Ausfall
+     * erzwungen werden soll, ohne auf einen echten warten zu müssen.
+     * Greift ausschließlich bei WP_DEBUG === true, zusätzlich entweder über
+     * die Konstante SMF_SIMULATE_OUTAGE (z.B. in wp-config.php) oder den
+     * Filter 'smf_simulate_outage'. Bewusst nicht als Backend-Option, damit
+     * das niemand versehentlich auf einer Live-Seite aktiviert.
+     *
+     * @return bool
+     */
+    private static function is_outage_simulated() {
+        if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
+            return false;
+        }
+        if ( defined( 'SMF_SIMULATE_OUTAGE' ) && SMF_SIMULATE_OUTAGE ) {
+            return true;
+        }
+        return (bool) apply_filters( 'smf_simulate_outage', false );
+    }
+
+    /**
+     * Aktueller Breaker-Zustand für den konfigurierten Host - für die
+     * Backend-Statusanzeige (SM Floorball -> Einstellungen).
+     *
+     * @return array{open: bool, open_until: int|null, host: string}
+     */
+    public static function get_breaker_status() {
+        $api   = new self();
+        $host  = $api->get_host();
+        $state = get_transient( $api->breaker_key( $host ) );
+
+        $open = is_array( $state ) && ! empty( $state['open_until'] ) && time() < (int) $state['open_until'];
+
+        return array(
+            'open'       => $open,
+            'open_until' => $open ? (int) $state['open_until'] : null,
+            'host'       => $host,
+        );
+    }
+
+    /**
+     * Liefert bei einem Fehler die Notreserve zurück, wenn vorhanden, sonst
+     * einen WP_Error. Der Fehlertext bleibt bewusst allgemein - technische
+     * Details (HTTP-Code, URL, Ursache) landen in den WP_Error-Daten, nicht
+     * in der für Besucher:innen sichtbaren Message (siehe SMF_Shortcodes,
+     * die daraus für Admins die Details, für alle anderen nur den
+     * allgemeinen Satz anzeigt).
+     *
+     * @param string      $url
+     * @param int         $code   HTTP-Code (0 = kein HTTP-Response, z.B. Netzwerkfehler oder offener Breaker)
+     * @param string|null $detail Technischer Zusatz für die WP_Error-Daten
+     * @return array|WP_Error
+     */
+    private function stale_or_error( $url, $code, $detail = null ) {
+        $stale = $this->cache->get_stale( $url );
+
+        if ( false !== $stale ) {
+            $this->stale_since = ( $this->stale_since === null )
+                ? $stale['time']
+                : min( $this->stale_since, $stale['time'] );
+            return $stale['data'];
+        }
+
+        $message = ( $code === 429 )
+            ? 'Der Saisonmanager-Server hat aktuell zu viele Anfragen erhalten. Bitte in Kürze erneut versuchen.'
+            : 'Der Saisonmanager-Server ist aktuell nicht erreichbar. Bitte später erneut versuchen.';
+
+        return new WP_Error(
+            'smf_api_unavailable',
+            $message,
+            array(
+                'http_code' => $code,
+                'url'       => $url,
+                'detail'    => $detail,
+            )
+        );
+    }
+
+    /**
+     * Ältester Zeitstempel, aus dem diese Instanz Notreserve-Daten
+     * ausgeliefert hat, oder null, wenn alle Antworten frisch waren. Erst
+     * nach dem letzten API-Aufruf eines Shortcodes lesen, nicht zwischen
+     * zwei Aufrufen - ein Shortcode macht oft mehrere Requests.
+     *
+     * @return int|null
+     */
+    public function stale_since() {
+        return $this->stale_since;
     }
 
     /** @return array|WP_Error */
@@ -115,9 +349,15 @@ class SMF_API {
         return $this->request( "leagues/{$league_id}/schedule.json" );
     }
 
-    /** @return array|WP_Error */
+    /**
+     * Kein Stale-Spiegel: Antwort enthält u.a. players[] und referees[]
+     * (Namen), wird ausschließlich per AJAX für das Spieldetail-Modal
+     * geladen und blockiert damit ohnehin keinen Seitenaufbau.
+     *
+     * @return array|WP_Error
+     */
     public function get_game( $game_id ) {
-        return $this->request( "games/{$game_id}.json" );
+        return $this->request( "games/{$game_id}.json", false );
     }
 
     /** @return array|WP_Error */
@@ -125,9 +365,16 @@ class SMF_API {
         return $this->request( "leagues/{$league_id}.json" );
     }
 
-    /** @return array|WP_Error */
+    /**
+     * Kein Stale-Spiegel: Antwort umfasst alle Ligen des Verbands und kann
+     * mehrere hundert KB groß werden - das gehört nicht als serialisierte
+     * Option dauerhaft in wp_options. Aktuell von keiner Aufrufstelle im
+     * Plugin genutzt.
+     *
+     * @return array|WP_Error
+     */
     public function get_leagues() {
-        return $this->request( 'leagues.json' );
+        return $this->request( 'leagues.json', false );
     }
 
     /**
@@ -150,24 +397,31 @@ class SMF_API {
      * Der Endpunktpfad ist über den Filter 'smf_scorer_endpoint' an dieser
      * einen Stelle austauschbar.
      *
+     * Kein Stale-Spiegel: "scorer" enthält Vor-/Nachnamen der Spieler:innen.
+     *
      * @param int $team_id
      * @return array|WP_Error
      */
     public function get_scorer( $team_id ) {
         $endpoint = apply_filters( 'smf_scorer_endpoint', "teams/{$team_id}/stats", (int) $team_id );
-        return $this->request( $endpoint );
+        return $this->request( $endpoint, false );
     }
 
     /**
      * Generischer, öffentlicher Zugriff auf beliebige (bekannte) Endpunkte -
      * für Hilfswerkzeuge wie SMF_TeamFinder, die keine eigene Wrapper-Methode
-     * rechtfertigen.
+     * rechtfertigen. Default kein Stale-Spiegel: die bisherigen Aufrufstellen
+     * (Team-Finder, Saison-Ermittlung über init.json) sind reine Admin-
+     * Werkzeuge, bei denen "Server aktuell nicht erreichbar, bitte später
+     * erneut versuchen" die richtige Antwort ist - keine Notreserve nötig,
+     * hält wp_options schlank.
      *
      * @param string $endpoint
+     * @param bool   $mirror
      * @return array|WP_Error
      */
-    public function get_raw( $endpoint ) {
-        return $this->request( $endpoint );
+    public function get_raw( $endpoint, $mirror = false ) {
+        return $this->request( $endpoint, $mirror );
     }
 
     /**
@@ -322,5 +576,13 @@ class SMF_API {
 
     public function flush_cache() {
         $this->cache->flush();
+    }
+
+    /**
+     * Löscht auch die Notreserve (Stufe 2) - nur für den ausdrücklichen
+     * "Cache vollständig zurücksetzen"-Knopf im Backend.
+     */
+    public function flush_all_cache() {
+        $this->cache->flush_all();
     }
 }

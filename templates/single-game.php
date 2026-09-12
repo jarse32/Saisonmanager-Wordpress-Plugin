@@ -2,7 +2,8 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 /**
  * Template: Einzelnes Spiel (nächstes / letztes)
- * Variablen: $game, $league_name, $label, $show_logos
+ * Variablen: $game, $league_name, $label, $show_logos,
+ *            $stale_since (int|null - siehe SMF_API::stale_since())
  */
 
 $api = new SMF_API();
@@ -115,6 +116,8 @@ if ( $show_logos ) {
     <?php endif; ?>
 
 </div>
+
+<?php echo SMF_Shortcodes::stale_notice( $stale_since ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- stale_notice() escapt bereits intern ?>
 
 <?php if ( ! defined( 'SMF_MODAL_RENDERED' ) ) : define( 'SMF_MODAL_RENDERED', true ); ?>
 <div id="smf-modal" class="smf-modal" role="dialog" aria-modal="true" style="display:none;">

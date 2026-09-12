@@ -64,8 +64,12 @@ class SMF_Scorer {
      *     @type int $anzahl Max. Zeilen, 0 = alle
      * }
      * @return array {
-     *     @type string     $status  'ok' | 'empty' | 'not_visible' | 'error'
-     *     @type string     $error   Fehlermeldung bei status 'error'
+     *     @type string       $status 'ok' | 'empty' | 'not_visible' | 'error'
+     *     @type WP_Error|string $error WP_Error bei status 'error' (leerer
+     *                                  String sonst) - der aufrufende Code
+     *                                  entscheidet rollenbasiert, wie viel
+     *                                  davon angezeigt wird, siehe
+     *                                  SMF_Shortcodes::error().
      *     @type array      $rows    Normalisierte, sortierte Zeilen (rank, first_name,
      *                               last_name, games, goals, assists, points, penalty_minutes)
      *     @type array      $columns Sichtbarkeit optionaler Spalten: goals, assists, penalty_minutes
@@ -89,7 +93,7 @@ class SMF_Scorer {
 
         if ( is_wp_error( $data ) ) {
             $result['status'] = 'error';
-            $result['error']  = $data->get_error_message();
+            $result['error']  = $data;
             return $result;
         }
 

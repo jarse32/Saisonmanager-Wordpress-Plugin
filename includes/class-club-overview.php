@@ -42,7 +42,19 @@ class SMF_ClubOverview {
      *
      * @param array $club    Vereins-Konfiguration (aus get_club())
      * @param int   $anzahl  Max. Spiele pro Kategorie
-     * @return array { upcoming: array, played: array }
+     * @return array {
+     *     @type array         $upcoming
+     *     @type array         $played
+     *     @type int|null      $stale_since         Ältester Notreserve-Zeitstempel
+     *                                               über alle Team-Requests, oder null
+     *     @type WP_Error|null $error               Gesetzt nur, wenn AUSNAHMSLOS alle
+     *                                               Teams gescheitert sind (weder frisch
+     *                                               noch Notreserve) - Aufrufer soll dann
+     *                                               einen Hinweis statt leerer Spalten zeigen.
+     *     @type int           $partial_error_count Anzahl gescheiterter Teams, wenn NICHT
+     *                                               alle gescheitert sind (Rest wird trotzdem
+     *                                               angezeigt, dazu ein dezenter Hinweis)
+     * }
      */
     public static function get_games( array $club, $anzahl = 4 ) {
         $team_ids = array();
@@ -66,12 +78,22 @@ class SMF_ClubOverview {
 
         $team_ids = array_values( array_unique( $team_ids ) );
 
-        $api       = new SMF_API();
-        $all_games = array();
+        $api        = new SMF_API();
+        $all_games  = array();
+        $team_count = count( $team_ids );
+        $fail_count = 0;
+        $last_error = null;
 
         foreach ( $team_ids as $team_id ) {
             $result = $api->get_team_matches( $team_id );
-            if ( is_wp_error( $result ) ) continue;
+            if ( is_wp_error( $result ) ) {
+                // Ein kaputtes Team soll die anderen nicht mitreißen - wird
+                // übersprungen, der Fehler aber mitgezählt und unten nach
+                // oben gereicht (siehe $error/$partial_error_count).
+                $fail_count++;
+                $last_error = $result;
+                continue;
+            }
 
             $matches = isset( $result['matches'] ) && is_array( $result['matches'] ) ? $result['matches'] : array();
             foreach ( $matches as &$game ) {
@@ -106,9 +128,19 @@ class SMF_ClubOverview {
         } );
         $played = array_slice( $played, 0, $anzahl );
 
+        // "Alle Teams gescheitert" nur, wenn überhaupt Teams konfiguriert
+        // waren - eine leere Team-Liste ist ein Konfigurationsproblem, kein
+        // Ausfall, und wird von SMF_Shortcodes weiterhin normal (leere
+        // Spalten) behandelt.
+        $all_failed = ( $team_count > 0 && $fail_count === $team_count );
+
         return array(
-            'upcoming' => $upcoming,
-            'played'   => $played,
+            'upcoming'             => $upcoming,
+            'played'               => $played,
+            // Erst hier, nach dem letzten get_team_matches()-Aufruf, lesen.
+            'stale_since'          => $api->stale_since(),
+            'error'                => $all_failed ? $last_error : null,
+            'partial_error_count'  => ( ! $all_failed && $fail_count > 0 ) ? $fail_count : 0,
         );
     }
 }
