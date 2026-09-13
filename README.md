@@ -142,11 +142,11 @@ Anfragen an den Verbandsserver.
 
 | Shortcode | Beschreibung | Wichtigste Parameter |
 |---|---|---|
-| `[sm_tabelle liga_id="123"]` | Liga-Tabelle | `liga_id`, `titel`, `logos` |
-| `[sm_spiele liga_id="123"]` | Spielplan einer Liga | `liga_id`, `anzahl`, `team`, `modus` (`alle`/`vergangen`/`kommend`), `titel`, `logos` |
-| `[sm_naechstes_spiel liga_id="123"]` | Nächstes kommendes Spiel | `liga_id`, `team`, `logos` |
-| `[sm_letztes_spiel liga_id="123"]` | Letztes gespieltes Spiel | `liga_id`, `team`, `logos` |
-| `[sm_vereinsuebersicht verein="hannover"]` | Alle Spiele aller Teams eines Vereins | `verein` (Slug oder Name), `anzahl` |
+| `[sm_tabelle liga_id="123"]` | Liga-Tabelle | `liga_id`, `titel`, `logos`, `logo_groesse` |
+| `[sm_spiele liga_id="123"]` | Spielplan einer Liga | `liga_id`, `anzahl`, `team`, `modus` (`alle`/`vergangen`/`kommend`), `titel`, `logos`, `namen`, `logo_groesse` |
+| `[sm_naechstes_spiel liga_id="123"]` | Nächstes kommendes Spiel | `liga_id`, `team`, `logos`, `namen`, `logo_groesse` |
+| `[sm_letztes_spiel liga_id="123"]` | Letztes gespieltes Spiel | `liga_id`, `team`, `logos`, `namen`, `logo_groesse` |
+| `[sm_vereinsuebersicht verein="hannover"]` | Alle Spiele aller Teams eines Vereins | `verein` (Slug oder Name), `anzahl`, `namen`, `logo_groesse` |
 | `[sm_scorer team_id="6754"]` | Scorerliste (Punkteliste) eines Teams | `team_id` (Pflicht), `anzahl`, `spalten` (`voll`/`kompakt`), `namen` (`voll`/`abgekuerzt`), `titel`, `summe` |
 
 Die `liga_id`/`team_id` findest du über den Team-Finder oder den "Teams
@@ -156,6 +156,35 @@ Vollständige Referenz direkt in der Admin-Oberfläche unter
 Klarnamen von Spieler:innen an – siehe
 [Personenbezogene Daten](#personenbezogene-daten) weiter unten, bevor du
 den Shortcode einsetzt.
+
+### Teamnamen und Logogröße
+
+`namen` (`true`/`false`, Standard `true`) und `logo_groesse` (`klein`/
+`mittel`/`gross`/`sehr_gross`, Standard `mittel`) steuern die Darstellung bei
+`sm_spiele`, `sm_naechstes_spiel`, `sm_letztes_spiel` und
+`sm_vereinsuebersicht`. `mittel` entspricht exakt der bisherigen Größe,
+bestehende Einbettungen ohne diese Attribute sehen unverändert aus.
+
+`sm_tabelle` kennt nur `logo_groesse`, kein `namen` – die Ligatabelle listet
+üblicherweise viele verschiedene Vereine statt mehrerer Teams desselben
+Vereins, ein Ausblenden des Namens brächte dort keinen Nutzen.
+
+Ist `logos="false"` gesetzt, wird `namen` unabhängig vom übergebenen Wert auf
+`true` erzwungen – sonst wäre die Begegnung ohne Logo und ohne Namen leer.
+Unabhängig davon bleibt der Name pro Team auch bei `namen="false"` sichtbar,
+wenn für genau dieses eine Team kein Logo vorliegt.
+
+**Wichtig bei mehreren eigenen Teams mit demselben Vereinslogo** (z.B. 1. und
+2. Mannschaft): `namen="false"` macht solche Begegnungen am identischen Logo
+nicht mehr unterscheidbar – das Attribut eignet sich nur, wenn die
+gegenüberstehenden Teams tatsächlich unterschiedliche Logos haben. Für den
+Fall gleicher Vereinslogos wurde stattdessen das Abschneiden langer
+Teamnamen (z.B. „TV Eiche Horn…") in `sm_spiele` und `sm_vereinsuebersicht`
+entfernt – Namen brechen jetzt mehrzeilig um, statt per Ellipsis
+abgeschnitten zu werden.
+
+Beispiel für eine Startseite mit größeren Logos:
+`[sm_vereinsuebersicht verein="hannover" logo_groesse="gross"]`
 
 ## Hooks für Theme-Entwickler:innen
 
