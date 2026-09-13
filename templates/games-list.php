@@ -5,6 +5,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  * Variablen: $games (array), $league_name (string), $show_title (bool), $modus (string),
  *            $show_logos (bool), $show_names (bool),
  *            $logo_size_class (string, siehe SMF_Shortcodes::logo_size_class()),
+ *            $hervorheben (string, Rohwert des Attributs),
+ *            $own_team_ids (int[], siehe SMF_Highlight::get_own_team_ids()),
  *            $stale_since (int|null - siehe SMF_API::stale_since())
  *
  * $show_names ist der globale Schalter aus dem namen-Attribut, pro Team
@@ -14,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  *
  * Saisonmanager API Feldnamen:
  *   game_id, date (YYYY-MM-DD), time (HH:MM), game_day,
- *   home_team_name, guest_team_name,
+ *   home_team_id, guest_team_id, home_team_name, guest_team_name,
  *   result.home_goals, result.guest_goals,
  *   arena_name, ended, started
  */
@@ -67,6 +69,11 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : smf_labe
                 // ein Logo da ist - sonst stünde in der Karte nichts.
                 $show_home_name = $show_names || ! $home_logo;
                 $show_away_name = $show_names || ! $away_logo;
+
+                $home_team_id = isset( $game['home_team_id'] )  ? (int) $game['home_team_id']  : 0;
+                $away_team_id = isset( $game['guest_team_id'] ) ? (int) $game['guest_team_id'] : 0;
+                $home_is_own  = SMF_Highlight::should_highlight( $home_team_id, $home_name, $hervorheben, $own_team_ids );
+                $away_is_own  = SMF_Highlight::should_highlight( $away_team_id, $away_name, $hervorheben, $own_team_ids );
             ?>
 
                 <div class="smf-game-card<?php echo $has_result ? ' smf-game--played' : ' smf-game--upcoming'; ?>"
@@ -102,7 +109,7 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : smf_labe
                     <!-- Spielergebnis / Matchup -->
                     <div class="smf-game-matchup">
                         <!-- Home: Name links, Logo rechts (nah am Score) -->
-                        <div class="smf-game-team smf-game-team--home">
+                        <div class="smf-game-team smf-game-team--home<?php echo $home_is_own ? ' smf-game-team--own' : ''; ?>">
                             <?php if ( $show_home_name ) : ?>
                                 <span class="smf-team-name"><?php echo esc_html( $home_name ); ?></span>
                             <?php endif; ?>
@@ -111,6 +118,9 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : smf_labe
                                      alt="<?php echo esc_attr( $home_name ); ?>"
                                      <?php if ( ! $show_home_name ) : ?>title="<?php echo esc_attr( $home_name ); ?>"<?php endif; ?>
                                      class="smf-game-team-logo" loading="lazy">
+                            <?php endif; ?>
+                            <?php if ( $home_is_own ) : ?>
+                                <span class="smf-visually-hidden"><?php echo esc_html( smf_label( 'own_team_label', ' (eigenes Team)' ) ); ?></span>
                             <?php endif; ?>
                         </div>
 
@@ -123,7 +133,7 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : smf_labe
                         </div>
 
                         <!-- Away: Logo links (nah am Score), Name rechts -->
-                        <div class="smf-game-team smf-game-team--away">
+                        <div class="smf-game-team smf-game-team--away<?php echo $away_is_own ? ' smf-game-team--own' : ''; ?>">
                             <?php if ( $away_logo ) : ?>
                                 <img src="<?php echo esc_url( $away_logo ); ?>"
                                      alt="<?php echo esc_attr( $away_name ); ?>"
@@ -132,6 +142,9 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : smf_labe
                             <?php endif; ?>
                             <?php if ( $show_away_name ) : ?>
                                 <span class="smf-team-name"><?php echo esc_html( $away_name ); ?></span>
+                            <?php endif; ?>
+                            <?php if ( $away_is_own ) : ?>
+                                <span class="smf-visually-hidden"><?php echo esc_html( smf_label( 'own_team_label', ' (eigenes Team)' ) ); ?></span>
                             <?php endif; ?>
                         </div>
                     </div>

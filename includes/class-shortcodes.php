@@ -22,7 +22,7 @@ class SMF_Shortcodes {
     }
 
     // ----------------------------------------------------------------
-    // [sm_tabelle liga_id="123" titel="true" logo_groesse="mittel"]
+    // [sm_tabelle liga_id="123" titel="true" logo_groesse="mittel" hervorheben=""]
     // ----------------------------------------------------------------
     public function shortcode_tabelle( $atts ) {
         $atts = shortcode_atts( array(
@@ -30,6 +30,7 @@ class SMF_Shortcodes {
             'titel'        => 'true',
             'logos'        => 'false',
             'logo_groesse' => 'mittel',
+            'hervorheben'  => '',
         ), $atts, 'sm_tabelle' );
 
         $liga_id = (int) $atts['liga_id'];
@@ -59,13 +60,15 @@ class SMF_Shortcodes {
             'show_title'      => $atts['titel'] !== 'false',
             'show_logos'      => $atts['logos'] === 'true',
             'logo_size_class' => self::logo_size_class( $atts['logo_groesse'] ),
+            'hervorheben'     => $atts['hervorheben'],
+            'own_team_ids'    => SMF_Highlight::get_own_team_ids(),
             'stale_since'     => $stale_since,
         ) );
         return ob_get_clean();
     }
 
     // ----------------------------------------------------------------
-    // [sm_spiele liga_id="123" anzahl="10" team="Eichehorn" modus="alle|vergangen|kommend" namen="true" logo_groesse="mittel"]
+    // [sm_spiele liga_id="123" anzahl="10" team="Eichehorn" modus="alle|vergangen|kommend" namen="true" logo_groesse="mittel" hervorheben=""]
     // ----------------------------------------------------------------
     public function shortcode_spiele( $atts ) {
         $atts = shortcode_atts( array(
@@ -77,6 +80,7 @@ class SMF_Shortcodes {
             'logos'        => 'false',
             'namen'        => 'true',
             'logo_groesse' => 'mittel',
+            'hervorheben'  => '',
         ), $atts, 'sm_spiele' );
 
         $liga_id = (int) $atts['liga_id'];
@@ -132,13 +136,21 @@ class SMF_Shortcodes {
             'show_logos'      => $show_logos,
             'show_names'      => $show_names,
             'logo_size_class' => self::logo_size_class( $atts['logo_groesse'] ),
+            'hervorheben'     => $atts['hervorheben'],
+            'own_team_ids'    => SMF_Highlight::get_own_team_ids(),
             'stale_since'     => $stale_since,
         ) );
         return ob_get_clean();
     }
 
     // ----------------------------------------------------------------
-    // [sm_naechstes_spiel liga_id="123" team="Eichehorn" namen="true" logo_groesse="mittel"]
+    // [sm_naechstes_spiel liga_id="123" team="Eichehorn" namen="true" logo_groesse="mittel" hervorheben=""]
+    //
+    // hervorheben wird akzeptiert (kein Fehlerkasten bei Verwendung), hat
+    // hier aber bewusst KEINEN sichtbaren Effekt: Die Karte zeigt ohnehin
+    // nur zwei Teams gleichzeitig, "eins davon eigen" hat hier keinen
+    // Unterscheidungswert wie in Tabelle/Spielplan (siehe README/
+    // Shortcode-Referenz).
     // ----------------------------------------------------------------
     public function shortcode_naechstes_spiel( $atts ) {
         $atts = shortcode_atts( array(
@@ -147,6 +159,7 @@ class SMF_Shortcodes {
             'logos'        => 'true',
             'namen'        => 'true',
             'logo_groesse' => 'mittel',
+            'hervorheben'  => '',
         ), $atts, 'sm_naechstes_spiel' );
 
         $liga_id = (int) $atts['liga_id'];
@@ -195,7 +208,10 @@ class SMF_Shortcodes {
     }
 
     // ----------------------------------------------------------------
-    // [sm_letztes_spiel liga_id="123" team="Eichehorn" namen="true" logo_groesse="mittel"]
+    // [sm_letztes_spiel liga_id="123" team="Eichehorn" namen="true" logo_groesse="mittel" hervorheben=""]
+    //
+    // hervorheben wird akzeptiert, hat aber bewusst keinen sichtbaren
+    // Effekt - siehe Begründung bei shortcode_naechstes_spiel() oben.
     // ----------------------------------------------------------------
     public function shortcode_letztes_spiel( $atts ) {
         $atts = shortcode_atts( array(
@@ -204,6 +220,7 @@ class SMF_Shortcodes {
             'logos'        => 'true',
             'namen'        => 'true',
             'logo_groesse' => 'mittel',
+            'hervorheben'  => '',
         ), $atts, 'sm_letztes_spiel' );
 
         $liga_id = (int) $atts['liga_id'];
@@ -252,7 +269,14 @@ class SMF_Shortcodes {
     }
 
     // ----------------------------------------------------------------
-    // [sm_vereinsuebersicht verein="hannover" anzahl="4" namen="true" logo_groesse="mittel"]
+    // [sm_vereinsuebersicht verein="hannover" anzahl="4" namen="true" logo_groesse="mittel" hervorheben="false"]
+    //
+    // hervorheben ist hier standardmäßig false: Anders als bei Tabelle/
+    // Spielplan ist in der Vereinsübersicht ohnehin JEDES Spiel eins der
+    // eigenen Teams, eine Markierung auf allen Karten wäre Dekoration ohne
+    // Informationswert. Explizit auf eine einzelne Team-ID/ein
+    // Namensfragment gesetzt, funktioniert es trotzdem (z.B. um auf einer
+    // Seite nur für die 1. Mannschaft nach eigenen Teams zu suchen).
     // ----------------------------------------------------------------
     public function shortcode_vereinsuebersicht( $atts ) {
         $atts = shortcode_atts( array(
@@ -260,6 +284,7 @@ class SMF_Shortcodes {
             'anzahl'       => 0,
             'namen'        => 'true',
             'logo_groesse' => 'mittel',
+            'hervorheben'  => 'false',
         ), $atts, 'sm_vereinsuebersicht' );
 
         $club = SMF_ClubOverview::get_club( $atts['verein'] );
@@ -301,6 +326,8 @@ class SMF_Shortcodes {
             'partial_error_count'  => $games['partial_error_count'],
             'show_names'           => $show_names,
             'logo_size_class'      => self::logo_size_class( $atts['logo_groesse'] ),
+            'hervorheben'          => $atts['hervorheben'],
+            'own_team_ids'         => SMF_Highlight::get_own_team_ids(),
         ) );
         return ob_get_clean();
     }

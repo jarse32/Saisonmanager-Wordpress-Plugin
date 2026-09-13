@@ -26,6 +26,26 @@
     --smf-color-text-muted:    #5a5a5a;
     --smf-color-on-primary:    var(--smf-color-surface);
     --smf-color-on-accent:     var(--smf-color-text);
+
+    /* Team-Highlighting (Attribut hervorheben): statischer Fallback für
+       Neuinstallationen ohne gespeicherte Design-Konfiguration. Der
+       tatsächliche Wert kommt aus SMF_Design::build_css() - --smf-color-
+       on-highlight ist dort gegen die tatsächliche color-mix()-Mischung
+       unten (nicht gegen die reine Akzentfarbe) kontraktgeprüft, siehe
+       SMF_Design::mix_hex(). --smf-highlight-tint-pct ist die EINZIGE
+       Quelle des Mischanteils - hier wie in build_css() 20%, sonst
+       driften PHP-Kontrastprüfung und CSS-Darstellung auseinander. */
+    --smf-color-on-highlight:  var(--smf-color-text);
+    --smf-highlight-tint-pct:  20%;
+    /* Einmalige Mischung statt Duplikat in .smf-row--own UND
+       .smf-game-team--own - erste Zeile ist der statische Fallback für
+       Browser ohne color-mix()-Unterstützung (Wert = das Ergebnis der
+       zweiten Zeile bei Standard-Akzent/-Oberfläche, siehe
+       tests/test-design-color-mix.php), zweite Zeile überschreibt ihn dort,
+       wo color-mix() verstanden wird. */
+    --smf-highlight-bg:        #fcedd6;
+    --smf-highlight-bg:        color-mix(in srgb, var(--smf-color-accent) var(--smf-highlight-tint-pct), var(--smf-color-surface));
+
     --smf-radius:              8px;
     --smf-fs-base:             16px;
     --smf-font:                inherit;
@@ -269,12 +289,48 @@
     text-align: left;
 }
 
+/* Immer reserviert (transparent), damit eine hervorgehobene Zeile keinen
+   Layout-Sprung gegenüber den anderen Zeilen verursacht - Farbe kommt erst
+   über .smf-row--own unten, analog zum border-left-Muster bei .smf-game-card. */
+.smf .smf-table-row td:first-child {
+    border-left: 4px solid transparent;
+}
+
 .smf-table-row.smf-row-even {
     background: var(--smf-color-surface-alt);
 }
 
+/* Team-Highlighting (Attribut hervorheben, siehe SMF_Highlight): drei
+   Merkmale gleichzeitig (Hintergrundton, Akzentbalken, fette Schrift beim
+   Teamnamen unten), keins davon allein über Farbe kodiert - bleibt auch bei
+   Farbfehlsichtigkeit/Graustufendruck erkennbar. Nach .smf-row-even, damit
+   das Highlight unabhängig davon gewinnt, ob die Zeile zufällig geradzahlig
+   ist (gleiche Spezifität, Reihenfolge entscheidet). */
+.smf-table-row.smf-row--own {
+    background: var(--smf-highlight-bg);
+    color: var(--smf-color-on-highlight);
+}
+
+.smf-table-row.smf-row--own td:first-child {
+    border-left-color: var(--smf-color-accent);
+}
+
+.smf-table-row.smf-row--own .smf-team-name {
+    font-weight: 700;
+}
+
 .smf-table-row:hover {
     background: var(--smf-color-hover);
+}
+
+/* Eigene, höher spezifische Regel statt !important: Hover muss auf einer
+   hervorgehobenen Zeile weiterhin spürbar sein, ohne die Markierung
+   auszulöschen - leichte Verschiebung Richtung Hover-Ton statt eines neuen,
+   ungeprüften Farbtons (die Kontrastprüfung für --smf-color-on-highlight
+   gilt für den Ruhezustand; die kurze Hover-Verschiebung bleibt nah genug
+   daran, um lesbar zu bleiben). */
+.smf-table-row.smf-row--own:hover {
+    background: color-mix(in srgb, var(--smf-highlight-bg) 70%, var(--smf-color-hover) 30%);
 }
 
 .smf-col-rank {
@@ -425,6 +481,26 @@
     font-weight: 700;
     font-size: calc(var(--smf-fs-base) * 1);
     color: var(--smf-color-text);
+}
+
+/* Team-Highlighting in der Spielkarte: NUR Tönung + fette Schrift, bewusst
+   ohne Akzentbalken - der linke Kartenrand ist bereits für den Spielstatus
+   (gespielt/anstehend/Hover) vergeben, siehe .smf-game-card oben, und ein
+   Balken am Away-Block läge ohnehin auf der falschen (linken statt
+   inneren) Seite. Beide Merkmale bleiben auch in Graustufen unterscheidbar. */
+.smf-game-team--own {
+    background: var(--smf-highlight-bg);
+    color: var(--smf-color-on-highlight);
+    border-radius: var(--smf-radius);
+    padding: 4px 8px;
+}
+
+.smf-game-team--own .smf-team-name {
+    /* .smf-team-name ist im Spielplan bereits regulär fett (700, siehe
+       oben) - 800 ist der einzige noch verfügbare Schritt und je nach
+       Schriftart nur ein dezenter Unterschied. Tönung trägt hier den
+       Hauptteil der Erkennbarkeit. */
+    font-weight: 800;
 }
 
 .smf-game-team-logo {
@@ -1188,6 +1264,23 @@
     filter: drop-shadow(0 1px 2px rgba(0,0,0,.12));
 }
 
+/* Team-Highlighting: Standard hier aus (siehe SMF_Shortcodes/Nicht-Ziele -
+   in der Vereinsübersicht ist ohnehin jedes Spiel eins der eigenen Teams),
+   aber technisch identisch zur Spielkarte nutzbar, wenn hervorheben explizit
+   genau EIN eigenes Team adressiert (z.B. auf einer Seite nur für die
+   1. Mannschaft). Gleiche zwei Merkmale, gleicher Grund gegen den
+   Akzentbalken wie bei .smf-game-team--own. */
+.smf-co-game__team--own {
+    background: var(--smf-highlight-bg);
+    color: var(--smf-color-on-highlight);
+    border-radius: var(--smf-radius);
+    padding: 3px 7px;
+}
+
+.smf-co-game__team--own .smf-co-game__name {
+    font-weight: 800;
+}
+
 .smf-co-game__name {
     /* Bewusste Abweichung von der bisherigen Darstellung: Namen brachen
        zuvor per Ellipsis ab ("TV Eiche Horn…"), jetzt umbrechen sie
@@ -1459,6 +1552,23 @@
     .smf-co-game__name {
         font-size: calc(var(--smf-fs-base) * 0.88);
     }
+}
+
+/* Nur für Screenreader: Äquivalent zum Team-Highlighting (Hintergrundton/
+   Fettschrift/Akzentbalken), das rein visuell keine neue Textinformation
+   ist. Eigene, plugin-scope Utility-Klasse statt der theme-abhängigen
+   WordPress-Konvention ".screen-reader-text" - die ist nicht auf jeder
+   Seite garantiert verfügbar (Theme-Stylesheet, nicht WP-Core-Frontend). */
+.smf-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 /* Pflicht-Quellenangabe (Saisonmanager-Nutzungsvereinbarung) - dezent, aber lesbar */

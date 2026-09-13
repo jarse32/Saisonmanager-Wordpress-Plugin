@@ -7,6 +7,9 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  *            SMF_ClubOverview::get_games()
  *            $show_names (bool), $logo_size_class (string, siehe
  *            SMF_Shortcodes::logo_size_class())
+ *            $hervorheben (string, Rohwert des Attributs - Standard "false",
+ *            siehe class-shortcodes.php), $own_team_ids (int[], siehe
+ *            SMF_Highlight::get_own_team_ids())
  *
  * Logos sind hier immer an (kein logos-Attribut, siehe class-shortcodes.php)
  * - $show_names pro Team daher nur maßgeblich, wenn für dieses Team
@@ -21,8 +24,10 @@ $api = new SMF_API();
  * @param array   $game
  * @param SMF_API $api
  * @param bool    $show_names
+ * @param string  $hervorheben
+ * @param int[]   $own_team_ids
  */
-$render_game = function ( array $game ) use ( $api, $show_names ) {
+$render_game = function ( array $game ) use ( $api, $show_names, $hervorheben, $own_team_ids ) {
     $game_id    = isset( $game['game_id'] )              ? $game['game_id']              : 0;
     $has_result = $api->has_result( $game );
     $date_ts    = $api->parse_game_date( $game );
@@ -40,6 +45,11 @@ $render_game = function ( array $game ) use ( $api, $show_names ) {
     // ist - sonst stünde in der Karte nichts.
     $show_home_name = $show_names || ! $home_logo;
     $show_away_name = $show_names || ! $away_logo;
+
+    $home_team_id = isset( $game['home_team_id'] )  ? (int) $game['home_team_id']  : 0;
+    $away_team_id = isset( $game['guest_team_id'] ) ? (int) $game['guest_team_id'] : 0;
+    $home_is_own  = SMF_Highlight::should_highlight( $home_team_id, $home_name, $hervorheben, $own_team_ids );
+    $away_is_own  = SMF_Highlight::should_highlight( $away_team_id, $away_name, $hervorheben, $own_team_ids );
 
     $card_class = 'smf-co-game' . ( $has_result ? ' smf-co-game--played' : ' smf-co-game--upcoming' );
     ?>
@@ -69,7 +79,7 @@ $render_game = function ( array $game ) use ( $api, $show_names ) {
         <!-- Matchup: Heimteam · Score/vs · Gastteam -->
         <div class="smf-co-game__matchup">
 
-            <div class="smf-co-game__team smf-co-game__team--home">
+            <div class="smf-co-game__team smf-co-game__team--home<?php echo $home_is_own ? ' smf-co-game__team--own' : ''; ?>">
                 <?php if ( $home_logo ) : ?>
                     <img src="<?php echo esc_url( $home_logo ); ?>"
                          alt="<?php echo esc_attr( $home_name ); ?>"
@@ -78,6 +88,9 @@ $render_game = function ( array $game ) use ( $api, $show_names ) {
                 <?php endif; ?>
                 <?php if ( $show_home_name ) : ?>
                     <span class="smf-co-game__name"><?php echo esc_html( $home_name ); ?></span>
+                <?php endif; ?>
+                <?php if ( $home_is_own ) : ?>
+                    <span class="smf-visually-hidden"><?php echo esc_html( smf_label( 'own_team_label', ' (eigenes Team)' ) ); ?></span>
                 <?php endif; ?>
             </div>
 
@@ -89,7 +102,7 @@ $render_game = function ( array $game ) use ( $api, $show_names ) {
                 <?php endif; ?>
             </div>
 
-            <div class="smf-co-game__team smf-co-game__team--away">
+            <div class="smf-co-game__team smf-co-game__team--away<?php echo $away_is_own ? ' smf-co-game__team--own' : ''; ?>">
                 <?php if ( $show_away_name ) : ?>
                     <span class="smf-co-game__name"><?php echo esc_html( $away_name ); ?></span>
                 <?php endif; ?>
@@ -98,6 +111,9 @@ $render_game = function ( array $game ) use ( $api, $show_names ) {
                          alt="<?php echo esc_attr( $away_name ); ?>"
                          <?php if ( ! $show_away_name ) : ?>title="<?php echo esc_attr( $away_name ); ?>"<?php endif; ?>
                          class="smf-co-game__logo" loading="lazy">
+                <?php endif; ?>
+                <?php if ( $away_is_own ) : ?>
+                    <span class="smf-visually-hidden"><?php echo esc_html( smf_label( 'own_team_label', ' (eigenes Team)' ) ); ?></span>
                 <?php endif; ?>
             </div>
 

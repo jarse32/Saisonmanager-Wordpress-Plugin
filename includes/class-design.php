@@ -22,6 +22,16 @@ class SMF_Design {
     const FONT_STACK_SYSTEM_SERIF = 'Georgia, "Times New Roman", Times, serif';
 
     /**
+     * Mischanteil der Akzentfarbe für den Team-Highlighting-Hintergrund
+     * (Rest = --smf-color-surface). EINZIGE Stelle, an der dieser Anteil
+     * definiert wird - style.css referenziert ihn ausschließlich über die
+     * CSS-Variable --smf-highlight-tint-pct (siehe build_css()), rechnet ihn
+     * nie selbst nach. So können PHP-Kontrastprüfung (mix_hex() + siehe
+     * unten) und CSS-color-mix() nicht auseinanderlaufen.
+     */
+    const HIGHLIGHT_TINT_PERCENT = 20;
+
+    /**
      * Erlaubte Basis-Schriftgrößen (px) für --smf-fs-base. Enum statt
      * Freitext/Slider, konsistent zur Schatten-Intensität - alle
      * font-size-Angaben im Stylesheet sind calc(var(--smf-fs-base) * Faktor),
@@ -254,6 +264,64 @@ class SMF_Design {
     }
 
     /**
+     * Bildet CSS' color-mix(in srgb, $hex_a $percent_a%, $hex_b) in PHP nach
+     * - NICHT um die Highlight-Farbe zu erzeugen (das bleibt CSS
+     * vorbehalten, siehe style.css), sondern um das Ergebnis für die
+     * Kontrastprüfung (relative_luminance()/contrast_var()) zu kennen, bevor
+     * der Browser es rendert.
+     *
+     * Wichtig: color-mix(in srgb, ...) interpoliert die gammakodierten gemäß
+     * sRGB (0-255 bzw. 0-1) direkt, OHNE Linearisierung - anders als die
+     * physikalisch korrekte Lichtmischung, die relative_luminance() für den
+     * WCAG-Kontrast verwendet. Ein channelweiser gewichteter Mittelwert der
+     * rohen Hex-Werte ist deshalb hier richtig, obwohl es im selben File
+     * eine linearisierende Funktion gibt, die für einen anderen Zweck
+     * (Kontrast) korrekt linearisiert.
+     *
+     * Gegen echtes Browser-Rendering verifiziert (Chrome, headless, per
+     * getComputedStyle) - siehe tests/test-design-color-mix.php für die
+     * exakten Vergleichswerte. Bei Änderung dieser Funktion diesen Test
+     * erneut laufen lassen.
+     *
+     * @param string $hex_a     z.B. Akzentfarbe
+     * @param string $hex_b     z.B. Oberflächenfarbe
+     * @param float  $percent_a Anteil von $hex_a in Prozent (0-100)
+     * @return string Hex-Wert, z.B. "#a1b2c3"
+     */
+    public static function mix_hex( string $hex_a, string $hex_b, float $percent_a ): string {
+        $a = self::hex_to_rgb( $hex_a );
+        $b = self::hex_to_rgb( $hex_b );
+        $p = max( 0, min( 100, $percent_a ) ) / 100;
+
+        $mixed = array();
+        foreach ( array( 0, 1, 2 ) as $i ) {
+            $mixed[ $i ] = (int) round( $a[ $i ] * $p + $b[ $i ] * ( 1 - $p ) );
+        }
+
+        return sprintf( '#%02x%02x%02x', $mixed[0], $mixed[1], $mixed[2] );
+    }
+
+    /**
+     * @param string $hex
+     * @return int[] [r, g, b], je 0-255. Ungültige Werte -> [0, 0, 0]
+     *               (mix_hex() bekommt dann konsequent die andere Farbe).
+     */
+    private static function hex_to_rgb( string $hex ): array {
+        $hex = ltrim( $hex, '#' );
+        if ( strlen( $hex ) === 3 ) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        if ( strlen( $hex ) !== 6 || ! ctype_xdigit( $hex ) ) {
+            return array( 0, 0, 0 );
+        }
+        return array(
+            hexdec( substr( $hex, 0, 2 ) ),
+            hexdec( substr( $hex, 2, 2 ) ),
+            hexdec( substr( $hex, 4, 2 ) ),
+        );
+    }
+
+    /**
      * Liefert den CSS-Wert (Referenz auf ein bestehendes Token, keine neue
      * Farbe) für hellen/dunklen Text auf einer farbigen Fläche.
      *
@@ -332,11 +400,22 @@ class SMF_Design {
          */
         $primary = self::safe_hex( $cfg['color_primary'], $defaults['color_primary'] );
         $accent  = self::safe_hex( $cfg['color_accent'], $defaults['color_accent'] );
+        $surface = self::safe_hex( $cfg['color_surface'], $defaults['color_surface'] );
+
+        /*
+         * Team-Highlighting-Hintergrund: wird in CSS per color-mix() aus
+         * Akzentfarbe + Oberfläche gemischt (siehe style.css, .smf-row--own/
+         * .smf-game-team--own) - hier nur zur Kontrastprüfung nachgerechnet
+         * (mix_hex(), siehe dort), nicht als eigentliche Darstellungsfarbe.
+         * --smf-highlight-tint-pct ist die EINZIGE Quelle des Mischanteils,
+         * CSS liest ihn nur, definiert ihn nicht erneut.
+         */
+        $highlight_bg = self::mix_hex( $accent, $surface, self::HIGHLIGHT_TINT_PERCENT );
 
         $vars = array(
             '--smf-color-primary'       => $primary,
             '--smf-color-accent'        => $accent,
-            '--smf-color-surface'       => self::safe_hex( $cfg['color_surface'], $defaults['color_surface'] ),
+            '--smf-color-surface'       => $surface,
             '--smf-color-surface-alt'   => self::safe_hex( $cfg['color_surface_alt'], $defaults['color_surface_alt'] ),
             '--smf-color-border'        => self::safe_hex( $cfg['color_border'], $defaults['color_border'] ),
             '--smf-color-border-strong' => self::safe_hex( $cfg['color_border_strong'], $defaults['color_border_strong'] ),
@@ -344,6 +423,8 @@ class SMF_Design {
             '--smf-color-text-muted'    => self::safe_hex( $cfg['color_text_muted'], $defaults['color_text_muted'] ),
             '--smf-color-on-primary'    => self::contrast_var( $primary, $cfg['contrast_on_primary'] ),
             '--smf-color-on-accent'     => self::contrast_var( $accent, $cfg['contrast_on_accent'] ),
+            '--smf-color-on-highlight'  => self::contrast_var( $highlight_bg, 'auto' ),
+            '--smf-highlight-tint-pct'  => self::HIGHLIGHT_TINT_PERCENT . '%',
             '--smf-radius'              => self::safe_radius( $cfg['radius'], $defaults['radius'] ) . 'px',
             '--smf-fs-base'             => self::safe_font_size( $cfg['font_size'], $defaults['font_size'] ) . 'px',
             '--smf-font'                => self::resolve_font( $cfg['font_mode'], $cfg['font_custom'] ),

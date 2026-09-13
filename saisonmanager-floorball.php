@@ -3,7 +3,7 @@
  * Plugin Name: SM Floorball
  * Plugin URI:  https://github.com/jarse32/Saisonmanager-Wordpress-Plugin
  * Description: Zeigt Floorball-Spiele, Tabellen und Ligen aus der Saisonmanager-API via Shortcodes an. Inoffizielles Community-Projekt, nicht von Saisonmanager/FVD betrieben.
- * Version:     1.5.0
+ * Version:     1.6.0
  * Author:      Kasche
  * Text Domain: saisonmanager-floorball
  * License:     GPL-2.0+
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'SMF_VERSION', '1.5.0' );
+define( 'SMF_VERSION', '1.6.0' );
 define( 'SMF_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SMF_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -22,6 +22,7 @@ require_once SMF_PLUGIN_DIR . 'includes/class-api.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-design.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-team-finder.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-club-overview.php';
+require_once SMF_PLUGIN_DIR . 'includes/class-highlight.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-scorer.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-shortcodes.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-admin.php';

@@ -31,6 +31,59 @@ class SMF_ClubOverview {
     }
 
     /**
+     * Team-IDs eines einzelnen Vereins ermitteln (siehe get_games() für die
+     * Herkunft der beiden Quellen). Eigenständige Methode, weil auch
+     * SMF_Highlight::get_own_team_ids() genau diese Liste braucht, nur über
+     * alle konfigurierten Vereine hinweg (siehe get_all_own_team_ids()).
+     *
+     * @param array $club Vereins-Konfiguration (aus get_club())
+     * @return int[]
+     */
+    public static function get_team_ids_for_club( array $club ): array {
+        $team_ids = array();
+
+        $club_id = (int) ( isset( $club['club_id'] ) ? $club['club_id'] : 0 );
+        if ( $club_id ) {
+            $cache = get_option( 'smf_club_teams_cache', array() );
+            $cached_teams = isset( $cache[ $club_id ]['teams'] ) && is_array( $cache[ $club_id ]['teams'] )
+                ? $cache[ $club_id ]['teams']
+                : array();
+            foreach ( $cached_teams as $team ) {
+                $id = isset( $team['id'] ) ? (int) $team['id'] : 0;
+                if ( $id ) $team_ids[] = $id;
+            }
+        }
+
+        foreach ( ( isset( $club['teams'] ) ? $club['teams'] : array() ) as $team_cfg ) {
+            $id = isset( $team_cfg['team_id'] ) ? (int) $team_cfg['team_id'] : 0;
+            if ( $id ) $team_ids[] = $id;
+        }
+
+        return array_values( array_unique( $team_ids ) );
+    }
+
+    /**
+     * Team-IDs ALLER konfigurierten Vereine, zusammengeführt - Grundlage für
+     * die Automatik des Team-Highlightings (SMF_Highlight::should_highlight()),
+     * wenn das hervorheben-Attribut nichts anderes vorgibt. Keine
+     * zusätzlichen API-Aufrufe: nutzt ausschließlich bereits gespeicherte
+     * Optionen (smf_vereine, smf_club_teams_cache).
+     *
+     * @return int[]
+     */
+    public static function get_all_own_team_ids(): array {
+        $vereine  = get_option( 'smf_vereine', array() );
+        $team_ids = array();
+
+        foreach ( $vereine as $club ) {
+            if ( ! is_array( $club ) ) continue;
+            $team_ids = array_merge( $team_ids, self::get_team_ids_for_club( $club ) );
+        }
+
+        return array_values( array_unique( $team_ids ) );
+    }
+
+    /**
      * Alle Spiele eines Vereins laden, aufgeteilt in upcoming/played.
      *
      * Team-IDs kommen aus zwei Quellen, die vereinigt werden:
@@ -57,26 +110,7 @@ class SMF_ClubOverview {
      * }
      */
     public static function get_games( array $club, $anzahl = 4 ) {
-        $team_ids = array();
-
-        $club_id = (int) ( isset( $club['club_id'] ) ? $club['club_id'] : 0 );
-        if ( $club_id ) {
-            $cache = get_option( 'smf_club_teams_cache', array() );
-            $cached_teams = isset( $cache[ $club_id ]['teams'] ) && is_array( $cache[ $club_id ]['teams'] )
-                ? $cache[ $club_id ]['teams']
-                : array();
-            foreach ( $cached_teams as $team ) {
-                $id = isset( $team['id'] ) ? (int) $team['id'] : 0;
-                if ( $id ) $team_ids[] = $id;
-            }
-        }
-
-        foreach ( ( isset( $club['teams'] ) ? $club['teams'] : array() ) as $team_cfg ) {
-            $id = isset( $team_cfg['team_id'] ) ? (int) $team_cfg['team_id'] : 0;
-            if ( $id ) $team_ids[] = $id;
-        }
-
-        $team_ids = array_values( array_unique( $team_ids ) );
+        $team_ids = self::get_team_ids_for_club( $club );
 
         $api        = new SMF_API();
         $all_games  = array();

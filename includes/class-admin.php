@@ -720,7 +720,9 @@ class SMF_Admin {
                                 <td>Liga-Tabelle anzeigen</td>
                                 <td>
                                     <code>liga_id</code>, <code>titel</code>, <code>logos</code> (true/false, Standard: false),
-                                    <code>logo_groesse</code> (klein/mittel/gross/sehr_gross, Standard: mittel)
+                                    <code>logo_groesse</code> (klein/mittel/gross/sehr_gross, Standard: mittel),
+                                    <code>hervorheben</code> (leer = eigene Vereine automatisch, <code>false</code> = aus,
+                                    Team-ID/Namensfragment = genau dieses Team)
                                 </td>
                             </tr>
                             <tr>
@@ -730,7 +732,9 @@ class SMF_Admin {
                                     <code>liga_id</code>, <code>anzahl</code>, <code>team</code>, <code>modus</code> (alle/vergangen/kommend),
                                     <code>titel</code>, <code>logos</code> (true/false, Standard: false),
                                     <code>namen</code> (true/false, Standard: true), <code>logo_groesse</code>
-                                    (klein/mittel/gross/sehr_gross, Standard: mittel)
+                                    (klein/mittel/gross/sehr_gross, Standard: mittel), <code>hervorheben</code>
+                                    (leer = eigene Vereine automatisch, <code>false</code> = aus,
+                                    Team-ID/Namensfragment = genau dieses Team)
                                 </td>
                             </tr>
                             <tr>
@@ -739,7 +743,9 @@ class SMF_Admin {
                                 <td>
                                     <code>liga_id</code>, <code>team</code>, <code>logos</code> (true/false, Standard: true),
                                     <code>namen</code> (true/false, Standard: true), <code>logo_groesse</code>
-                                    (klein/mittel/gross/sehr_gross, Standard: mittel)
+                                    (klein/mittel/gross/sehr_gross, Standard: mittel). <code>hervorheben</code> wird
+                                    akzeptiert, hat hier aber keinen sichtbaren Effekt (nur zwei Teams gleichzeitig,
+                                    kein "unter vielen" wie bei Tabelle/Spielplan)
                                 </td>
                             </tr>
                             <tr>
@@ -748,7 +754,8 @@ class SMF_Admin {
                                 <td>
                                     <code>liga_id</code>, <code>team</code>, <code>logos</code> (true/false, Standard: true),
                                     <code>namen</code> (true/false, Standard: true), <code>logo_groesse</code>
-                                    (klein/mittel/gross/sehr_gross, Standard: mittel)
+                                    (klein/mittel/gross/sehr_gross, Standard: mittel). <code>hervorheben</code> wird
+                                    akzeptiert, hat hier aber keinen sichtbaren Effekt (wie bei <code>sm_naechstes_spiel</code>)
                                 </td>
                             </tr>
                             <tr>
@@ -757,7 +764,10 @@ class SMF_Admin {
                                 <td>
                                     <code>verein</code> (Slug oder Name, Standard: erster Verein), <code>anzahl</code>
                                     (überschreibt Backend-Einstellung), <code>namen</code> (true/false, Standard: true),
-                                    <code>logo_groesse</code> (klein/mittel/gross/sehr_gross, Standard: mittel)
+                                    <code>logo_groesse</code> (klein/mittel/gross/sehr_gross, Standard: mittel),
+                                    <code>hervorheben</code> (Standard: <code>false</code> - hier ist ohnehin jedes
+                                    Spiel eins der eigenen Teams; per Team-ID/Namensfragment trotzdem gezielt
+                                    nutzbar, z.B. um nur die 1. Mannschaft zu markieren)
                                 </td>
                             </tr>
                             <tr>
@@ -780,6 +790,13 @@ class SMF_Admin {
                     </p>
                     <p class="description">
                         Beispiel: <code>[sm_scorer team_id="6754" anzahl="10" spalten="kompakt" namen="abgekuerzt"]</code>
+                    </p>
+                    <p class="description">
+                        Normalfall Team-Highlighting: <code>[sm_tabelle liga_id="123"]</code> ohne
+                        <code>hervorheben</code> markiert automatisch die Zeile(n) der oben konfigurierten Vereine -
+                        kein zusätzliches Attribut nötig. Für eine Seite, die nur die 1. Mannschaft markieren soll
+                        (z.B. wenn mehrere eigene Teams in dieselbe Tabelle einsortiert sind), stattdessen die
+                        konkrete Team-ID setzen: <code>[sm_tabelle liga_id="123" hervorheben="9667"]</code>.
                     </p>
                     <p class="description">
                         Beispiel für eine Startseite mit größeren Logos:

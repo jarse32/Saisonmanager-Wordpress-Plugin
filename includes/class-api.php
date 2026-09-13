@@ -566,12 +566,29 @@ class SMF_API {
      * @return array
      */
     public function filter_by_team( $games, $team_name ) {
-        $needle = strtolower( trim( $team_name ) );
-        return array_values( array_filter( $games, function( $game ) use ( $needle ) {
-            $home  = strtolower( isset( $game['home_team_name'] )  ? $game['home_team_name']  : '' );
-            $guest = strtolower( isset( $game['guest_team_name'] ) ? $game['guest_team_name'] : '' );
-            return strpos( $home, $needle ) !== false || strpos( $guest, $needle ) !== false;
+        return array_values( array_filter( $games, function( $game ) use ( $team_name ) {
+            $home  = isset( $game['home_team_name'] )  ? $game['home_team_name']  : '';
+            $guest = isset( $game['guest_team_name'] ) ? $game['guest_team_name'] : '';
+            return self::name_matches( $home, $team_name ) || self::name_matches( $guest, $team_name );
         } ) );
+    }
+
+    /**
+     * Teilstring-Namensabgleich, case-insensitive - einzige Stelle für diesen
+     * Vergleich, genutzt von filter_by_team() oben und von
+     * SMF_Highlight::should_highlight() für den expliziten Override des
+     * hervorheben-Attributs (Namensfragment statt Team-ID).
+     *
+     * @param string $team_name Zu prüfender Name (z.B. home_team_name)
+     * @param string $needle    Gesuchter Teilstring (z.B. Attributwert)
+     * @return bool
+     */
+    public static function name_matches( $team_name, $needle ) {
+        $needle = strtolower( trim( (string) $needle ) );
+        if ( $needle === '' ) {
+            return false;
+        }
+        return strpos( strtolower( (string) $team_name ), $needle ) !== false;
     }
 
     public function flush_cache() {
