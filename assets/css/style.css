@@ -31,6 +31,12 @@
     --smf-font:                inherit;
     --smf-font-title:          inherit;
 
+    /* Logogröße (Shortcode-Attribut logo_groesse): Skalierungsfaktor für
+       alle Team-Logo-Klassen im Stylesheet. "mittel" (Standard) = Faktor 1,
+       damit bestehende Einbettungen ohne das Attribut unverändert bleiben -
+       siehe die .smf--logo-*-Modifier-Klassen unten. */
+    --smf-logo-scale:          1;
+
     /*
      * Schatten-Stufen: einmalige Definition aller vier Intensitätsstufen.
      * PHP (SMF_Design::build_css()) und beide Vorschauen (dev/preview.html,
@@ -119,6 +125,16 @@
     --smf-gray-dark:   var(--smf-color-text-muted);
     --smf-text:        var(--smf-color-text);
 }
+
+/* Modifier-Klassen für logo_groesse (siehe SMF_Shortcodes) - überschreiben
+   den Skalierungsfaktor für die jeweilige Einbettung. "mittel" braucht
+   keine eigene Klasse, das ist der --smf-logo-scale-Standard oben (1).
+   Zusammengesetzter Selektor (.smf + Modifier) statt nur der Modifier-
+   Klasse allein, damit die höhere Spezifität unabhängig von der
+   Reihenfolge im Stylesheet zuverlässig gegen den Standardwert gewinnt. */
+.smf.smf--logo-klein      { --smf-logo-scale: 0.7; }
+.smf.smf--logo-gross      { --smf-logo-scale: 1.35; }
+.smf.smf--logo-sehr-gross { --smf-logo-scale: 1.75; }
 
 .smf {
     font-family: var(--smf-font);
@@ -284,6 +300,12 @@
 }
 
 .smf-team-logo {
+    /* width/height-HTML-Attribute im Template (20x20) bleiben als
+       intrinsische Größe stehen (verhindert Layout-Shift vor dem Laden von
+       CSS/Bild) - diese Regel überschreibt nur die tatsächliche
+       Darstellungsgröße gemäß logo_groesse. */
+    width: calc(20px * var(--smf-logo-scale));
+    height: calc(20px * var(--smf-logo-scale));
     vertical-align: middle;
     border-radius: 2px;
     margin-right: 6px;
@@ -397,17 +419,17 @@
 }
 
 .smf .smf-game-team .smf-team-name {
+    /* Bewusste Abweichung von der bisherigen Darstellung: Namen brachen
+       zuvor per Ellipsis ab, jetzt umbrechen sie mehrzeilig. Layout ist
+       flexibel (kein feste Zeilenhöhe), siehe Umsetzungsauftrag Phase 0.2. */
     font-weight: 700;
     font-size: calc(var(--smf-fs-base) * 1);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     color: var(--smf-color-text);
 }
 
 .smf-game-team-logo {
-    width: 30px;
-    height: 30px;
+    width: calc(30px * var(--smf-logo-scale));
+    height: calc(30px * var(--smf-logo-scale));
     object-fit: contain;
     flex-shrink: 0;
     filter: drop-shadow(0 1px 2px rgba(0,0,0,.12));
@@ -489,8 +511,8 @@
 }
 
 .smf-single-game__logo {
-    width: 64px;
-    height: 64px;
+    width: calc(64px * var(--smf-logo-scale));
+    height: calc(64px * var(--smf-logo-scale));
     object-fit: contain;
     filter: drop-shadow(0 2px 6px rgba(0,0,0,.25));
     transition: transform 0.2s;
@@ -1159,19 +1181,19 @@
 }
 
 .smf-co-game__logo {
-    width: 38px;
-    height: 38px;
+    width: calc(38px * var(--smf-logo-scale));
+    height: calc(38px * var(--smf-logo-scale));
     object-fit: contain;
     flex-shrink: 0;
     filter: drop-shadow(0 1px 2px rgba(0,0,0,.12));
 }
 
 .smf-co-game__name {
+    /* Bewusste Abweichung von der bisherigen Darstellung: Namen brachen
+       zuvor per Ellipsis ab ("TV Eiche Horn…"), jetzt umbrechen sie
+       mehrzeilig - siehe Umsetzungsauftrag Phase 0.2/1. */
     font-size: calc(var(--smf-fs-base) * 0.92);
     font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     color: var(--smf-color-text);
 }
 
@@ -1325,18 +1347,21 @@
         border-bottom: 1px solid rgba(0,0,0,.07);
     }
 
-    /* Namen dürfen umbrechen */
-    .smf-game-team .smf-team-name {
+    /* Umbrechen selbst passiert jetzt bereits in der Basis-Regel oben (bei
+       jeder Breite), hier nur noch die für schmale Screens reduzierte
+       Schriftgröße. Selektor mit .smf-Präfix (wie die Basis-Regel), sonst
+       verliert diese Regel gegen die höhere Spezifität der Basis-Regel -
+       vorher betraf das bereits die frühere white-space/overflow/
+       text-overflow-Überschreibung hier, die dadurch nie griff (siehe
+       Bericht Phase 4). */
+    .smf .smf-game-team .smf-team-name {
         font-size: calc(var(--smf-fs-base) * 0.875);
-        white-space: normal;
-        overflow: visible;
-        text-overflow: clip;
         flex: 1;
     }
 
     .smf-game-team-logo {
-        width: 26px;
-        height: 26px;
+        width: calc(26px * var(--smf-logo-scale));
+        height: calc(26px * var(--smf-logo-scale));
         flex-shrink: 0;
     }
 
@@ -1401,8 +1426,8 @@
     }
 
     .smf-co-game__logo {
-        width: 30px;
-        height: 30px;
+        width: calc(30px * var(--smf-logo-scale));
+        height: calc(30px * var(--smf-logo-scale));
     }
 
     .smf-co-game__name {
@@ -1427,8 +1452,8 @@
     }
 
     .smf-co-game__logo {
-        width: 32px;
-        height: 32px;
+        width: calc(32px * var(--smf-logo-scale));
+        height: calc(32px * var(--smf-logo-scale));
     }
 
     .smf-co-game__name {

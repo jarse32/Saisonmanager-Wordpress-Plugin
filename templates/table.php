@@ -3,8 +3,16 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 /**
  * Template: Liga-Tabelle
  * Variablen: $table (array), $league_name (string), $show_title (bool),
+ *            $show_logos (bool), $logo_size_class (string, siehe
+ *            SMF_Shortcodes::logo_size_class()),
  *            $stale_since (int|null - Zeitstempel, wenn $table aus der
  *            Notreserve kommt, siehe SMF_API::stale_since())
+ *
+ * Kein namen-Attribut hier (bewusst, siehe Umsetzungsauftrag Phase 0/1):
+ * die Tabelle listet üblicherweise viele verschiedene Vereine, nicht
+ * mehrere Teams desselben Vereins, und der Name bricht in der Zelle
+ * bereits nativ um statt abgeschnitten zu werden - ein Ausblenden hätte
+ * hier keinen Nutzen, nur Informationsverlust.
  *
  * Saisonmanager API Feldnamen:
  *   position, team_name, games, won, won_ot, lost_ot, lost,
@@ -21,7 +29,7 @@ if ( isset( $table['teams'] ) ) {
 }
 ?>
 
-<div class="smf smf-table-wrapper">
+<div class="smf smf-table-wrapper<?php echo ! empty( $logo_size_class ) ? ' ' . esc_attr( $logo_size_class ) : ''; ?>">
 
     <?php if ( $show_title && $league_name ) : ?>
         <div class="smf-header">

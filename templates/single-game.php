@@ -2,8 +2,13 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 /**
  * Template: Einzelnes Spiel (nächstes / letztes)
- * Variablen: $game, $league_name, $label, $show_logos,
+ * Variablen: $game, $league_name, $label, $show_logos, $show_names,
+ *            $logo_size_class (string, siehe SMF_Shortcodes::logo_size_class()),
  *            $stale_since (int|null - siehe SMF_API::stale_since())
+ *
+ * $show_names pro Team nur maßgeblich, wenn für dieses Team ein Logo da
+ * ist - fehlt es, bleibt der Name sichtbar (siehe $show_home_name/
+ * $show_away_name unten).
  */
 
 $api = new SMF_API();
@@ -30,9 +35,14 @@ if ( $show_logos ) {
     $raw = isset( $game[ $logo_field ] ) ? $game[ $logo_field ] : ( isset( $game['guest_team_logo'] ) ? $game['guest_team_logo'] : '' );
     $away_logo = SMF_API::get_logo_url( $raw );
 }
+
+// Name pro Team nur ausblenden, wenn für GENAU dieses Team ein Logo da ist
+// - sonst stünde in der Karte nichts.
+$show_home_name = $show_names || ! $home_logo;
+$show_away_name = $show_names || ! $away_logo;
 ?>
 
-<div class="smf smf-single-game<?php echo $has_result ? ' smf-game--played' : ' smf-game--upcoming'; ?><?php echo $show_logos ? ' smf-single-game--with-logos' : ''; ?>"
+<div class="smf smf-single-game<?php echo $has_result ? ' smf-game--played' : ' smf-game--upcoming'; ?><?php echo $show_logos ? ' smf-single-game--with-logos' : ''; ?><?php echo ! empty( $logo_size_class ) ? ' ' . esc_attr( $logo_size_class ) : ''; ?>"
      <?php if ( $game_id ) : ?>
          data-game-id="<?php echo esc_attr( $game_id ); ?>"
          role="button"
@@ -66,11 +76,14 @@ if ( $show_logos ) {
                 <div class="smf-single-game__logo-wrap">
                     <img src="<?php echo esc_url( $home_logo ); ?>"
                          alt="<?php echo esc_attr( $home_name ); ?>"
+                         <?php if ( ! $show_home_name ) : ?>title="<?php echo esc_attr( $home_name ); ?>"<?php endif; ?>
                          class="smf-single-game__logo"
                          loading="lazy">
                 </div>
             <?php endif; ?>
-            <span class="smf-single-game__team-name"><?php echo esc_html( $home_name ); ?></span>
+            <?php if ( $show_home_name ) : ?>
+                <span class="smf-single-game__team-name"><?php echo esc_html( $home_name ); ?></span>
+            <?php endif; ?>
         </div>
 
         <div class="smf-single-game__center">
@@ -86,11 +99,14 @@ if ( $show_logos ) {
                 <div class="smf-single-game__logo-wrap">
                     <img src="<?php echo esc_url( $away_logo ); ?>"
                          alt="<?php echo esc_attr( $away_name ); ?>"
+                         <?php if ( ! $show_away_name ) : ?>title="<?php echo esc_attr( $away_name ); ?>"<?php endif; ?>
                          class="smf-single-game__logo"
                          loading="lazy">
                 </div>
             <?php endif; ?>
-            <span class="smf-single-game__team-name"><?php echo esc_html( $away_name ); ?></span>
+            <?php if ( $show_away_name ) : ?>
+                <span class="smf-single-game__team-name"><?php echo esc_html( $away_name ); ?></span>
+            <?php endif; ?>
         </div>
 
     </div>

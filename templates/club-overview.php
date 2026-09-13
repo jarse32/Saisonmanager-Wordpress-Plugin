@@ -5,6 +5,12 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  * Variablen: $club_name (string), $upcoming (array), $played (array),
  *            $stale_since (int|null), $partial_error_count (int) - siehe
  *            SMF_ClubOverview::get_games()
+ *            $show_names (bool), $logo_size_class (string, siehe
+ *            SMF_Shortcodes::logo_size_class())
+ *
+ * Logos sind hier immer an (kein logos-Attribut, siehe class-shortcodes.php)
+ * - $show_names pro Team daher nur maßgeblich, wenn für dieses Team
+ * tatsächlich ein Logo vorliegt, sonst bleibt der Name sichtbar.
  */
 
 $api = new SMF_API();
@@ -14,8 +20,9 @@ $api = new SMF_API();
  *
  * @param array   $game
  * @param SMF_API $api
+ * @param bool    $show_names
  */
-$render_game = function ( array $game ) use ( $api ) {
+$render_game = function ( array $game ) use ( $api, $show_names ) {
     $game_id    = isset( $game['game_id'] )              ? $game['game_id']              : 0;
     $has_result = $api->has_result( $game );
     $date_ts    = $api->parse_game_date( $game );
@@ -28,6 +35,11 @@ $render_game = function ( array $game ) use ( $api ) {
 
     $home_logo = SMF_API::get_logo_url( isset( $game['home_team_small_logo'] )  ? $game['home_team_small_logo']  : '' );
     $away_logo = SMF_API::get_logo_url( isset( $game['guest_team_small_logo'] ) ? $game['guest_team_small_logo'] : '' );
+
+    // Name pro Team nur ausblenden, wenn für GENAU dieses Team ein Logo da
+    // ist - sonst stünde in der Karte nichts.
+    $show_home_name = $show_names || ! $home_logo;
+    $show_away_name = $show_names || ! $away_logo;
 
     $card_class = 'smf-co-game' . ( $has_result ? ' smf-co-game--played' : ' smf-co-game--upcoming' );
     ?>
@@ -61,9 +73,12 @@ $render_game = function ( array $game ) use ( $api ) {
                 <?php if ( $home_logo ) : ?>
                     <img src="<?php echo esc_url( $home_logo ); ?>"
                          alt="<?php echo esc_attr( $home_name ); ?>"
+                         <?php if ( ! $show_home_name ) : ?>title="<?php echo esc_attr( $home_name ); ?>"<?php endif; ?>
                          class="smf-co-game__logo" loading="lazy">
                 <?php endif; ?>
-                <span class="smf-co-game__name"><?php echo esc_html( $home_name ); ?></span>
+                <?php if ( $show_home_name ) : ?>
+                    <span class="smf-co-game__name"><?php echo esc_html( $home_name ); ?></span>
+                <?php endif; ?>
             </div>
 
             <div class="smf-co-game__center">
@@ -75,10 +90,13 @@ $render_game = function ( array $game ) use ( $api ) {
             </div>
 
             <div class="smf-co-game__team smf-co-game__team--away">
-                <span class="smf-co-game__name"><?php echo esc_html( $away_name ); ?></span>
+                <?php if ( $show_away_name ) : ?>
+                    <span class="smf-co-game__name"><?php echo esc_html( $away_name ); ?></span>
+                <?php endif; ?>
                 <?php if ( $away_logo ) : ?>
                     <img src="<?php echo esc_url( $away_logo ); ?>"
                          alt="<?php echo esc_attr( $away_name ); ?>"
+                         <?php if ( ! $show_away_name ) : ?>title="<?php echo esc_attr( $away_name ); ?>"<?php endif; ?>
                          class="smf-co-game__logo" loading="lazy">
                 <?php endif; ?>
             </div>
@@ -90,7 +108,7 @@ $render_game = function ( array $game ) use ( $api ) {
 };
 ?>
 
-<div class="smf smf-club-overview">
+<div class="smf smf-club-overview<?php echo ! empty( $logo_size_class ) ? ' ' . esc_attr( $logo_size_class ) : ''; ?>">
 
     <div class="smf-header smf-co-header">
         <h3 class="smf-title"><?php echo esc_html( $club_name ); ?></h3>

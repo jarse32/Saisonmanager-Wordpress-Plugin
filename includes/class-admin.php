@@ -718,27 +718,47 @@ class SMF_Admin {
                             <tr>
                                 <td><code>[sm_tabelle liga_id="123"]</code></td>
                                 <td>Liga-Tabelle anzeigen</td>
-                                <td><code>liga_id</code>, <code>titel</code>, <code>logos</code> (true/false, Standard: false)</td>
+                                <td>
+                                    <code>liga_id</code>, <code>titel</code>, <code>logos</code> (true/false, Standard: false),
+                                    <code>logo_groesse</code> (klein/mittel/gross/sehr_gross, Standard: mittel)
+                                </td>
                             </tr>
                             <tr>
                                 <td><code>[sm_spiele liga_id="123"]</code></td>
                                 <td>Spielplan einer Liga</td>
-                                <td><code>liga_id</code>, <code>anzahl</code>, <code>team</code>, <code>modus</code> (alle/vergangen/kommend), <code>titel</code>, <code>logos</code> (true/false, Standard: false)</td>
+                                <td>
+                                    <code>liga_id</code>, <code>anzahl</code>, <code>team</code>, <code>modus</code> (alle/vergangen/kommend),
+                                    <code>titel</code>, <code>logos</code> (true/false, Standard: false),
+                                    <code>namen</code> (true/false, Standard: true), <code>logo_groesse</code>
+                                    (klein/mittel/gross/sehr_gross, Standard: mittel)
+                                </td>
                             </tr>
                             <tr>
                                 <td><code>[sm_naechstes_spiel liga_id="123"]</code></td>
                                 <td>Nächstes kommendes Spiel</td>
-                                <td><code>liga_id</code>, <code>team</code>, <code>logos</code> (true/false, Standard: true)</td>
+                                <td>
+                                    <code>liga_id</code>, <code>team</code>, <code>logos</code> (true/false, Standard: true),
+                                    <code>namen</code> (true/false, Standard: true), <code>logo_groesse</code>
+                                    (klein/mittel/gross/sehr_gross, Standard: mittel)
+                                </td>
                             </tr>
                             <tr>
                                 <td><code>[sm_letztes_spiel liga_id="123"]</code></td>
                                 <td>Letztes gespieltes Spiel</td>
-                                <td><code>liga_id</code>, <code>team</code>, <code>logos</code> (true/false, Standard: true)</td>
+                                <td>
+                                    <code>liga_id</code>, <code>team</code>, <code>logos</code> (true/false, Standard: true),
+                                    <code>namen</code> (true/false, Standard: true), <code>logo_groesse</code>
+                                    (klein/mittel/gross/sehr_gross, Standard: mittel)
+                                </td>
                             </tr>
                             <tr>
                                 <td><code>[sm_vereinsuebersicht verein="hannover"]</code></td>
                                 <td>Vereinsübersicht: anstehende &amp; gespielte Spiele aller Teams</td>
-                                <td><code>verein</code> (Slug oder Name, Standard: erster Verein), <code>anzahl</code> (überschreibt Backend-Einstellung)</td>
+                                <td>
+                                    <code>verein</code> (Slug oder Name, Standard: erster Verein), <code>anzahl</code>
+                                    (überschreibt Backend-Einstellung), <code>namen</code> (true/false, Standard: true),
+                                    <code>logo_groesse</code> (klein/mittel/gross/sehr_gross, Standard: mittel)
+                                </td>
                             </tr>
                             <tr>
                                 <td><code>[sm_scorer team_id="6754"]</code></td>
@@ -760,6 +780,14 @@ class SMF_Admin {
                     </p>
                     <p class="description">
                         Beispiel: <code>[sm_scorer team_id="6754" anzahl="10" spalten="kompakt" namen="abgekuerzt"]</code>
+                    </p>
+                    <p class="description">
+                        Beispiel für eine Startseite mit größeren Logos:
+                        <code>[sm_vereinsuebersicht verein="hannover" logo_groesse="gross"]</code>. Wichtig, wenn
+                        mehrere eigene Teams dasselbe Vereinslogo tragen (z.B. 1. und 2. Mannschaft): dann bitte
+                        <code>namen</code> auf dem Standard <code>true</code> belassen, sonst sind Begegnungen der
+                        beiden Teams am identischen Logo nicht mehr unterscheidbar. <code>namen="false"</code> eignet
+                        sich nur, wenn die gegenüberstehenden Teams tatsächlich unterschiedliche Logos haben.
                     </p>
                     <p class="description">
                         <strong>Datenschutz:</strong> <code>[sm_scorer]</code> zeigt – anders als die übrigen

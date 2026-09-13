@@ -22,13 +22,14 @@ class SMF_Shortcodes {
     }
 
     // ----------------------------------------------------------------
-    // [sm_tabelle liga_id="123" titel="true"]
+    // [sm_tabelle liga_id="123" titel="true" logo_groesse="mittel"]
     // ----------------------------------------------------------------
     public function shortcode_tabelle( $atts ) {
         $atts = shortcode_atts( array(
-            'liga_id' => get_option( 'smf_default_league_id', '' ),
-            'titel'   => 'true',
-            'logos'   => 'false',
+            'liga_id'      => get_option( 'smf_default_league_id', '' ),
+            'titel'        => 'true',
+            'logos'        => 'false',
+            'logo_groesse' => 'mittel',
         ), $atts, 'sm_tabelle' );
 
         $liga_id = (int) $atts['liga_id'];
@@ -53,26 +54,29 @@ class SMF_Shortcodes {
 
         ob_start();
         smf_render_template( 'table', array(
-            'table'       => $table,
-            'league_name' => $league_name,
-            'show_title'  => $atts['titel'] !== 'false',
-            'show_logos'  => $atts['logos'] === 'true',
-            'stale_since' => $stale_since,
+            'table'           => $table,
+            'league_name'     => $league_name,
+            'show_title'      => $atts['titel'] !== 'false',
+            'show_logos'      => $atts['logos'] === 'true',
+            'logo_size_class' => self::logo_size_class( $atts['logo_groesse'] ),
+            'stale_since'     => $stale_since,
         ) );
         return ob_get_clean();
     }
 
     // ----------------------------------------------------------------
-    // [sm_spiele liga_id="123" anzahl="10" team="Eichehorn" modus="alle|vergangen|kommend"]
+    // [sm_spiele liga_id="123" anzahl="10" team="Eichehorn" modus="alle|vergangen|kommend" namen="true" logo_groesse="mittel"]
     // ----------------------------------------------------------------
     public function shortcode_spiele( $atts ) {
         $atts = shortcode_atts( array(
-            'liga_id' => get_option( 'smf_default_league_id', '' ),
-            'anzahl'  => 0,
-            'team'    => '',
-            'modus'   => 'alle',
-            'titel'   => 'true',
-            'logos'   => 'false',
+            'liga_id'      => get_option( 'smf_default_league_id', '' ),
+            'anzahl'       => 0,
+            'team'         => '',
+            'modus'        => 'alle',
+            'titel'        => 'true',
+            'logos'        => 'false',
+            'namen'        => 'true',
+            'logo_groesse' => 'mittel',
         ), $atts, 'sm_spiele' );
 
         $liga_id = (int) $atts['liga_id'];
@@ -116,26 +120,33 @@ class SMF_Shortcodes {
         // Erst nach dem letzten API-Aufruf lesen, direkt vor dem Rendern.
         $stale_since = $api->stale_since();
 
+        $show_logos = $atts['logos'] === 'true';
+        $show_names = self::resolve_show_names( $atts['namen'], $show_logos );
+
         ob_start();
         smf_render_template( 'games-list', array(
-            'games'       => $games,
-            'league_name' => $league_name,
-            'show_title'  => $atts['titel'] !== 'false',
-            'modus'       => $atts['modus'],
-            'show_logos'  => $atts['logos'] === 'true',
-            'stale_since' => $stale_since,
+            'games'           => $games,
+            'league_name'     => $league_name,
+            'show_title'      => $atts['titel'] !== 'false',
+            'modus'           => $atts['modus'],
+            'show_logos'      => $show_logos,
+            'show_names'      => $show_names,
+            'logo_size_class' => self::logo_size_class( $atts['logo_groesse'] ),
+            'stale_since'     => $stale_since,
         ) );
         return ob_get_clean();
     }
 
     // ----------------------------------------------------------------
-    // [sm_naechstes_spiel liga_id="123" team="Eichehorn"]
+    // [sm_naechstes_spiel liga_id="123" team="Eichehorn" namen="true" logo_groesse="mittel"]
     // ----------------------------------------------------------------
     public function shortcode_naechstes_spiel( $atts ) {
         $atts = shortcode_atts( array(
-            'liga_id' => get_option( 'smf_default_league_id', '' ),
-            'team'    => '',
-            'logos'   => 'true',
+            'liga_id'      => get_option( 'smf_default_league_id', '' ),
+            'team'         => '',
+            'logos'        => 'true',
+            'namen'        => 'true',
+            'logo_groesse' => 'mittel',
         ), $atts, 'sm_naechstes_spiel' );
 
         $liga_id = (int) $atts['liga_id'];
@@ -167,25 +178,32 @@ class SMF_Shortcodes {
         // Erst nach dem letzten API-Aufruf lesen, direkt vor dem Rendern.
         $stale_since = $api->stale_since();
 
+        $show_logos = $atts['logos'] === 'true';
+        $show_names = self::resolve_show_names( $atts['namen'], $show_logos );
+
         ob_start();
         smf_render_template( 'single-game', array(
-            'game'        => $game,
-            'league_name' => $league_name,
-            'label'       => smf_label( 'next_game_label', 'Nächstes Spiel' ),
-            'show_logos'  => $atts['logos'] === 'true',
-            'stale_since' => $stale_since,
+            'game'            => $game,
+            'league_name'     => $league_name,
+            'label'           => smf_label( 'next_game_label', 'Nächstes Spiel' ),
+            'show_logos'      => $show_logos,
+            'show_names'      => $show_names,
+            'logo_size_class' => self::logo_size_class( $atts['logo_groesse'] ),
+            'stale_since'     => $stale_since,
         ) );
         return ob_get_clean();
     }
 
     // ----------------------------------------------------------------
-    // [sm_letztes_spiel liga_id="123" team="Eichehorn"]
+    // [sm_letztes_spiel liga_id="123" team="Eichehorn" namen="true" logo_groesse="mittel"]
     // ----------------------------------------------------------------
     public function shortcode_letztes_spiel( $atts ) {
         $atts = shortcode_atts( array(
-            'liga_id' => get_option( 'smf_default_league_id', '' ),
-            'team'    => '',
-            'logos'   => 'true',
+            'liga_id'      => get_option( 'smf_default_league_id', '' ),
+            'team'         => '',
+            'logos'        => 'true',
+            'namen'        => 'true',
+            'logo_groesse' => 'mittel',
         ), $atts, 'sm_letztes_spiel' );
 
         $liga_id = (int) $atts['liga_id'];
@@ -217,24 +235,31 @@ class SMF_Shortcodes {
         // Erst nach dem letzten API-Aufruf lesen, direkt vor dem Rendern.
         $stale_since = $api->stale_since();
 
+        $show_logos = $atts['logos'] === 'true';
+        $show_names = self::resolve_show_names( $atts['namen'], $show_logos );
+
         ob_start();
         smf_render_template( 'single-game', array(
-            'game'        => $game,
-            'league_name' => $league_name,
-            'label'       => smf_label( 'last_game_label', 'Letztes Spiel' ),
-            'show_logos'  => $atts['logos'] === 'true',
-            'stale_since' => $stale_since,
+            'game'            => $game,
+            'league_name'     => $league_name,
+            'label'           => smf_label( 'last_game_label', 'Letztes Spiel' ),
+            'show_logos'      => $show_logos,
+            'show_names'      => $show_names,
+            'logo_size_class' => self::logo_size_class( $atts['logo_groesse'] ),
+            'stale_since'     => $stale_since,
         ) );
         return ob_get_clean();
     }
 
     // ----------------------------------------------------------------
-    // [sm_vereinsuebersicht verein="hannover" anzahl="4"]
+    // [sm_vereinsuebersicht verein="hannover" anzahl="4" namen="true" logo_groesse="mittel"]
     // ----------------------------------------------------------------
     public function shortcode_vereinsuebersicht( $atts ) {
         $atts = shortcode_atts( array(
-            'verein' => '',
-            'anzahl' => 0,
+            'verein'       => '',
+            'anzahl'       => 0,
+            'namen'        => 'true',
+            'logo_groesse' => 'mittel',
         ), $atts, 'sm_vereinsuebersicht' );
 
         $club = SMF_ClubOverview::get_club( $atts['verein'] );
@@ -262,6 +287,11 @@ class SMF_Shortcodes {
             return $this->error( $games['error'] );
         }
 
+        // Vereinsübersicht hat keinen logos-Schalter (Logos sind hier immer
+        // an), daher entfällt die Zwangsregel "logos=false -> namen=true" -
+        // resolve_show_names() mit $show_logos=true wertet namen normal aus.
+        $show_names = self::resolve_show_names( $atts['namen'], true );
+
         ob_start();
         smf_render_template( 'club-overview', array(
             'club_name'            => isset( $club['name'] ) ? $club['name'] : '',
@@ -269,6 +299,8 @@ class SMF_Shortcodes {
             'played'               => $games['played'],
             'stale_since'          => $games['stale_since'],
             'partial_error_count'  => $games['partial_error_count'],
+            'show_names'           => $show_names,
+            'logo_size_class'      => self::logo_size_class( $atts['logo_groesse'] ),
         ) );
         return ob_get_clean();
     }
@@ -327,6 +359,53 @@ class SMF_Shortcodes {
     // ----------------------------------------------------------------
     // Hilfsfunktionen
     // ----------------------------------------------------------------
+
+    /**
+     * Attribut logo_groesse in eine CSS-Modifier-Klasse übersetzen (siehe
+     * assets/css/style.css, --smf-logo-scale). Ungültige/leere Werte und
+     * "mittel" selbst fallen still auf '' zurück (= Standardgröße, keine
+     * Modifier-Klasse nötig) - kein Fehlerkasten bei einem Tippfehler im
+     * Shortcode.
+     *
+     * @param string $value
+     * @return string Leerstring oder "smf--logo-*"
+     */
+    private static function logo_size_class( $value ) {
+        $map = array(
+            'klein'      => 'smf--logo-klein',
+            'gross'      => 'smf--logo-gross',
+            'sehr_gross' => 'smf--logo-sehr-gross',
+        );
+        return isset( $map[ $value ] ) ? $map[ $value ] : '';
+    }
+
+    /**
+     * Attribut namen (true/false) auswerten, inklusive der Zwangsregel
+     * "logos=false -> namen=true": Ohne Logos wäre eine Begegnung mit
+     * ausgeblendeten Namen komplett leer, das darf ein Shortcode-Attribut
+     * nicht erzeugen können. Ergänzt die pro-Team-Regel in den Templates
+     * (Name bleibt sichtbar, wenn ausgerechnet für dieses eine Team kein
+     * Logo vorliegt), ersetzt sie nicht.
+     *
+     * Kein dritter Wert (z.B. ein API-Kurzname als Alternative zum vollen
+     * Namen) - teams/{id}/matches und leagues/{id}/schedule.json liefern
+     * keinen Kurznamen. Das existierende Feld "short_name" bei
+     * game_operations/{id}/clubs ist zwar vorhanden, aber pro Verein und
+     * nicht pro Team vergeben (z.B. bei TV Eiche Horn Bremen an allen
+     * zwölf Mannschaften identisch "TVE") und kann daher nicht zwischen
+     * "TV Eiche Horn 1" und "TV Eiche Horn 2" unterscheiden - der Fall,
+     * den dieses Attribut eigentlich lösen soll.
+     *
+     * @param string $namen_att  Rohwert des namen-Attributs
+     * @param bool   $show_logos Aufgelöster logos-Wert desselben Shortcodes
+     * @return bool
+     */
+    private static function resolve_show_names( $namen_att, $show_logos ) {
+        if ( ! $show_logos ) {
+            return true;
+        }
+        return $namen_att !== 'false';
+    }
 
     /**
      * Spielplan normalisieren (API kann verschiedene Strukturen liefern)
