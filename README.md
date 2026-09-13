@@ -142,11 +142,11 @@ Anfragen an den Verbandsserver.
 
 | Shortcode | Beschreibung | Wichtigste Parameter |
 |---|---|---|
-| `[sm_tabelle liga_id="123"]` | Liga-Tabelle | `liga_id`, `titel`, `logos`, `logo_groesse` |
-| `[sm_spiele liga_id="123"]` | Spielplan einer Liga | `liga_id`, `anzahl`, `team`, `modus` (`alle`/`vergangen`/`kommend`), `titel`, `logos`, `namen`, `logo_groesse` |
-| `[sm_naechstes_spiel liga_id="123"]` | Nächstes kommendes Spiel | `liga_id`, `team`, `logos`, `namen`, `logo_groesse` |
-| `[sm_letztes_spiel liga_id="123"]` | Letztes gespieltes Spiel | `liga_id`, `team`, `logos`, `namen`, `logo_groesse` |
-| `[sm_vereinsuebersicht verein="hannover"]` | Alle Spiele aller Teams eines Vereins | `verein` (Slug oder Name), `anzahl`, `namen`, `logo_groesse` |
+| `[sm_tabelle liga_id="123"]` | Liga-Tabelle | `liga_id`, `titel`, `logos`, `logo_groesse`, `hervorheben` |
+| `[sm_spiele liga_id="123"]` | Spielplan einer Liga | `liga_id`, `anzahl`, `team`, `modus` (`alle`/`vergangen`/`kommend`), `titel`, `logos`, `namen`, `logo_groesse`, `hervorheben` |
+| `[sm_naechstes_spiel liga_id="123"]` | Nächstes kommendes Spiel | `liga_id`, `team`, `logos`, `namen`, `logo_groesse`, `hervorheben` (ohne sichtbaren Effekt) |
+| `[sm_letztes_spiel liga_id="123"]` | Letztes gespieltes Spiel | `liga_id`, `team`, `logos`, `namen`, `logo_groesse`, `hervorheben` (ohne sichtbaren Effekt) |
+| `[sm_vereinsuebersicht verein="hannover"]` | Alle Spiele aller Teams eines Vereins | `verein` (Slug oder Name), `anzahl`, `namen`, `logo_groesse`, `hervorheben` (Standard `false`) |
 | `[sm_scorer team_id="6754"]` | Scorerliste (Punkteliste) eines Teams | `team_id` (Pflicht), `anzahl`, `spalten` (`voll`/`kompakt`), `namen` (`voll`/`abgekuerzt`), `titel`, `summe` |
 
 Die `liga_id`/`team_id` findest du über den Team-Finder oder den "Teams
@@ -185,6 +185,42 @@ abgeschnitten zu werden.
 
 Beispiel für eine Startseite mit größeren Logos:
 `[sm_vereinsuebersicht verein="hannover" logo_groesse="gross"]`
+
+### Team-Highlighting
+
+`hervorheben` markiert das eigene Team in `sm_tabelle` und `sm_spiele`
+optisch (Hintergrundton, fette Schrift, in der Tabelle zusätzlich ein
+Akzentbalken am linken Rand) - drei Merkmale in der Tabelle, zwei in den
+Spielkarten (kein Akzentbalken dort, der linke Kartenrand zeigt bereits den
+Spielstatus), keins davon allein über Farbe kodiert, damit die Markierung
+auch bei Farbfehlsichtigkeit und im Schwarzweißdruck erkennbar bleibt. Für
+Screenreader trägt ein unsichtbares Textlabel dieselbe Information nach.
+
+Drei Werte:
+
+- **leer/nicht gesetzt** (Standard bei `sm_tabelle`/`sm_spiele`): Automatik -
+  markiert werden die Team-IDs aller unter **SM Floorball → Vereine**
+  konfigurierten Vereine. Kein zusätzliches Attribut nötig.
+- **`false`**: keine Markierung.
+- **Team-ID oder Namensfragment**: markiert genau dieses eine Team, auch
+  wenn es nicht zu den konfigurierten Vereinen gehört bzw. unabhängig davon,
+  welche der eigenen Teams sonst automatisch markiert würden. Praktisch,
+  wenn mehrere eigene Teams in derselben Liga stehen und nur eines markiert
+  werden soll.
+
+Erkennung ist ID-basiert (Saisonmanager-`team_id`, dieselbe ID wie in der
+Vereinskonfiguration/im Team-Finder) - zuverlässig, weil diese ID innerhalb
+einer Liga stabil ist. Ist eine Team-ID unbekannt oder nicht eindeutig
+zuordenbar, bleibt die Zeile/Karte unmarkiert statt falsch markiert zu
+werden.
+
+`sm_naechstes_spiel`/`sm_letztes_spiel` akzeptieren `hervorheben` (kein
+Fehlerkasten), zeigen aber keine Markierung - die Karte stellt ohnehin nur
+zwei Teams gleichzeitig dar, „eins davon eigen" hat dort keinen
+Unterscheidungswert. In `sm_vereinsuebersicht` ist der Standard `false`,
+weil dort jedes gezeigte Spiel bereits eins der eigenen Teams betrifft; ein
+expliziter Wert funktioniert trotzdem, z.B. um auf einer Seite nur die
+1. Mannschaft zu markieren.
 
 ## Hooks für Theme-Entwickler:innen
 

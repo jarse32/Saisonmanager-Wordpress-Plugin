@@ -4,7 +4,7 @@ Tags: floorball, sport, spielplan, ergebnisse, tabelle
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.5.0
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,6 +25,10 @@ Verband Deutschland e. V.
 * Liga-Tabelle, Spielplan, nächstes/letztes Spiel per Shortcode
 * Vereinsübersicht: alle anstehenden und gespielten Spiele aller Teams eines
   Vereins, automatisch über die Saisonmanager-Club-ID ermittelt
+* Team-Highlighting: eigene Teams werden in Tabelle und Spielplan automatisch
+  hervorgehoben, sobald ein Verein konfiguriert ist
+* Darstellung pro Einbettung steuerbar: Teamnamen ein-/ausblendbar,
+  Logogröße wählbar (`namen`/`logo_groesse`, siehe `README.md`)
 * Team-Finder: Club-IDs, Team-IDs und Liga-IDs im Adminbereich finden
 * Serverseitiges Caching, ein eigener Saisonmanager-API-Key pro Installation
 * Ausfallsicher: Ist der Verbandsserver nicht erreichbar, lädt die Seite
@@ -63,6 +67,21 @@ im `main`-Branch des Repositories eine neue Version veröffentlicht wird -
 Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren*.
 
 == Changelog ==
+
+= 1.6.0 =
+* Neue Shortcode-Attribute `namen` (true/false) und `logo_groesse` (klein/
+  mittel/gross/sehr_gross) bei `sm_tabelle`, `sm_spiele`, `sm_naechstes_spiel`,
+  `sm_letztes_spiel` und `sm_vereinsuebersicht` - Standard entspricht jeweils
+  exakt der bisherigen Darstellung. Lange Teamnamen brechen in `sm_spiele`
+  und `sm_vereinsuebersicht` jetzt mehrzeilig um statt per Ellipsis
+  abgeschnitten zu werden (z.B. "TV Eiche Horn Bremen…")
+* Team-Highlighting: eigene Teams werden in `sm_tabelle` und `sm_spiele`
+  automatisch hervorgehoben (Hintergrundton, fette Schrift, in der Tabelle
+  zusätzlich ein Akzentbalken), sobald unter SM Floorball -> Vereine ein
+  Verein konfiguriert ist - kein zusätzliches Attribut nötig. Neues Attribut
+  `hervorheben` zum Abschalten oder zum gezielten Markieren eines einzelnen
+  Teams (Team-ID oder Namensfragment), z.B. wenn mehrere eigene Teams in
+  derselben Liga stehen
 
 = 1.5.0 =
 * Ausfallsicherheit gegen einen nicht erreichbaren Verbandsserver: kurzer,
@@ -116,6 +135,13 @@ Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren
 * Vereinsübersicht (alle Teams eines Vereins)
 
 == Upgrade Notice ==
+
+= 1.6.0 =
+Keine Aktion nötig - das Erscheinungsbild bleibt unverändert, solange die
+neuen Attribute `namen`/`logo_groesse`/`hervorheben` nicht gesetzt werden.
+Ausnahme: eigene Teams werden jetzt automatisch in Tabelle und Spielplan
+hervorgehoben, wenn unter SM Floorball -> Vereine ein Verein konfiguriert
+ist - mit `hervorheben="false"` abschaltbar.
 
 = 1.5.0 =
 Keine Aktion nötig. Neu: Die Seite bleibt bei einem nicht erreichbaren
