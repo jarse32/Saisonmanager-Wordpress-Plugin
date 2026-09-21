@@ -138,6 +138,12 @@ class SMF_Admin {
             },
             'default'           => 'abgekuerzt',
         ] );
+        register_setting( 'smf_settings_group', 'smf_stream_embed_mode', [
+            'sanitize_callback' => static function ( $val ) {
+                return in_array( $val, array( 'zwei_klick', 'nur_link', 'aus' ), true ) ? $val : 'nur_link';
+            },
+            'default'           => 'nur_link',
+        ] );
 
         register_setting( 'smf_design_group', 'smf_design', [
             'type'              => 'array',
@@ -425,6 +431,28 @@ class SMF_Admin {
                                         Notreserve (Verbandsserver gerade nicht erreichbar) oder bei einem Anstoß,
                                         der mehr als vier Stunden zurückliegt. Pro Einbindung über das
                                         Shortcode-Attribut <code>live_badge="false"</code> abschaltbar.
+                                    </p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="smf_stream_embed_mode">Livestream-Einbettung</label></th>
+                                <td>
+                                    <?php $current_stream_mode = get_option( 'smf_stream_embed_mode', 'nur_link' ); ?>
+                                    <select id="smf_stream_embed_mode" name="smf_stream_embed_mode">
+                                        <option value="zwei_klick" <?php selected( $current_stream_mode, 'zwei_klick' ); ?>>Zwei-Klick (eingebetteter Player nach Klick)</option>
+                                        <option value="nur_link" <?php selected( $current_stream_mode, 'nur_link' ); ?>>Nur Link (öffnet YouTube/Twitch extern)</option>
+                                        <option value="aus" <?php selected( $current_stream_mode, 'aus' ); ?>>Aus</option>
+                                    </select>
+                                    <p class="description">
+                                        Zeigt bei Spielen mit hinterlegtem <code>live_stream_link</code>/<code>vod_link</code>
+                                        einen kleinen "Livestream"-/"Aufzeichnung"-Button in den Karten
+                                        (<code>sm_naechstes_spiel</code>, <code>sm_letztes_spiel</code>,
+                                        <code>sm_spiel_duo</code>), der das Spieldetail-Modal öffnet. Dort je nach
+                                        Modus entweder nur ein Link zum Anbieter ("Nur Link") oder – nach einem
+                                        zusätzlichen bewussten Klick, ohne vorher Daten an den Anbieter zu senden –
+                                        ein eingebetteter Player ("Zwei-Klick"). Nur YouTube und Twitch werden
+                                        eingebettet, siehe README, Abschnitt „Livestream-/Aufzeichnungs-Einbettung“.
+                                        Standard für neue Installationen: „Nur Link“.
                                     </p>
                                 </td>
                             </tr>

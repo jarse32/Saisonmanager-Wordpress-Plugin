@@ -7,6 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  *            $logo_size_class (string, siehe SMF_Shortcodes::logo_size_class()),
  *            $stale_since (int|null - siehe SMF_API::stale_since()),
  *            $show_status_badge (bool - siehe SMF_Shortcodes::resolve_show_status_badge())
+ *            $stream_button_kind ('live'|'vod'|null - siehe SMF_Shortcodes::resolve_stream_button_kind())
  *
  * $show_names pro Team nur maßgeblich, wenn für dieses Team ein Logo da
  * ist - fehlt es, bleibt der Name sichtbar (siehe $show_home_name/
@@ -55,6 +56,13 @@ if ( $show_logos ) {
 // - sonst stünde in der Karte nichts.
 $show_home_name = $show_names || ! $home_logo;
 $show_away_name = $show_names || ! $away_logo;
+
+$stream_label = null;
+if ( $stream_button_kind === 'vod' ) {
+    $stream_label = smf_label( 'stream_btn_vod_label', 'Aufzeichnung' );
+} elseif ( $stream_button_kind === 'live' ) {
+    $stream_label = smf_label( 'stream_btn_live_label', 'Livestream' );
+}
 ?>
 
 <div class="smf smf-single-game<?php echo $has_result ? ' smf-game--played' : ' smf-game--upcoming'; ?><?php echo $show_running_ui ? ' smf-game--running' : ''; ?><?php echo $display_status === 'canceled' ? ' smf-game--canceled' : ''; ?><?php echo $show_logos ? ' smf-single-game--with-logos' : ''; ?><?php echo ! empty( $logo_size_class ) ? ' ' . esc_attr( $logo_size_class ) : ''; ?>"
@@ -164,6 +172,19 @@ $show_away_name = $show_names || ! $away_logo;
             <?php if ( $game_day ) : ?>
                 <span><?php echo esc_html( smf_label( 'game_day_prefix', 'Spieltag' ) . ' ' . $game_day ); ?></span>
             <?php endif; ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ( $stream_label ) : ?>
+        <div class="smf-single-game__stream">
+            <?php /* Eigener <button> statt Teil des kartenweiten role="button"-Klicks:
+                     öffnet dasselbe Modal (main.js delegiert auf [data-game-id]), aber
+                     stoppt die Klick-Propagation, damit der äußere Karten-Handler nicht
+                     zusätzlich denselben AJAX-Request auslöst (siehe main.js). */ ?>
+            <button type="button" class="smf-stream-btn" data-game-id="<?php echo esc_attr( $game_id ); ?>">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8l6 4-6 4V8z"/></svg>
+                <?php echo esc_html( $stream_label ); ?>
+            </button>
         </div>
     <?php endif; ?>
 

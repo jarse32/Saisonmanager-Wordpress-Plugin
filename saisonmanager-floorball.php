@@ -20,6 +20,7 @@ define( 'SMF_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 require_once SMF_PLUGIN_DIR . 'includes/class-cache.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-api.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-game-status.php';
+require_once SMF_PLUGIN_DIR . 'includes/class-stream.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-design.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-team-finder.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-club-overview.php';
@@ -111,6 +112,25 @@ function smf_maybe_migrate_player_names() {
     update_option( 'smf_player_names_migrated', '1' );
 }
 add_action( 'plugins_loaded', 'smf_maybe_migrate_player_names' );
+
+/**
+ * Einmalige Migration für die neue Option "Livestream-Einbettung"
+ * (smf_stream_embed_mode, siehe Etappe D / SMF_Stream). Eigener Merker
+ * statt des smf_version-Gates in smf_maybe_migrate_design(): Die
+ * Plugin-Version bleibt für dieses Release zunächst unverändert (Etappe C
+ * folgt noch vor dem nächsten Versionssprung) - der smf_version-Gate würde
+ * diese Migration also nie ausführen. Default ist für Bestands- und
+ * Neuinstallationen identisch ("nur_link", die datensparsamste Stufe) -
+ * anders als bei Design/Personennamen oben gibt es hier keinen
+ * unterschiedlichen Bestandswert zu übernehmen.
+ */
+function smf_maybe_migrate_stream_embed_mode() {
+    if ( get_option( 'smf_stream_embed_mode', false ) !== false ) {
+        return;
+    }
+    update_option( 'smf_stream_embed_mode', 'nur_link' );
+}
+add_action( 'plugins_loaded', 'smf_maybe_migrate_stream_embed_mode' );
 
 /**
  * Admin-Einstellungen + POST-Handler registrieren.

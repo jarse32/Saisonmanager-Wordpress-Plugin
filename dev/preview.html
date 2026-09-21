@@ -979,6 +979,18 @@
             </div>
 
             <div class="smf-detail__section">
+                <h4 class="smf-detail__section-title">Aufzeichnung</h4>
+                <div class="smf-stream-embed">
+                    <div class="smf-stream-embed__placeholder">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/></svg>
+                        <p class="smf-stream-embed__notice">Wird von YouTube eingebettet. Beim Laden werden Daten an YouTube übertragen.</p>
+                        <button type="button" class="smf-btn smf-stream-reveal">Video laden</button>
+                        <a class="smf-stream-link" href="#">Auf YouTube ansehen</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="smf-detail__section">
                 <h4 class="smf-detail__section-title">Spielverlauf</h4>
                 <div class="smf-timeline">
                     <div class="smf-timeline__period">1. Drittel</div>
@@ -1028,6 +1040,68 @@
             <div class="smf-detail__section smf-detail__section--minor">
                 <h4 class="smf-detail__section-title">Schiedsrichter</h4>
                 <p class="smf-detail__referees">A. Schiri, B. Schiri</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <div class="preview-section-label">Livestream-/Aufzeichnungs-Einbettung (Etappe D) – Karten-Button, Modal vor/nach Klick, "Nur Link"-Modus</div>
+
+    <div class="preview-three-col">
+        <div class="smf-single-game smf-game--upcoming smf-single-game--with-logos" role="button" tabindex="0">
+            <div class="smf-single-game__label">
+                <span>Nächstes Spiel</span>
+                <span class="smf-single-game__league">Regionalliga Nord</span>
+            </div>
+            <div class="smf-single-game__date-row">
+                <span class="smf-single-game__date-day">Montag</span>
+                <span class="smf-single-game__date-full">21. September 2026</span>
+                <span class="smf-single-game__date-time">19:30 Uhr</span>
+            </div>
+            <div class="smf-single-game__matchup">
+                <div class="smf-single-game__team smf-single-game__team--home">
+                    <div class="smf-single-game__logo-wrap">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23ffffff'/%3E%3C/svg%3E" alt="" class="smf-single-game__logo">
+                    </div>
+                    <span class="smf-single-game__team-name">Floorball Beispielhausen</span>
+                </div>
+                <div class="smf-single-game__center">
+                    <div class="smf-single-game__score smf-single-game__score--upcoming">vs.</div>
+                </div>
+                <div class="smf-single-game__team smf-single-game__team--away">
+                    <div class="smf-single-game__logo-wrap">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23ffffff'/%3E%3C/svg%3E" alt="" class="smf-single-game__logo">
+                    </div>
+                    <span class="smf-single-game__team-name">Beispiel SV Nord</span>
+                </div>
+            </div>
+            <!-- $stream_label ("Livestream"/"Aufzeichnung"): kleiner Button
+                 zusätzlich zum kartenweiten Klick, siehe single-game.php -->
+            <div class="smf-single-game__stream">
+                <button type="button" class="smf-stream-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8l6 4-6 4V8z"/></svg>
+                    Livestream
+                </button>
+            </div>
+            <div class="smf-single-game__action">
+                <span class="smf-btn">Details ansehen</span>
+            </div>
+        </div>
+
+        <div>
+            <p style="font-size: 0.85rem; color: var(--smf-color-text-muted); margin: 0 0 0.5rem;">Modal-Ausschnitt, Option "Zwei-Klick" – NACH Klick auf "Video laden" (main.js ersetzt den Platzhalter durch ein iframe; hier ein Dummy statt eines echten Anbieter-Embeds):</p>
+            <div class="smf-stream-embed" style="max-width: 400px;">
+                <iframe class="smf-stream-embed__iframe" srcdoc="<html><body style='margin:0;display:flex;align-items:center;justify-content:center;height:100%;background:#111;color:#fff;font:14px sans-serif;'>Dummy-Player (kein echter Anbieter-Request)</body></html>" title="Dummy-Vorschau"></iframe>
+            </div>
+        </div>
+
+        <div>
+            <p style="font-size: 0.85rem; color: var(--smf-color-text-muted); margin: 0 0 0.5rem;">Modal-Ausschnitt, Option "Nur Link" (oder ein nicht einbettbarer Link, z.B. ein Twitch-Kanal-Link ohne konkretes Video):</p>
+            <div class="smf-detail__section" style="max-width: 400px;">
+                <h4 class="smf-detail__section-title">Livestream</h4>
+                <p>
+                    <a class="smf-btn smf-stream-link" href="#">Auf Twitch ansehen</a>
+                </p>
             </div>
         </div>
     </div>

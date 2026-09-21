@@ -18,6 +18,20 @@ class SMF_API {
     /** Fallback-Sperrzeit bei 429 ohne Retry-After-Header (Sekunden). */
     const BREAKER_DEFAULT_RETRY_AFTER = 60;
 
+    /** TTL für Stream-Felder (get_game_stream_fields()) bei upcoming/running/canceled: kurz, weil der Link oft erst kurz vor Anstoß eingetragen wird. */
+    const STREAM_CACHE_TTL_LIVE = 5 * MINUTE_IN_SECONDS;
+
+    /** TTL für Stream-Felder bei ended: lang, ein einmal gesetzter Aufzeichnungs-Link ändert sich praktisch nie mehr. */
+    const STREAM_CACHE_TTL_ENDED = 6 * HOUR_IN_SECONDS;
+
+    /**
+     * Zwischenspeicher für get_game_stream_fields() PRO PHP-Request (nicht
+     * PRO INSTANZ - static) - siehe dort.
+     *
+     * @var array<int, array{live_stream_link: string|null, vod_link: string|null}>
+     */
+    private static $stream_fields_memo = array();
+
     /** @var string */
     private $base_url;
 
@@ -358,6 +372,64 @@ class SMF_API {
      */
     public function get_game( $game_id ) {
         return $this->request( "games/{$game_id}.json", false );
+    }
+
+    /**
+     * Nur die Stream-Felder (live_stream_link, vod_link) eines Spiels - für
+     * den Livestream-/Aufzeichnungs-Button in Karten (sm_naechstes_spiel,
+     * sm_letztes_spiel, sm_spiel_duo). Lädt games/{id} wie get_game(),
+     * extrahiert aber sofort NUR die zwei Stream-Felder und verwirft den
+     * Rest (u.a. Spieler-/Schiedsrichternamen) - weder im Rückgabewert noch
+     * im eigenen Cache-Eintrag landet mehr als das.
+     *
+     * Eigener, kurzlebiger Cache-Eintrag statt des generischen
+     * games/{id}-Caches (get_game() cached bereits selbst, siehe request()):
+     * smf_cache_duration ist ein einzelner globaler Wert für alle
+     * Endpunkte, hier braucht es aber eine vom Spielstatus abhängige TTL
+     * (siehe STREAM_CACHE_TTL_*). Kein Stale-Spiegel (Stufe 2) - schlägt
+     * der Request fehl, gibt es einfach (noch) keinen Button, keine
+     * erfundene/veraltete Notreserve nötig.
+     *
+     * Zusätzlich ein statischer Zwischenspeicher PRO PHP-REQUEST (siehe
+     * $stream_fields_memo): Referenzieren mehrere Karten-Shortcodes auf
+     * derselben Seite dasselbe Spiel (z.B. sm_naechstes_spiel UND
+     * sm_spiel_duo für dasselbe Team), löst das trotzdem nur einen
+     * Request pro tatsächlich unterschiedlichem Spiel aus - im
+     * Normalfall (ein Team, "nächstes" + "letztes" Spiel) macht eine
+     * ganze Seite damit höchstens zwei zusätzliche Requests, unabhängig
+     * davon, wie oft/in welcher Kombination die Karten-Shortcodes für
+     * dasselbe Team eingebunden sind.
+     *
+     * @param int    $game_id
+     * @param string $status  Rückgabe von SMF_Game_Status::status() - steuert nur die Cache-TTL.
+     * @return array{live_stream_link: string|null, vod_link: string|null}
+     */
+    public function get_game_stream_fields( $game_id, $status ) {
+        $game_id = (int) $game_id;
+
+        if ( isset( self::$stream_fields_memo[ $game_id ] ) ) {
+            return self::$stream_fields_memo[ $game_id ];
+        }
+
+        $cache_key = 'smf_stream_fields_' . $game_id;
+        $cached    = get_transient( $cache_key );
+        if ( is_array( $cached ) ) {
+            self::$stream_fields_memo[ $game_id ] = $cached;
+            return $cached;
+        }
+
+        $game = $this->get_game( $game_id );
+
+        $fields = array(
+            'live_stream_link' => ( ! is_wp_error( $game ) && ! empty( $game['live_stream_link'] ) ) ? (string) $game['live_stream_link'] : null,
+            'vod_link'         => ( ! is_wp_error( $game ) && ! empty( $game['vod_link'] ) )         ? (string) $game['vod_link']         : null,
+        );
+
+        $ttl = ( $status === 'ended' ) ? self::STREAM_CACHE_TTL_ENDED : self::STREAM_CACHE_TTL_LIVE;
+        set_transient( $cache_key, $fields, $ttl );
+
+        self::$stream_fields_memo[ $game_id ] = $fields;
+        return $fields;
     }
 
     /** @return array|WP_Error */

@@ -115,6 +115,41 @@ if ( $smf_show_names && ! empty( $referees ) ) {
 if ( $smf_show_names && ! $ref_string && $nom_refs ) {
     $ref_string = $nom_refs;
 }
+
+// Livestream-/Aufzeichnungs-Einbettung (Etappe D). $game kommt hier bereits
+// vollständig von games/{id} (siehe smf_ajax_game_detail() im Hauptplugin) -
+// kein zusätzlicher Request nötig, die Felder werden nur mitgenutzt.
+$smf_stream_mode = get_option( 'smf_stream_embed_mode', 'nur_link' );
+$smf_stream       = null;
+
+if ( $smf_stream_mode !== 'aus' ) {
+    $smf_stream_status = SMF_Game_Status::status( $game );
+    $smf_stream_picked = SMF_Stream::pick_link( array(
+        'live_stream_link' => isset( $game['live_stream_link'] ) ? $game['live_stream_link'] : null,
+        'vod_link'         => isset( $game['vod_link'] )         ? $game['vod_link']         : null,
+    ), $smf_stream_status );
+
+    if ( $smf_stream_picked ) {
+        $smf_stream_parsed = SMF_Stream::parse_url( $smf_stream_picked['url'] );
+        if ( $smf_stream_parsed['valid'] ) {
+            $smf_stream = array(
+                'kind'      => $smf_stream_picked['kind'],
+                'parsed'    => $smf_stream_parsed,
+                'embed_url' => ( $smf_stream_mode === 'zwei_klick' && $smf_stream_parsed['embeddable'] )
+                    ? SMF_Stream::build_embed_url( $smf_stream_parsed, SMF_Stream::embed_parent_host() )
+                    : '',
+            );
+        }
+    }
+}
+
+$smf_stream_provider_label = $smf_stream ? ( $smf_stream['parsed']['provider_label'] ?: $smf_stream['parsed']['host'] ) : '';
+$smf_stream_section_title  = '';
+if ( $smf_stream ) {
+    $smf_stream_section_title = ( $smf_stream['kind'] === 'vod' )
+        ? smf_label( 'stream_section_title_vod', 'Aufzeichnung' )
+        : smf_label( 'stream_section_title_live', 'Livestream' );
+}
 ?>
 
 <div class="smf-detail">
@@ -189,6 +224,44 @@ if ( $smf_show_names && ! $ref_string && $nom_refs ) {
             <span class="smf-detail__team-name"><?php echo esc_html( $away_name ); ?></span>
         </div>
     </div>
+
+    <?php if ( $smf_stream ) : ?>
+    <!-- Livestream/Aufzeichnung (Etappe D) -->
+    <div class="smf-detail__section">
+        <h4 class="smf-detail__section-title"><?php echo esc_html( $smf_stream_section_title ); ?></h4>
+
+        <?php if ( $smf_stream['embed_url'] !== '' ) : ?>
+            <div class="smf-stream-embed">
+                <div class="smf-stream-embed__placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/></svg>
+                    <p class="smf-stream-embed__notice">
+                        <?php
+                        echo esc_html( sprintf(
+                            /* translators: %1$s: Anbieter, z.B. YouTube */
+                            smf_label( 'stream_privacy_notice', 'Wird von %1$s eingebettet. Beim Laden werden Daten an %1$s übertragen.' ),
+                            $smf_stream_provider_label
+                        ) );
+                        ?>
+                    </p>
+                    <button type="button" class="smf-btn smf-stream-reveal"
+                            data-embed-url="<?php echo esc_url( $smf_stream['embed_url'] ); ?>"
+                            data-embed-title="<?php echo esc_attr( $smf_stream_section_title . ': ' . $home_name . ' – ' . $away_name ); ?>">
+                        <?php echo esc_html( smf_label( 'stream_reveal_btn', 'Video laden' ) ); ?>
+                    </button>
+                    <a class="smf-stream-link" href="<?php echo esc_url( $smf_stream['parsed']['link_url'] ); ?>" target="_blank" rel="noopener noreferrer">
+                        <?php echo esc_html( sprintf( smf_label( 'stream_external_link', 'Auf %s ansehen' ), $smf_stream_provider_label ) ); ?>
+                    </a>
+                </div>
+            </div>
+        <?php else : ?>
+            <p>
+                <a class="smf-btn smf-stream-link" href="<?php echo esc_url( $smf_stream['parsed']['link_url'] ); ?>" target="_blank" rel="noopener noreferrer">
+                    <?php echo esc_html( sprintf( smf_label( 'stream_external_link', 'Auf %s ansehen' ), $smf_stream_provider_label ) ); ?>
+                </a>
+            </p>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
 
     <?php if ( ! empty( $timeline ) ) : ?>
     <!-- Chronologische Ereignisse -->

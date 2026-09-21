@@ -201,15 +201,16 @@ class SMF_Shortcodes {
 
         ob_start();
         smf_render_template( 'single-game', array(
-            'game'              => $game,
-            'league_name'       => $league_name,
-            'label'             => smf_label( 'next_game_label', 'Nächstes Spiel' ),
-            'running_label'     => smf_label( 'next_game_running_label', 'Läuft gerade' ),
-            'show_logos'        => $show_logos,
-            'show_names'        => $show_names,
-            'logo_size_class'   => self::logo_size_class( $atts['logo_groesse'] ),
-            'stale_since'       => $stale_since,
-            'show_status_badge' => self::resolve_show_status_badge( $atts['live_badge'] ),
+            'game'               => $game,
+            'league_name'        => $league_name,
+            'label'              => smf_label( 'next_game_label', 'Nächstes Spiel' ),
+            'running_label'      => smf_label( 'next_game_running_label', 'Läuft gerade' ),
+            'show_logos'         => $show_logos,
+            'show_names'         => $show_names,
+            'logo_size_class'    => self::logo_size_class( $atts['logo_groesse'] ),
+            'stale_since'        => $stale_since,
+            'show_status_badge'  => self::resolve_show_status_badge( $atts['live_badge'] ),
+            'stream_button_kind' => self::resolve_stream_button_kind( $api, $game ),
         ) );
         return ob_get_clean();
     }
@@ -265,20 +266,21 @@ class SMF_Shortcodes {
 
         ob_start();
         smf_render_template( 'single-game', array(
-            'game'              => $game,
-            'league_name'       => $league_name,
-            'label'             => smf_label( 'last_game_label', 'Letztes Spiel' ),
+            'game'               => $game,
+            'league_name'        => $league_name,
+            'label'              => smf_label( 'last_game_label', 'Letztes Spiel' ),
             // Kein running_label: "Letztes Spiel" zeigt konstruktionsbedingt
             // nie ein laufendes Spiel (get_last_game() schließt "running"
             // aus, siehe SMF_API::filter_past_games()) - null statt der
             // Vollständigkeit halber eine Übersetzungszeichenkette pflegen,
             // die nie gerendert wird.
-            'running_label'     => null,
-            'show_logos'        => $show_logos,
-            'show_names'        => $show_names,
-            'logo_size_class'   => self::logo_size_class( $atts['logo_groesse'] ),
-            'stale_since'       => $stale_since,
-            'show_status_badge' => self::resolve_show_status_badge( $atts['live_badge'] ),
+            'running_label'      => null,
+            'show_logos'         => $show_logos,
+            'show_names'         => $show_names,
+            'logo_size_class'    => self::logo_size_class( $atts['logo_groesse'] ),
+            'stale_since'        => $stale_since,
+            'show_status_badge'  => self::resolve_show_status_badge( $atts['live_badge'] ),
+            'stream_button_kind' => self::resolve_stream_button_kind( $api, $game ),
         ) );
         return ob_get_clean();
     }
@@ -508,6 +510,39 @@ class SMF_Shortcodes {
             return true;
         }
         return $namen_att !== 'false';
+    }
+
+    /**
+     * Ob und als was (Livestream/Aufzeichnung) eine Karte den kleinen
+     * Stream-Button zeigt (siehe single-game.php, Etappe D). Nur bei
+     * Option smf_stream_embed_mode != "aus", nur bei einem tatsächlich
+     * https-gültigen Link (SMF_Stream::parse_url()) - eine kaputte oder
+     * unsichere URL soll erst gar keinen Button erzeugen, statt im Modal
+     * dann doch nichts Anklickbares zu zeigen.
+     *
+     * @param SMF_API $api
+     * @param array   $game
+     * @return 'live'|'vod'|null
+     */
+    private static function resolve_stream_button_kind( SMF_API $api, array $game ) {
+        if ( get_option( 'smf_stream_embed_mode', 'nur_link' ) === 'aus' ) {
+            return null;
+        }
+
+        $game_id = isset( $game['game_id'] ) ? (int) $game['game_id'] : 0;
+        if ( ! $game_id ) {
+            return null;
+        }
+
+        $status        = SMF_Game_Status::status( $game );
+        $stream_fields = $api->get_game_stream_fields( $game_id, $status );
+        $picked        = SMF_Stream::pick_link( $stream_fields, $status );
+        if ( ! $picked ) {
+            return null;
+        }
+
+        $parsed = SMF_Stream::parse_url( $picked['url'] );
+        return $parsed['valid'] ? $picked['kind'] : null;
     }
 
     /**

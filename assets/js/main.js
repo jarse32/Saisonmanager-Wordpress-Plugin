@@ -29,6 +29,45 @@
                 SMF.openModal(gameId);
             });
 
+            // Stream-Button in einer Karte (Etappe D): öffnet dasselbe Modal
+            // wie ein Klick auf die Karte selbst, aber eigener Handler +
+            // stopPropagation - sonst würde der Klick zusätzlich noch den
+            // kartenweiten [data-game-id]-Handler oben auslösen (doppelter
+            // AJAX-Request für dasselbe Spiel).
+            $(document).on('click', '.smf-stream-btn', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const gameId = $(this).data('game-id');
+                if (!gameId) return;
+
+                SMF.openModal(gameId);
+            });
+
+            // Zwei-Klick-Reveal im Spieldetail-Modal (Etappe D, Option
+            // smf_stream_embed_mode = "zwei_klick"): erst hier, nach
+            // explizitem Klick, wird das iframe erzeugt - vorher (Platzhalter)
+            // ist kein Request an den Streaming-Anbieter ausgelöst worden.
+            $(document).on('click', '.smf-stream-reveal', function (e) {
+                e.preventDefault();
+
+                const $btn      = $(this);
+                const embedUrl  = $btn.data('embed-url');
+                const embedTitle = $btn.data('embed-title') || '';
+                if (!embedUrl) return;
+
+                const $iframe = $('<iframe>', {
+                    src: embedUrl,
+                    title: embedTitle,
+                    allow: 'autoplay; fullscreen; picture-in-picture',
+                    allowfullscreen: true,
+                    referrerpolicy: 'strict-origin-when-cross-origin',
+                    class: 'smf-stream-embed__iframe',
+                });
+
+                $btn.closest('.smf-stream-embed').empty().append($iframe);
+            });
+
             // Modal schließen – Close-Button
             $(document).on('click', '.smf-modal-close', function () {
                 SMF.closeModal();
@@ -114,6 +153,14 @@
          */
         closeModal() {
             if (!this.modal) return;
+
+            // Inhalt leeren statt nur zu verstecken: ein evtl. eingebetteter
+            // Livestream (Etappe D, .smf-stream-embed__iframe) darf im
+            // Hintergrund nicht weiterlaufen. Unkritisch für den Normalfall
+            // (Spieldetails) - openModal() ersetzt den Inhalt beim nächsten
+            // Öffnen ohnehin sofort durch den Loading-Zustand und lädt ihn
+            // frisch per AJAX nach.
+            this.body.empty();
 
             this.modal.hide();
             $('body').css('overflow', '');

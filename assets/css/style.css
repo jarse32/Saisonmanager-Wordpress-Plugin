@@ -801,6 +801,39 @@
 }
 
 /* ------------------------------------------------------------------ */
+/*  Livestream-/Aufzeichnungs-Button in der Karte (Etappe D)            */
+/* ------------------------------------------------------------------ */
+
+.smf-single-game__stream {
+    text-align: center;
+    margin-top: 0.625rem;
+}
+
+.smf-stream-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.5); /* Fallback für alte Browser */
+    border: 1px solid color-mix(in srgb, var(--smf-color-on-primary) 50%, transparent);
+    color: var(--smf-color-on-primary);
+    font: inherit;
+    font-weight: 700;
+    font-size: calc(var(--smf-fs-base) * 0.8);
+    padding: 0.4rem 1rem;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.smf-stream-btn:hover,
+.smf-stream-btn:focus-visible {
+    background: rgba(255,255,255,0.14); /* Fallback für alte Browser */
+    background: color-mix(in srgb, var(--smf-color-on-primary) 14%, transparent);
+    border-color: var(--smf-color-on-primary);
+}
+
+/* ------------------------------------------------------------------ */
 /*  Status-Abzeichen (SMF_Game_Status: LIVE / Abgesagt)                 */
 /*  Erscheint in .smf-single-game__center, .smf-game-score und          */
 /*  .smf-co-game__center - jeweils bereits zentriert/text-align:center, */
@@ -1111,6 +1144,68 @@
     margin: 0 0 0.625rem;
     padding-bottom: 0.35rem;
     border-bottom: 2px solid var(--smf-color-primary);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Livestream-/Aufzeichnungs-Einbettung im Spieldetail-Modal (Etappe D) */
+/* ------------------------------------------------------------------ */
+
+.smf-stream-embed {
+    aspect-ratio: 16 / 9;
+    width: 100%;
+    border-radius: calc(var(--smf-radius) * 0.75);
+    overflow: hidden;
+    background: var(--smf-color-surface-alt);
+}
+
+.smf-stream-embed__iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+/* Platzhalter vor dem ersten Klick (siehe main.js, .smf-stream-reveal) -
+   bewusst kein Bild/Thumbnail vom Anbieter (kein Request vor dem Klick). */
+.smf-stream-embed__placeholder {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    text-align: center;
+    color: var(--smf-color-text-muted);
+}
+
+.smf-stream-embed__notice {
+    margin: 0;
+    max-width: 32em;
+    font-size: calc(var(--smf-fs-base) * 0.875);
+}
+
+.smf-stream-reveal {
+    font-size: calc(var(--smf-fs-base) * 0.85);
+    padding: 0.5rem 1.25rem;
+}
+
+.smf-stream-link {
+    font-size: calc(var(--smf-fs-base) * 0.8125);
+    color: var(--smf-color-primary);
+    text-decoration: underline;
+}
+
+.smf-stream-link:hover {
+    color: var(--smf-color-primary-dark);
+}
+
+/* "Nur Link"-Modus / nicht einbettbarer Link (z.B. Twitch-Kanal-Link):
+   der Link erscheint dann als eigener Button statt als Unterstreichung. */
+p > a.smf-btn.smf-stream-link {
+    text-decoration: none;
 }
 
 /* ------------------------------------------------------------------ */
