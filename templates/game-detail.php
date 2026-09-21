@@ -9,6 +9,7 @@ $api = new SMF_API();
 
 $date_ts    = $api->parse_game_date( $game );
 $has_result = $api->has_result( $game );
+$game_tz    = SMF_API::game_timezone();
 
 $home_name  = isset( $game['home_team_name'] )  ? $game['home_team_name']  : '?';
 $away_name  = isset( $game['guest_team_name'] ) ? $game['guest_team_name'] : '?';
@@ -125,7 +126,8 @@ if ( $smf_show_names && ! $ref_string && $nom_refs ) {
         <?php endif; ?>
         <?php if ( $date_ts ) : ?>
             <div class="smf-detail__date">
-                <?php echo esc_html( date_i18n( 'l, d. F Y', $date_ts ) ); ?>
+                <?php // wp_date() statt date_i18n(), siehe SMF_API::game_timezone() ?>
+                <?php echo esc_html( wp_date( 'l, d. F Y', $date_ts, $game_tz ) ); ?>
                 <?php if ( ! empty( $game['time'] ) ) : ?>
                     &ndash; <?php echo esc_html( $game['time'] . ' ' . smf_label( 'time_suffix', 'Uhr' ) ); ?>
                 <?php endif; ?>

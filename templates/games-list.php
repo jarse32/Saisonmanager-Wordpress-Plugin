@@ -21,7 +21,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  *   arena_name, ended, started
  */
 
-$api = new SMF_API();
+$api     = new SMF_API();
+$game_tz = SMF_API::game_timezone();
 
 $title_map = array(
     'alle'      => smf_label( 'games_list_title_alle', 'Alle Spiele' ),
@@ -89,7 +90,8 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : smf_labe
                         <?php if ( $date_ts ) : ?>
                             <span class="smf-game-date">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                <?php echo esc_html( date_i18n( 'd.m.Y', $date_ts ) ); ?>
+                                <?php // wp_date() statt date_i18n(), siehe SMF_API::game_timezone() ?>
+                                <?php echo esc_html( wp_date( 'd.m.Y', $date_ts, $game_tz ) ); ?>
                                 <?php if ( ! empty( $game['time'] ) ) : ?>
                                     <span class="smf-game-time"><?php echo esc_html( $game['time'] . ' ' . smf_label( 'time_suffix', 'Uhr' ) ); ?></span>
                                 <?php endif; ?>

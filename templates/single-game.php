@@ -16,6 +16,7 @@ $api = new SMF_API();
 $game_id    = isset( $game['game_id'] )  ? $game['game_id']  : 0;
 $has_result = $api->has_result( $game );
 $date_ts    = $api->parse_game_date( $game );
+$game_tz    = SMF_API::game_timezone();
 
 $home_name  = isset( $game['home_team_name'] )     ? $game['home_team_name']     : '?';
 $away_name  = isset( $game['guest_team_name'] )    ? $game['guest_team_name']    : '?';
@@ -63,8 +64,16 @@ $show_away_name = $show_names || ! $away_logo;
     ?>
     <?php if ( $date_ts ) : ?>
         <div class="smf-single-game__date-row">
-            <span class="smf-single-game__date-day"><?php echo esc_html( date_i18n( 'l', $date_ts ) ); ?></span>
-            <span class="smf-single-game__date-full"><?php echo esc_html( date_i18n( 'd. F Y', $date_ts ) ); ?></span>
+            <?php /* wp_date() statt date_i18n(): date_i18n() addiert den
+                     AKTUELLEN gmt_offset der Site auf den Timestamp, ohne
+                     Sommer-/Winterzeit am Datum des Spiels selbst zu
+                     berücksichtigen - bei einer anderen Site-Zeitzone als
+                     Europe/Berlin könnte das vom unverändert angezeigten
+                     Rohstring $game['time'] abweichen. wp_date() mit
+                     expliziter Zeitzone ist DST-korrekt für das jeweilige
+                     Datum, siehe SMF_API::game_timezone(). */ ?>
+            <span class="smf-single-game__date-day"><?php echo esc_html( wp_date( 'l', $date_ts, $game_tz ) ); ?></span>
+            <span class="smf-single-game__date-full"><?php echo esc_html( wp_date( 'd. F Y', $date_ts, $game_tz ) ); ?></span>
             <?php /* Zeile bleibt immer im Markup (layoutwirksam, siehe
                      .smf-single-game__date-time--empty in style.css) - sonst
                      hat die Karte ohne Uhrzeit (z.B. "Letztes Spiel") eine

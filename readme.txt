@@ -1,7 +1,7 @@
 === SM Floorball ===
 Contributors: jarse32
 Tags: floorball, sport, spielplan, ergebnisse, tabelle
-Requires at least: 5.0
+Requires at least: 5.3
 Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 1.6.0

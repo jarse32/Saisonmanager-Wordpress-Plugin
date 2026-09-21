@@ -16,7 +16,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  * tatsächlich ein Logo vorliegt, sonst bleibt der Name sichtbar.
  */
 
-$api = new SMF_API();
+$api     = new SMF_API();
+$game_tz = SMF_API::game_timezone();
 
 /**
  * Einzelne kompakte Spielkarte ausgeben
@@ -26,8 +27,9 @@ $api = new SMF_API();
  * @param bool    $show_names
  * @param string  $hervorheben
  * @param int[]   $own_team_ids
+ * @param DateTimeZone $game_tz
  */
-$render_game = function ( array $game ) use ( $api, $show_names, $hervorheben, $own_team_ids ) {
+$render_game = function ( array $game ) use ( $api, $show_names, $hervorheben, $own_team_ids, $game_tz ) {
     $game_id    = isset( $game['game_id'] )              ? $game['game_id']              : 0;
     $has_result = $api->has_result( $game );
     $date_ts    = $api->parse_game_date( $game );
@@ -68,7 +70,8 @@ $render_game = function ( array $game ) use ( $api, $show_names, $hervorheben, $
             <?php endif; ?>
             <?php if ( $date_ts ) : ?>
                 <span class="smf-co-date">
-                    <?php echo esc_html( date_i18n( 'D, d.m.', $date_ts ) ); ?>
+                    <?php // wp_date() statt date_i18n(), siehe SMF_API::game_timezone() ?>
+                    <?php echo esc_html( wp_date( 'D, d.m.', $date_ts, $game_tz ) ); ?>
                     <?php if ( ! $has_result && ! empty( $game['time'] ) ) : ?>
                         <span class="smf-co-time"><?php echo esc_html( $game['time'] ); ?></span>
                     <?php endif; ?>

@@ -19,6 +19,7 @@ define( 'SMF_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 require_once SMF_PLUGIN_DIR . 'includes/class-cache.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-api.php';
+require_once SMF_PLUGIN_DIR . 'includes/class-game-status.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-design.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-team-finder.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-club-overview.php';

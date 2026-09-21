@@ -18,19 +18,6 @@ class SMF_API {
     /** Fallback-Sperrzeit bei 429 ohne Retry-After-Header (Sekunden). */
     const BREAKER_DEFAULT_RETRY_AFTER = 60;
 
-    /**
-     * Obergrenze, ab der ein started=true/ended=false-Spiel nicht mehr als
-     * "läuft gerade" gilt, siehe filter_upcoming_games()/filter_past_games().
-     * Schützt gegen ein Spiel, bei dem der Verband ended nie setzt (z.B.
-     * Spielbericht nie abgeschlossen) - ohne diese Obergrenze bliebe es
-     * dauerhaft "nächstes Spiel" und würde das tatsächlich nächste Spiel
-     * verdrängen. Stichprobe über ~1.280 Spiele aus 35 Ligen (aktuelle und
-     * vorherige Saison, September 2026) fand keinen einzigen solchen Fall,
-     * das Risiko bleibt aber real genug für eine feste Obergrenze statt
-     * einer Option - siehe Umsetzungsauftrag.
-     */
-    const RUNNING_MAX_AGE = 4 * HOUR_IN_SECONDS;
-
     /** @var string */
     private $base_url;
 
@@ -482,10 +469,29 @@ class SMF_API {
      * Unix-Timestamp aus Spieldaten extrahieren.
      * API liefert Datum und Zeit getrennt: date="YYYY-MM-DD", time="HH:MM"
      *
+     * Anstoßzeiten der Saisonmanager-API sind immer Europe/Berlin (deutscher
+     * Floorball-Spielbetrieb) - unabhängig davon, wie die WordPress-
+     * Installation selbst konfiguriert ist (Einstellungen -> Allgemein ->
+     * Zeitzone). Deshalb bewusst fest auf Europe/Berlin verdrahtet statt
+     * wp_timezone(): Das wäre die Zeitzone der SITE, nicht zwingend die der
+     * Datenquelle - ein Verein könnte seine WordPress-Zeitzone abweichend
+     * konfiguriert haben (oder auf UTC belassen), ohne dass sich dadurch
+     * ändert, wann ein Spiel in Deutschland tatsächlich angepfiffen wird.
+     * Vorher lief das über strtotime() ohne explizite Zeitzone - das nutzt
+     * PHPs Default-Zeitzone, und die ist unter WordPress immer UTC, nie die
+     * Site-Zeitzone. Ein Anstoß "19:30" wurde damit als 19:30 UTC
+     * interpretiert, je nach Sommer-/Winterzeit 1-2 Stunden zu spät.
+     *
+     * Statisch, weil rein funktional (kein $this nötig) - unter anderem
+     * SMF_Game_Status::is_running() ruft das ohne eigene SMF_API-Instanz
+     * auf. Bestehende Aufrufstellen ($api->parse_game_date(...)) bleiben
+     * unverändert gültig, ein statischer Methodenaufruf über eine Instanz
+     * ist in PHP zulässig.
+     *
      * @param array $game
      * @return int|false
      */
-    public function parse_game_date( $game ) {
+    public static function parse_game_date( $game ) {
         if ( empty( $game['date'] ) ) return false;
 
         $date_str = $game['date'];
@@ -493,18 +499,51 @@ class SMF_API {
             $date_str .= ' ' . $game['time'];
         }
 
-        $ts = strtotime( $date_str );
-        return $ts ?: false;
+        try {
+            $dt = new DateTimeImmutable( $date_str, self::game_timezone() );
+        } catch ( Exception $e ) {
+            // z.B. "TBD" oder ein leerer/kaputter Wert in game_days.date -
+            // siehe "Bekannte Datenfallen" in
+            // docs/saisonmanager-api-uebersicht.md im Website-Repo.
+            return false;
+        }
+
+        return $dt->getTimestamp();
+    }
+
+    /**
+     * Zeitzone der Saisonmanager-Anstoßzeiten, siehe ausführliche Begründung
+     * an parse_game_date() oben (Europe/Berlin statt wp_timezone() - Zeitzone
+     * der Datenquelle, nicht der Site).
+     *
+     * Auch für die ANZEIGE relevant, nicht nur zum Parsen: Wochentag/Datum
+     * eines Spiels werden aus dem geparsten Timestamp per wp_date() erzeugt
+     * (siehe single-game.php, games-list.php, club-overview.php,
+     * game-detail.php), die Uhrzeit dagegen bleibt überall der unveränderte
+     * Rohstring $game['time']. Würde die Datums-Anzeige stattdessen
+     * wp_timezone() (Site-Zeitzone) nutzen, könnten Wochentag/Datum und die
+     * daneben angezeigte Rohzeit bei einer von Europe/Berlin abweichenden
+     * Site-Zeitzone auseinanderlaufen ("Montag, 19:30 Uhr" obwohl der 19:30-
+     * Anstoß in Berlin bereits auf einen Dienstag fällt) - beide Anzeigen
+     * müssen dieselbe Zeitzone verwenden wie die Quelle selbst.
+     *
+     * @return DateTimeZone
+     */
+    public static function game_timezone(): DateTimeZone {
+        return new DateTimeZone( 'Europe/Berlin' );
     }
 
     /**
      * Prüfen ob ein Spiel ein Ergebnis hat.
      * API: ended=true und result.home_goals / result.guest_goals gesetzt
      *
+     * Statisch aus demselben Grund wie parse_game_date() oben - genutzt von
+     * SMF_Game_Status::status() ohne eigene SMF_API-Instanz.
+     *
      * @param array $game
      * @return bool
      */
-    public function has_result( $game ) {
+    public static function has_result( $game ) {
         if ( ! empty( $game['ended'] ) ) {
             return true;
         }
@@ -516,48 +555,39 @@ class SMF_API {
     }
 
     /**
-     * Ob ein Spiel aktuell als "läuft" gilt: angepfiffen, noch nicht
-     * beendet, und der Anstoß liegt höchstens RUNNING_MAX_AGE zurück. Ein
-     * fehlendes/unparsbares Datum (parse_game_date() liefert dann false,
-     * z.B. bei "TBD") zählt bewusst NICHT als laufend - ohne verlässliches
-     * Datum lässt sich das Zeitfenster nicht prüfen.
-     *
-     * Gemeinsam genutzt von filter_upcoming_games() und filter_past_games(),
-     * damit beide exakt dieselbe Grenze verwenden - sonst könnte ein Spiel
-     * kurzzeitig in keinem oder in beiden Filtern gleichzeitig auftauchen.
-     *
-     * @param array $game
-     * @param int   $now
-     * @return bool
-     */
-    private function is_running_within_window( $game, $now ) {
-        if ( empty( $game['started'] ) || ! empty( $game['ended'] ) ) {
-            return false;
-        }
-        $date = $this->parse_game_date( $game );
-        return $date && ( $now - $date ) <= self::RUNNING_MAX_AGE;
-    }
-
-    /**
-     * @param array $games
+     * @param array    $games
+     * @param int|null $now Referenzzeitpunkt (Unix-Timestamp), Default time() - nur für Tests überschreiben, siehe SMF_Game_Status::status().
      * @return array
      */
-    public function filter_past_games( $games ) {
-        $now = time();
+    public function filter_past_games( $games, $now = null ) {
+        $now = $now ?? time();
         return array_values( array_filter( $games, function( $game ) use ( $now ) {
-            // Ein noch laufendes Spiel (siehe is_running_within_window())
-            // ist nie "vergangen" - bleibt Kandidat für
-            // filter_upcoming_games() (siehe dort), sonst könnte dasselbe
-            // Spiel für eine Weile gleichzeitig als nächstes UND als
-            // letztes Spiel erscheinen. Jenseits von RUNNING_MAX_AGE (z.B.
-            // weil der Verband ended nie setzt) greift wieder die normale
-            // Datums-Logik unten - das "Zombie-Spiel" landet dann wie
-            // jedes andere überfällige Spiel im 2h-Puffer-Fallback.
-            if ( $this->is_running_within_window( $game, $now ) ) {
+            $status = SMF_Game_Status::status( $game, $now );
+
+            // Ein noch laufendes Spiel ist nie "vergangen" - bleibt
+            // Kandidat für filter_upcoming_games() (siehe dort), sonst
+            // könnte dasselbe Spiel für eine Weile gleichzeitig als
+            // nächstes UND als letztes Spiel erscheinen. Jenseits von
+            // RUNNING_MAX_AGE (z.B. weil der Verband ended nie setzt)
+            // greift wieder die normale Datums-Logik unten - das
+            // "Zombie-Spiel" landet dann wie jedes andere überfällige
+            // Spiel im 2h-Puffer-Fallback.
+            if ( $status === 'running' ) {
                 return false;
             }
 
-            $date = $this->parse_game_date( $game );
+            // Ein abgesagtes Spiel hat kein Ergebnis und wird es auch nie
+            // bekommen - taugt daher nicht als "letztes Spiel"
+            // (get_last_game() würde sonst eine Absage statt des zuletzt
+            // tatsächlich gespielten Spiels zeigen). Bleibt weiterhin
+            // Kandidat für filter_upcoming_games(), wenn sein Datum noch in
+            // der Zukunft liegt - dort ist die Absage relevante Information
+            // (Abgesagt-Badge), hier wäre sie nur eine Lücke ohne Kontext.
+            if ( $status === 'canceled' ) {
+                return false;
+            }
+
+            $date = self::parse_game_date( $game );
             if ( ! $date ) return false;
             // Spiel gilt als vergangen wenn das Datum + 2h Puffer überschritten ist
             // (ended=true ist im Spielplan-Endpoint nicht immer gesetzt) - reiner
@@ -568,54 +598,57 @@ class SMF_API {
     }
 
     /**
-     * @param array $games
+     * @param array    $games
+     * @param int|null $now Referenzzeitpunkt (Unix-Timestamp), Default time() - nur für Tests überschreiben, siehe SMF_Game_Status::status().
      * @return array
      */
-    public function filter_upcoming_games( $games ) {
-        $now = time();
+    public function filter_upcoming_games( $games, $now = null ) {
+        $now = $now ?? time();
         return array_values( array_filter( $games, function( $game ) use ( $now ) {
-            if ( $this->has_result( $game ) ) return false;
+            $status = SMF_Game_Status::status( $game, $now );
+
+            if ( $status === 'ended' ) return false;
 
             // Ein laufendes Spiel zählt als nächstes/aktuelles Spiel - aber
             // nur innerhalb von RUNNING_MAX_AGE seit Anstoß (siehe
-            // is_running_within_window()). Ohne diese Obergrenze bliebe ein
+            // SMF_Game_Status::status()). Ohne diese Obergrenze bliebe ein
             // Spiel, bei dem der Verband ended nie setzt (z.B. Spielbericht
             // nie abgeschlossen), dauerhaft als "nächstes" hängen und würde
             // das tatsächlich nächste Spiel verdrängen.
-            if ( $this->is_running_within_window( $game, $now ) ) {
-                return true;
-            }
+            if ( $status === 'running' ) return true;
 
-            $date = $this->parse_game_date( $game );
+            $date = self::parse_game_date( $game );
             return $date && $date >= $now;
         } ) );
     }
 
     /**
-     * @param array $games
+     * @param array    $games
+     * @param int|null $now Referenzzeitpunkt, siehe filter_past_games().
      * @return array|null
      */
-    public function get_last_game( $games ) {
-        $past = $this->filter_past_games( $games );
+    public function get_last_game( $games, $now = null ) {
+        $past = $this->filter_past_games( $games, $now );
         if ( empty( $past ) ) return null;
 
         usort( $past, function( $a, $b ) {
-            return $this->parse_game_date( $b ) - $this->parse_game_date( $a );
+            return self::parse_game_date( $b ) - self::parse_game_date( $a );
         } );
 
         return $past[0];
     }
 
     /**
-     * @param array $games
+     * @param array    $games
+     * @param int|null $now Referenzzeitpunkt, siehe filter_upcoming_games().
      * @return array|null
      */
-    public function get_next_game( $games ) {
-        $upcoming = $this->filter_upcoming_games( $games );
+    public function get_next_game( $games, $now = null ) {
+        $upcoming = $this->filter_upcoming_games( $games, $now );
         if ( empty( $upcoming ) ) return null;
 
         usort( $upcoming, function( $a, $b ) {
-            return $this->parse_game_date( $a ) - $this->parse_game_date( $b );
+            return self::parse_game_date( $a ) - self::parse_game_date( $b );
         } );
 
         return $upcoming[0];
