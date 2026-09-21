@@ -4,7 +4,7 @@ Tags: floorball, sport, spielplan, ergebnisse, tabelle
 Requires at least: 5.3
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.6.0
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,22 @@ im `main`-Branch des Repositories eine neue Version veröffentlicht wird -
 Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren*.
 
 == Changelog ==
+
+= 1.7.0 =
+* Neuer Shortcode `sm_spiel_duo`: nächstes und letztes Spiel nebeneinander
+  in einem gemeinsamen Karten-Layout, beide gleich hoch
+* LIVE-Kennzeichnung für laufende Spiele in Karten und Spiellisten, per
+  Attribut abschaltbar; eigenes `live_badge`-Attribut zur Anpassung des
+  Textes
+* Abgesagte Spiele werden jetzt ebenfalls gekennzeichnet (Karten und
+  Spiellisten) und tauchen nicht mehr fälschlich als "letztes Spiel" auf
+* Bugfix: ein laufendes Spiel konnte bis zu 2 Stunden lang weder als
+  nächstes noch als letztes Spiel angezeigt werden
+* Zeitzonen-Fix: Anstoßzeiten werden jetzt anhand der echten Zeitzone
+  Europe/Berlin berechnet statt mit einem festen Offset, damit sie auch
+  rund um die Zeitumstellung korrekt bleiben
+* Voraussetzung jetzt WordPress 5.3 (bisher 5.0), wegen der für den
+  Zeitzonen-Fix genutzten `wp_date()`-Funktion
 
 = 1.6.0 =
 * Neue Shortcode-Attribute `namen` (true/false) und `logo_groesse` (klein/
@@ -135,6 +151,11 @@ Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren
 * Vereinsübersicht (alle Teams eines Vereins)
 
 == Upgrade Notice ==
+
+= 1.7.0 =
+Keine Aktion nötig. Neu: Shortcode `sm_spiel_duo`, LIVE-/Abgesagt-
+Kennzeichnung in Karten und Spiellisten, Zeitzonen-Fix und ein Bugfix für
+laufende Spiele. Voraussetzung jetzt WordPress 5.3 (bisher 5.0).
 
 = 1.6.0 =
 Keine Aktion nötig - das Erscheinungsbild bleibt unverändert, solange die
