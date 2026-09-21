@@ -606,6 +606,11 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    /* Grid-Items haben min-width:auto (= Content-Breite) als Default -
+       ohne das hier würde eine Karte in .smf-spiel-duo__grid ihre Spalte
+       (minmax(0, 1fr)) aufblähen statt umzubrechen, sobald Teamname oder
+       Button-Text nicht mehr in die verfügbare Breite passen. */
+    min-width: 0;
 }
 
 .smf-single-game:hover {
@@ -879,11 +884,18 @@
     align-items: stretch;
 }
 
-/* Schwellwert 36rem (576px): zwei Karten mit Logo, Teamnamen und
-   Innenabstand brauchen je ca. 17rem, damit sie nicht gequetscht wirken. */
-@container smf-spiel-duo (min-width: 36rem) {
+/* Schwellwert 576px: zwei Karten mit Logo, Teamnamen und Innenabstand
+   brauchen je ca. 272px, damit sie nicht gequetscht wirken. Bewusst in px
+   statt rem: eine @container-Bedingung kann keine var() auflösen, rem
+   würde sich also gegen die Root-Schriftgröße des Themes skalieren statt
+   gegen --smf-fs-base (16px) - setzt ein Theme html{font-size} kleiner als
+   16px (z.B. die verbreitete 62.5%-Technik), triggert die Query auf schon
+   sehr schmalen Mobile-Breiten, ohne dass die Karten dort tatsächlich
+   nebeneinander passen (siehe minmax(0, 1fr)/min-width:0 unten als
+   zusätzliche Absicherung gegen genau diesen Fall). */
+@container smf-spiel-duo (min-width: 576px) {
     .smf-spiel-duo__grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
 }
 

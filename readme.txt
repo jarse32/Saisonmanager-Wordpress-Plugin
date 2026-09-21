@@ -4,7 +4,7 @@ Tags: floorball, sport, spielplan, ergebnisse, tabelle
 Requires at least: 5.3
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.7.0
+Stable tag: 1.7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,13 @@ im `main`-Branch des Repositories eine neue Version veröffentlicht wird -
 Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren*.
 
 == Changelog ==
+
+= 1.7.1 =
+* Bugfix `sm_spiel_duo`: Karten standen auf dem Handy nebeneinander statt
+  gestapelt und liefen über den Bildschirmrand hinaus, wenn das Theme eine
+  kleinere Root-Schriftgröße setzt (z.B. `html{font-size:62.5%}`) - die
+  Umbruch-Schwelle des Karten-Layouts war in `rem` angegeben und skalierte
+  sich dadurch mit
 
 = 1.7.0 =
 * Neuer Shortcode `sm_spiel_duo`: nächstes und letztes Spiel nebeneinander
@@ -151,6 +158,11 @@ Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren
 * Vereinsübersicht (alle Teams eines Vereins)
 
 == Upgrade Notice ==
+
+= 1.7.1 =
+Bugfix: Karten von `sm_spiel_duo` liefen auf dem Handy über den Bildschirmrand
+hinaus statt zu stapeln (betraf Themes mit kleinerer Root-Schriftgröße).
+Keine Aktion nötig.
 
 = 1.7.0 =
 Keine Aktion nötig. Neu: Shortcode `sm_spiel_duo`, LIVE-/Abgesagt-
