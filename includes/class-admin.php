@@ -120,6 +120,12 @@ class SMF_Admin {
             'sanitize_callback' => 'sanitize_text_field',
             'default'           => '',
         ] );
+        register_setting( 'smf_settings_group', 'smf_live_badge_enabled', [
+            'sanitize_callback' => static function ( $val ) {
+                return $val === 'aus' ? 'aus' : 'an';
+            },
+            'default'           => 'an',
+        ] );
         register_setting( 'smf_settings_group', 'smf_show_player_names', [
             'sanitize_callback' => static function ( $val ) {
                 return ! empty( $val ) ? '1' : '';
@@ -401,6 +407,24 @@ class SMF_Admin {
                                         erreichbar, soll die eigene Seite trotzdem schnell laden – bei
                                         mehreren Shortcodes auf einer Seite summiert sich sonst die
                                         Wartezeit, bis die Seite selbst in ein Timeout läuft.
+                                    </p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="smf_live_badge_enabled">LIVE-Kennzeichnung</label></th>
+                                <td>
+                                    <select id="smf_live_badge_enabled" name="smf_live_badge_enabled">
+                                        <option value="an" <?php selected( get_option( 'smf_live_badge_enabled', 'an' ), 'an' ); ?>>An</option>
+                                        <option value="aus" <?php selected( get_option( 'smf_live_badge_enabled', 'an' ), 'aus' ); ?>>Aus</option>
+                                    </select>
+                                    <p class="description">
+                                        Zeigt ein LIVE-Abzeichen auf einem gerade laufenden Spiel (Anstoß erfolgt,
+                                        noch nicht beendet) in Spielkarten und Spiellisten - ohne den Spielstand zu
+                                        erfinden, falls der eigene Saisonmanager-Key keine Echtzeit-Freigabe hat
+                                        (siehe „Ausfallverhalten“ in der README). Kein Abzeichen bei Daten aus der
+                                        Notreserve (Verbandsserver gerade nicht erreichbar) oder bei einem Anstoß,
+                                        der mehr als vier Stunden zurückliegt. Pro Einbindung über das
+                                        Shortcode-Attribut <code>live_badge="false"</code> abschaltbar.
                                     </p>
                                 </td>
                             </tr>
@@ -734,7 +758,8 @@ class SMF_Admin {
                                     <code>namen</code> (true/false, Standard: true), <code>logo_groesse</code>
                                     (klein/mittel/gross/sehr_gross, Standard: mittel), <code>hervorheben</code>
                                     (leer = eigene Vereine automatisch, <code>false</code> = aus,
-                                    Team-ID/Namensfragment = genau dieses Team)
+                                    Team-ID/Namensfragment = genau dieses Team), <code>live_badge</code>
+                                    (true/false, Standard: true - LIVE-/Abgesagt-Abzeichen)
                                 </td>
                             </tr>
                             <tr>
@@ -743,7 +768,8 @@ class SMF_Admin {
                                 <td>
                                     <code>liga_id</code>, <code>team</code>, <code>logos</code> (true/false, Standard: true),
                                     <code>namen</code> (true/false, Standard: true), <code>logo_groesse</code>
-                                    (klein/mittel/gross/sehr_gross, Standard: mittel). <code>hervorheben</code> wird
+                                    (klein/mittel/gross/sehr_gross, Standard: mittel), <code>live_badge</code>
+                                    (true/false, Standard: true). <code>hervorheben</code> wird
                                     akzeptiert, hat hier aber keinen sichtbaren Effekt (nur zwei Teams gleichzeitig,
                                     kein "unter vielen" wie bei Tabelle/Spielplan)
                                 </td>
@@ -754,7 +780,8 @@ class SMF_Admin {
                                 <td>
                                     <code>liga_id</code>, <code>team</code>, <code>logos</code> (true/false, Standard: true),
                                     <code>namen</code> (true/false, Standard: true), <code>logo_groesse</code>
-                                    (klein/mittel/gross/sehr_gross, Standard: mittel). <code>hervorheben</code> wird
+                                    (klein/mittel/gross/sehr_gross, Standard: mittel), <code>live_badge</code>
+                                    (true/false, Standard: true). <code>hervorheben</code> wird
                                     akzeptiert, hat hier aber keinen sichtbaren Effekt (wie bei <code>sm_naechstes_spiel</code>)
                                 </td>
                             </tr>
@@ -777,7 +804,8 @@ class SMF_Admin {
                                     <code>logo_groesse</code> (klein/mittel/gross/sehr_gross, Standard: mittel),
                                     <code>hervorheben</code> (Standard: <code>false</code> - hier ist ohnehin jedes
                                     Spiel eins der eigenen Teams; per Team-ID/Namensfragment trotzdem gezielt
-                                    nutzbar, z.B. um nur die 1. Mannschaft zu markieren)
+                                    nutzbar, z.B. um nur die 1. Mannschaft zu markieren), <code>live_badge</code>
+                                    (true/false, Standard: true)
                                 </td>
                             </tr>
                             <tr>

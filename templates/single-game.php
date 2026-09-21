@@ -2,9 +2,11 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 /**
  * Template: Einzelnes Spiel (nächstes / letztes)
- * Variablen: $game, $league_name, $label, $show_logos, $show_names,
+ * Variablen: $game, $league_name, $label, $running_label (string|null),
+ *            $show_logos, $show_names,
  *            $logo_size_class (string, siehe SMF_Shortcodes::logo_size_class()),
- *            $stale_since (int|null - siehe SMF_API::stale_since())
+ *            $stale_since (int|null - siehe SMF_API::stale_since()),
+ *            $show_status_badge (bool - siehe SMF_Shortcodes::resolve_show_status_badge())
  *
  * $show_names pro Team nur maßgeblich, wenn für dieses Team ein Logo da
  * ist - fehlt es, bleibt der Name sichtbar (siehe $show_home_name/
@@ -17,6 +19,18 @@ $game_id    = isset( $game['game_id'] )  ? $game['game_id']  : 0;
 $has_result = $api->has_result( $game );
 $date_ts    = $api->parse_game_date( $game );
 $game_tz    = SMF_API::game_timezone();
+
+$status = SMF_Game_Status::status( $game );
+// Staleness-Gate: Daten aus der Notreserve (Verbandsserver gerade nicht
+// erreichbar) können veraltet sein - ein "läuft gerade" auf so einem Stand
+// wäre eine erfundene Momentaufnahme. Karte fällt in diesem Fall optisch
+// komplett auf "bevorstehend" zurück (kein Live-Label, kein Badge, kein
+// "Ergebnis folgt"), der bestehende stale_notice()-Hinweis unten bleibt die
+// einzige Kommunikation über den veralteten Stand.
+$display_status = ( $status === 'running' && $stale_since ) ? 'upcoming' : $status;
+
+$show_running_ui = $display_status === 'running';
+$show_badge      = ! empty( $show_status_badge ) && in_array( $display_status, array( 'running', 'canceled' ), true );
 
 $home_name  = isset( $game['home_team_name'] )     ? $game['home_team_name']     : '?';
 $away_name  = isset( $game['guest_team_name'] )    ? $game['guest_team_name']    : '?';
@@ -43,7 +57,7 @@ $show_home_name = $show_names || ! $home_logo;
 $show_away_name = $show_names || ! $away_logo;
 ?>
 
-<div class="smf smf-single-game<?php echo $has_result ? ' smf-game--played' : ' smf-game--upcoming'; ?><?php echo $show_logos ? ' smf-single-game--with-logos' : ''; ?><?php echo ! empty( $logo_size_class ) ? ' ' . esc_attr( $logo_size_class ) : ''; ?>"
+<div class="smf smf-single-game<?php echo $has_result ? ' smf-game--played' : ' smf-game--upcoming'; ?><?php echo $show_running_ui ? ' smf-game--running' : ''; ?><?php echo $display_status === 'canceled' ? ' smf-game--canceled' : ''; ?><?php echo $show_logos ? ' smf-single-game--with-logos' : ''; ?><?php echo ! empty( $logo_size_class ) ? ' ' . esc_attr( $logo_size_class ) : ''; ?>"
      <?php if ( $game_id ) : ?>
          data-game-id="<?php echo esc_attr( $game_id ); ?>"
          role="button"
@@ -52,7 +66,7 @@ $show_away_name = $show_names || ! $away_logo;
 
     <!-- Label + Liga -->
     <div class="smf-single-game__label">
-        <span><?php echo esc_html( $label ); ?></span>
+        <span><?php echo esc_html( ( $show_running_ui && ! empty( $running_label ) ) ? $running_label : $label ); ?></span>
         <?php if ( $league_name ) : ?>
             <span class="smf-single-game__league"><?php echo esc_html( $league_name ); ?></span>
         <?php endif; ?>
@@ -106,8 +120,17 @@ $show_away_name = $show_names || ! $away_logo;
         </div>
 
         <div class="smf-single-game__center">
+            <?php if ( $show_badge ) : ?>
+                <?php echo smf_game_status_badge_html( $display_status ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapt bereits intern ?>
+            <?php endif; ?>
             <?php if ( $has_result ) : ?>
                 <div class="smf-single-game__score"><?php echo esc_html( $home_score . ' : ' . $away_score ); ?></div>
+            <?php elseif ( $show_running_ui ) : ?>
+                <?php /* Niemals 0:0 erfinden: ohne Echtzeit-Freigabe blendet
+                         die API das Ergebnis eines laufenden Spiels aus, statt
+                         es veraltet zu liefern (siehe README, Abschnitt
+                         "Ausfallverhalten"/Umsetzungsauftrag Etappe B). */ ?>
+                <div class="smf-single-game__score smf-single-game__score--upcoming"><?php echo esc_html( smf_label( 'live_no_result_label', 'Live – Ergebnis folgt' ) ); ?></div>
             <?php else : ?>
                 <div class="smf-single-game__score smf-single-game__score--upcoming"><?php echo esc_html( smf_label( 'vs_label', 'vs.' ) ); ?></div>
             <?php endif; ?>

@@ -27,6 +27,18 @@
     --smf-color-on-primary:    var(--smf-color-surface);
     --smf-color-on-accent:     var(--smf-color-text);
 
+    /* LIVE-/Abgesagt-Abzeichen (SMF_Game_Status): eigene, feste Tokens statt
+       Wiederverwendung von primary/accent - beide sind je nach Vereinsfarben
+       zu unterschiedlich (mal dunkel, mal hell), ein Live-Indikator sollte
+       aber unabhängig von der Vereinsfarbe erkennbar rot bleiben. Nicht Teil
+       von SMF_Design::build_css() (siehe dortige Variablenliste) - wer die
+       Farbe anpassen will, überschreibt die Variable direkt per Child-Theme-
+       CSS, siehe README "Hooks für Theme-Entwickler:innen". */
+    --smf-color-live:          #d6293e;
+    --smf-color-on-live:       #ffffff;
+    --smf-color-canceled:      #6b7280;
+    --smf-color-on-canceled:   #ffffff;
+
     /* Team-Highlighting (Attribut hervorheben): statischer Fallback für
        Neuinstallationen ohne gespeicherte Design-Konfiguration. Der
        tatsächliche Wert kommt aus SMF_Design::build_css() - --smf-color-
@@ -413,6 +425,17 @@
     border-left-color: var(--smf-color-accent);
 }
 
+/* Zusätzlich zu smf-game--upcoming (has_result ist bei running/canceled
+   immer false, siehe SMF_Game_Status::status()) - steht später im
+   Stylesheet, gewinnt also bei gleicher Spezifität. */
+.smf-game--running {
+    border-left-color: var(--smf-color-live);
+}
+
+.smf-game--canceled {
+    border-left-color: var(--smf-color-canceled);
+}
+
 .smf-game-meta {
     grid-column: 1 / -1;
     display: flex;
@@ -514,6 +537,13 @@
 .smf-game-score {
     flex: 0 0 auto;
     min-width: 80px;
+    /* Gegenstück zu min-width: ohne Obergrenze weigert sich ein
+       flex-shrink:0-Element, schmaler als sein einzeiliger Inhalt zu
+       werden (siehe ausführlicher Kommentar bei .smf-single-game__center) -
+       bei langem Text wie "Live – Ergebnis folgt" (smf-score-vs unten)
+       liefe er sonst über die Team-Spalten links/rechts hinweg statt
+       umzubrechen. */
+    max-width: 9rem;
     text-align: center;
 }
 
@@ -655,6 +685,13 @@
 .smf-single-game__center {
     flex: 0 0 auto;
     text-align: center;
+    /* max-width erzwungen, sonst berechnet der Browser bei flex-shrink:0
+       ohne Breitenvorgabe die "hypothetische Größe" aus dem Inhalt in EINER
+       Zeile (max-content) und weigert sich, schmaler zu werden als das -
+       bei kurzem Text wie "vs." unsichtbar, bei "Live – Ergebnis folgt"
+       (siehe .smf-single-game__score--upcoming unten) lief der Text sonst
+       über die Team-Boxen links/rechts hinweg, statt umzubrechen. */
+    max-width: 7rem;
 }
 
 .smf-single-game__score {
@@ -756,6 +793,61 @@
 .smf-single-game:hover .smf-btn {
     background: var(--smf-btn-hover-bg);
     transform: scale(1.03);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Status-Abzeichen (SMF_Game_Status: LIVE / Abgesagt)                 */
+/*  Erscheint in .smf-single-game__center, .smf-game-score und          */
+/*  .smf-co-game__center - jeweils bereits zentriert/text-align:center, */
+/*  daher hier nur der Abstand zum Text darunter (Score/vs/Ergebnis-    */
+/*  folgt), kein eigenes Layout nötig.                                  */
+/* ------------------------------------------------------------------ */
+
+.smf-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    padding: 0.2em 0.65em;
+    margin-bottom: 0.35em;
+    border-radius: 9999px;
+    font-size: calc(var(--smf-fs-base) * 0.7);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.smf-badge--live {
+    background: var(--smf-color-live);
+    color: var(--smf-color-on-live);
+}
+
+.smf-badge--canceled {
+    background: var(--smf-color-canceled);
+    color: var(--smf-color-on-canceled);
+}
+
+.smf-badge__dot {
+    width: 0.5em;
+    height: 0.5em;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+}
+
+/* Pulsieren nur ohne prefers-reduced-motion - der Text "LIVE" allein
+   transportiert die Information bereits vollständig, die Animation ist
+   reine Verstärkung, kein Träger einer eigenen Bedeutung. */
+@media (prefers-reduced-motion: no-preference) {
+    .smf-badge--live .smf-badge__dot {
+        animation: smf-badge-pulse 1.6s ease-in-out infinite;
+    }
+}
+
+@keyframes smf-badge-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: .35; }
 }
 
 /* ------------------------------------------------------------------ */
@@ -1253,6 +1345,14 @@
 
 .smf-co-game--upcoming {
     border-left-color: var(--smf-color-accent);
+}
+
+.smf-co-game--running {
+    border-left-color: var(--smf-color-live);
+}
+
+.smf-co-game--canceled {
+    border-left-color: var(--smf-color-canceled);
 }
 
 /* Obere Zeile: Liga-Badge + Datum */

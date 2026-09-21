@@ -369,6 +369,31 @@ function smf_render_attribution() {
 }
 
 /**
+ * HTML-Fragment für das LIVE-/Abgesagt-Abzeichen einer Spielkarte. Leerstring
+ * für 'upcoming'/'ended' - dort gibt es kein Abzeichen. Reine Darstellung pro
+ * Status, keine Policy: Aufrufer (Templates) entscheiden selbst, OB das
+ * Abzeichen überhaupt gezeigt werden soll (Option smf_live_badge_enabled,
+ * Shortcode-Attribut live_badge, Staleness-Gate über stale_since()) - siehe
+ * README, Abschnitt "LIVE-Kennzeichnung".
+ *
+ * An einer zentralen Stelle statt in jedem der drei Templates (single-game,
+ * games-list, club-overview) einzeln, damit Markup/Klassen nicht auseinanderlaufen.
+ *
+ * @param string $status Rückgabe von SMF_Game_Status::status()
+ * @return string
+ */
+function smf_game_status_badge_html( $status ) {
+    if ( $status === 'running' ) {
+        return '<span class="smf-badge smf-badge--live"><span class="smf-badge__dot" aria-hidden="true"></span>'
+            . esc_html( smf_label( 'live_badge_label', 'Live' ) ) . '</span>';
+    }
+    if ( $status === 'canceled' ) {
+        return '<span class="smf-badge smf-badge--canceled">' . esc_html( smf_label( 'canceled_badge_label', 'Abgesagt' ) ) . '</span>';
+    }
+    return '';
+}
+
+/**
  * Jetpack Photon für Saisonmanager-Logos deaktivieren.
  * Zwei Filter, da verschiedene Jetpack-Versionen unterschiedliche Hooks nutzen.
  */

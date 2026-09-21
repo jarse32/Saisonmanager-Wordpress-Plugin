@@ -83,6 +83,7 @@ class SMF_Shortcodes {
             'namen'        => 'true',
             'logo_groesse' => 'mittel',
             'hervorheben'  => '',
+            'live_badge'   => 'true',
         ), $atts, 'sm_spiele' );
 
         $liga_id = (int) $atts['liga_id'];
@@ -131,16 +132,17 @@ class SMF_Shortcodes {
 
         ob_start();
         smf_render_template( 'games-list', array(
-            'games'           => $games,
-            'league_name'     => $league_name,
-            'show_title'      => $atts['titel'] !== 'false',
-            'modus'           => $atts['modus'],
-            'show_logos'      => $show_logos,
-            'show_names'      => $show_names,
-            'logo_size_class' => self::logo_size_class( $atts['logo_groesse'] ),
-            'hervorheben'     => $atts['hervorheben'],
-            'own_team_ids'    => SMF_Highlight::get_own_team_ids(),
-            'stale_since'     => $stale_since,
+            'games'             => $games,
+            'league_name'       => $league_name,
+            'show_title'        => $atts['titel'] !== 'false',
+            'modus'             => $atts['modus'],
+            'show_logos'        => $show_logos,
+            'show_names'        => $show_names,
+            'logo_size_class'   => self::logo_size_class( $atts['logo_groesse'] ),
+            'hervorheben'       => $atts['hervorheben'],
+            'own_team_ids'      => SMF_Highlight::get_own_team_ids(),
+            'stale_since'       => $stale_since,
+            'show_status_badge' => self::resolve_show_status_badge( $atts['live_badge'] ),
         ) );
         return ob_get_clean();
     }
@@ -162,6 +164,7 @@ class SMF_Shortcodes {
             'namen'        => 'true',
             'logo_groesse' => 'mittel',
             'hervorheben'  => '',
+            'live_badge'   => 'true',
         ), $atts, 'sm_naechstes_spiel' );
 
         $liga_id = (int) $atts['liga_id'];
@@ -198,13 +201,15 @@ class SMF_Shortcodes {
 
         ob_start();
         smf_render_template( 'single-game', array(
-            'game'            => $game,
-            'league_name'     => $league_name,
-            'label'           => smf_label( 'next_game_label', 'Nächstes Spiel' ),
-            'show_logos'      => $show_logos,
-            'show_names'      => $show_names,
-            'logo_size_class' => self::logo_size_class( $atts['logo_groesse'] ),
-            'stale_since'     => $stale_since,
+            'game'              => $game,
+            'league_name'       => $league_name,
+            'label'             => smf_label( 'next_game_label', 'Nächstes Spiel' ),
+            'running_label'     => smf_label( 'next_game_running_label', 'Läuft gerade' ),
+            'show_logos'        => $show_logos,
+            'show_names'        => $show_names,
+            'logo_size_class'   => self::logo_size_class( $atts['logo_groesse'] ),
+            'stale_since'       => $stale_since,
+            'show_status_badge' => self::resolve_show_status_badge( $atts['live_badge'] ),
         ) );
         return ob_get_clean();
     }
@@ -223,6 +228,7 @@ class SMF_Shortcodes {
             'namen'        => 'true',
             'logo_groesse' => 'mittel',
             'hervorheben'  => '',
+            'live_badge'   => 'true',
         ), $atts, 'sm_letztes_spiel' );
 
         $liga_id = (int) $atts['liga_id'];
@@ -259,13 +265,20 @@ class SMF_Shortcodes {
 
         ob_start();
         smf_render_template( 'single-game', array(
-            'game'            => $game,
-            'league_name'     => $league_name,
-            'label'           => smf_label( 'last_game_label', 'Letztes Spiel' ),
-            'show_logos'      => $show_logos,
-            'show_names'      => $show_names,
-            'logo_size_class' => self::logo_size_class( $atts['logo_groesse'] ),
-            'stale_since'     => $stale_since,
+            'game'              => $game,
+            'league_name'       => $league_name,
+            'label'             => smf_label( 'last_game_label', 'Letztes Spiel' ),
+            // Kein running_label: "Letztes Spiel" zeigt konstruktionsbedingt
+            // nie ein laufendes Spiel (get_last_game() schließt "running"
+            // aus, siehe SMF_API::filter_past_games()) - null statt der
+            // Vollständigkeit halber eine Übersetzungszeichenkette pflegen,
+            // die nie gerendert wird.
+            'running_label'     => null,
+            'show_logos'        => $show_logos,
+            'show_names'        => $show_names,
+            'logo_size_class'   => self::logo_size_class( $atts['logo_groesse'] ),
+            'stale_since'       => $stale_since,
+            'show_status_badge' => self::resolve_show_status_badge( $atts['live_badge'] ),
         ) );
         return ob_get_clean();
     }
@@ -299,6 +312,7 @@ class SMF_Shortcodes {
             'namen'        => 'true',
             'logo_groesse' => 'mittel',
             'hervorheben'  => '',
+            'live_badge'   => 'true',
             'reihenfolge'  => 'naechstes-zuerst',
         ), $atts, 'sm_spiel_duo' );
 
@@ -345,6 +359,7 @@ class SMF_Shortcodes {
             'namen'        => 'true',
             'logo_groesse' => 'mittel',
             'hervorheben'  => 'false',
+            'live_badge'   => 'true',
         ), $atts, 'sm_vereinsuebersicht' );
 
         $club = SMF_ClubOverview::get_club( $atts['verein'] );
@@ -388,6 +403,7 @@ class SMF_Shortcodes {
             'logo_size_class'      => self::logo_size_class( $atts['logo_groesse'] ),
             'hervorheben'          => $atts['hervorheben'],
             'own_team_ids'         => SMF_Highlight::get_own_team_ids(),
+            'show_status_badge'    => self::resolve_show_status_badge( $atts['live_badge'] ),
         ) );
         return ob_get_clean();
     }
@@ -492,6 +508,24 @@ class SMF_Shortcodes {
             return true;
         }
         return $namen_att !== 'false';
+    }
+
+    /**
+     * Attribut live_badge (true/false) mit der globalen Option
+     * smf_live_badge_enabled kombinieren - beide müssen zustimmen, damit ein
+     * Template das LIVE-/Abgesagt-Abzeichen überhaupt in Betracht zieht.
+     * Die eigentliche Entscheidung, ob im Einzelfall ein Abzeichen gezeigt
+     * wird (Status running/canceled, Staleness-Gate), trifft erst das
+     * Template selbst anhand von SMF_Game_Status::status().
+     *
+     * @param string $live_badge_att Rohwert des live_badge-Attributs
+     * @return bool
+     */
+    private static function resolve_show_status_badge( $live_badge_att ) {
+        if ( $live_badge_att === 'false' ) {
+            return false;
+        }
+        return get_option( 'smf_live_badge_enabled', 'an' ) === 'an';
     }
 
     /**

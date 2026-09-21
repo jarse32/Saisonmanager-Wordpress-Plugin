@@ -7,7 +7,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  *            $logo_size_class (string, siehe SMF_Shortcodes::logo_size_class()),
  *            $hervorheben (string, Rohwert des Attributs),
  *            $own_team_ids (int[], siehe SMF_Highlight::get_own_team_ids()),
- *            $stale_since (int|null - siehe SMF_API::stale_since())
+ *            $stale_since (int|null - siehe SMF_API::stale_since()),
+ *            $show_status_badge (bool - siehe SMF_Shortcodes::resolve_show_status_badge())
  *
  * $show_names ist der globale Schalter aus dem namen-Attribut, pro Team
  * aber nur maßgeblich, wenn für dieses Team tatsächlich ein Logo da ist -
@@ -21,8 +22,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  *   arena_name, ended, started
  */
 
-$api     = new SMF_API();
-$game_tz = SMF_API::game_timezone();
+$api      = new SMF_API();
+$game_tz  = SMF_API::game_timezone();
 
 $title_map = array(
     'alle'      => smf_label( 'games_list_title_alle', 'Alle Spiele' ),
@@ -57,6 +58,14 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : smf_labe
                 $has_result = $api->has_result( $game );
                 $date_ts    = $api->parse_game_date( $game );
 
+                $status         = SMF_Game_Status::status( $game );
+                // Staleness-Gate wie in single-game.php: ohne frische Daten
+                // (Notreserve) kein Live-Anspruch, Karte fällt optisch auf
+                // "bevorstehend" zurück.
+                $display_status = ( $status === 'running' && $stale_since ) ? 'upcoming' : $status;
+                $show_running_ui = $display_status === 'running';
+                $show_badge      = ! empty( $show_status_badge ) && in_array( $display_status, array( 'running', 'canceled' ), true );
+
                 $home_name  = isset( $game['home_team_name'] )     ? $game['home_team_name']     : '?';
                 $away_name  = isset( $game['guest_team_name'] )    ? $game['guest_team_name']    : '?';
                 $home_score = isset( $game['result']['home_goals'] )  ? $game['result']['home_goals']  : null;
@@ -77,7 +86,7 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : smf_labe
                 $away_is_own  = SMF_Highlight::should_highlight( $away_team_id, $away_name, $hervorheben, $own_team_ids );
             ?>
 
-                <div class="smf-game-card<?php echo $has_result ? ' smf-game--played' : ' smf-game--upcoming'; ?>"
+                <div class="smf-game-card<?php echo $has_result ? ' smf-game--played' : ' smf-game--upcoming'; ?><?php echo $show_running_ui ? ' smf-game--running' : ''; ?><?php echo $display_status === 'canceled' ? ' smf-game--canceled' : ''; ?>"
                      <?php if ( $game_id ) : ?>
                          data-game-id="<?php echo esc_attr( $game_id ); ?>"
                          role="button"
@@ -127,8 +136,13 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : smf_labe
                         </div>
 
                         <div class="smf-game-score">
+                            <?php if ( $show_badge ) : ?>
+                                <?php echo smf_game_status_badge_html( $display_status ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapt bereits intern ?>
+                            <?php endif; ?>
                             <?php if ( $has_result ) : ?>
                                 <span class="smf-score"><?php echo esc_html( $home_score . ' : ' . $away_score ); ?></span>
+                            <?php elseif ( $show_running_ui ) : ?>
+                                <span class="smf-score-vs"><?php echo esc_html( smf_label( 'live_no_result_label', 'Live – Ergebnis folgt' ) ); ?></span>
                             <?php else : ?>
                                 <span class="smf-score-vs"><?php echo esc_html( smf_label( 'vs_label', 'vs.' ) ); ?></span>
                             <?php endif; ?>
