@@ -3,7 +3,7 @@
  * Plugin Name: SM Floorball
  * Plugin URI:  https://github.com/jarse32/Saisonmanager-Wordpress-Plugin
  * Description: Zeigt Floorball-Spiele, Tabellen und Ligen aus der Saisonmanager-API via Shortcodes an. Inoffizielles Community-Projekt, nicht von Saisonmanager/FVD betrieben.
- * Version:     1.7.1
+ * Version:     1.8.0
  * Author:      Kasche
  * Text Domain: saisonmanager-floorball
  * License:     GPL-2.0+
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'SMF_VERSION', '1.7.1' );
+define( 'SMF_VERSION', '1.8.0' );
 define( 'SMF_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SMF_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -115,14 +115,14 @@ add_action( 'plugins_loaded', 'smf_maybe_migrate_player_names' );
 
 /**
  * Einmalige Migration für die neue Option "Livestream-Einbettung"
- * (smf_stream_embed_mode, siehe Etappe D / SMF_Stream). Eigener Merker
- * statt des smf_version-Gates in smf_maybe_migrate_design(): Die
- * Plugin-Version bleibt für dieses Release zunächst unverändert (Etappe C
- * folgt noch vor dem nächsten Versionssprung) - der smf_version-Gate würde
- * diese Migration also nie ausführen. Default ist für Bestands- und
- * Neuinstallationen identisch ("nur_link", die datensparsamste Stufe) -
- * anders als bei Design/Personennamen oben gibt es hier keinen
- * unterschiedlichen Bestandswert zu übernehmen.
+ * (smf_stream_embed_mode, siehe Etappe D / SMF_Stream, Version 1.8.0).
+ * Eigener Merker statt des smf_version-Gates in smf_maybe_migrate_design():
+ * dieser Merker greift unabhängig davon, wann/ob sich die Plugin-Version
+ * ändert - robuster als an den Zeitpunkt eines Versionssprungs gekoppelt zu
+ * sein (analog zu smf_maybe_migrate_player_names() oben). Default ist für
+ * Bestands- und Neuinstallationen identisch ("nur_link", die
+ * datensparsamste Stufe) - anders als bei Design/Personennamen oben gibt es
+ * hier keinen unterschiedlichen Bestandswert zu übernehmen.
  */
 function smf_maybe_migrate_stream_embed_mode() {
     if ( get_option( 'smf_stream_embed_mode', false ) !== false ) {

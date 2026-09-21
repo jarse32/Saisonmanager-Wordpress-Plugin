@@ -4,7 +4,7 @@ Tags: floorball, sport, spielplan, ergebnisse, tabelle
 Requires at least: 5.3
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.7.1
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,19 @@ im `main`-Branch des Repositories eine neue Version veröffentlicht wird -
 Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren*.
 
 == Changelog ==
+
+= 1.8.0 =
+* Neu: Livestream-/Aufzeichnungs-Button in den Karten (`sm_naechstes_spiel`,
+  `sm_letztes_spiel`, `sm_spiel_duo`) - öffnet das Spieldetail-Modal
+* Einbettung (YouTube/Twitch) im Spieldetail-Modal über eine
+  datenschutzfreundliche Zwei-Klick-Lösung: vor dem Klick keine Anfrage an
+  den Anbieter, keine Cookies, keine dauerhafte Einwilligung
+* Neue Einstellung "Livestream-Einbettung" unter SM Floorball ->
+  Einstellungen (Zwei-Klick/Nur Link/Aus), Standard: Nur Link (öffnet den
+  Stream extern statt eingebettet)
+* Hinweis: Vereine, die die Einbettung nutzen, sollten den eingebundenen
+  Anbieter in ihrer eigenen Datenschutzerklärung nennen (siehe `README.md`,
+  Abschnitt "Livestream-/Aufzeichnungs-Einbettung")
 
 = 1.7.1 =
 * Bugfix `sm_spiel_duo`: Karten standen auf dem Handy nebeneinander statt
@@ -158,6 +171,12 @@ Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren
 * Vereinsübersicht (alle Teams eines Vereins)
 
 == Upgrade Notice ==
+
+= 1.8.0 =
+Keine Aktion nötig. Neu: Livestream-/Aufzeichnungs-Button in den Karten und
+Einbettung im Spieldetail-Modal - Standard ist "Nur Link" (kein Embed, keine
+Anbieter-Anfrage), unter SM Floorball -> Einstellungen anpassbar oder
+abschaltbar.
 
 = 1.7.1 =
 Bugfix: Karten von `sm_spiel_duo` liefen auf dem Handy über den Bildschirmrand
