@@ -58,12 +58,22 @@ $show_away_name = $show_names || ! $away_logo;
     </div>
 
     <!-- Datum prominent über dem Matchup -->
+    <?php
+    $show_time = ! $has_result && ! empty( $game['time'] );
+    ?>
     <?php if ( $date_ts ) : ?>
         <div class="smf-single-game__date-row">
             <span class="smf-single-game__date-day"><?php echo esc_html( date_i18n( 'l', $date_ts ) ); ?></span>
             <span class="smf-single-game__date-full"><?php echo esc_html( date_i18n( 'd. F Y', $date_ts ) ); ?></span>
-            <?php if ( ! $has_result && ! empty( $game['time'] ) ) : ?>
+            <?php /* Zeile bleibt immer im Markup (layoutwirksam, siehe
+                     .smf-single-game__date-time--empty in style.css) - sonst
+                     hat die Karte ohne Uhrzeit (z.B. "Letztes Spiel") eine
+                     Zeile weniger als die mit Uhrzeit und alles darunter
+                     rutscht hoch. */ ?>
+            <?php if ( $show_time ) : ?>
                 <span class="smf-single-game__date-time"><?php echo esc_html( $game['time'] . ' ' . smf_label( 'time_suffix', 'Uhr' ) ); ?></span>
+            <?php else : ?>
+                <span class="smf-single-game__date-time smf-single-game__date-time--empty" aria-hidden="true">&nbsp;</span>
             <?php endif; ?>
         </div>
     <?php endif; ?>

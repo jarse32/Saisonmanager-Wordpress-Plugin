@@ -759,6 +759,16 @@ class SMF_Admin {
                                 </td>
                             </tr>
                             <tr>
+                                <td><code>[sm_spiel_duo liga_id="123"]</code></td>
+                                <td>Nächstes und letztes Spiel nebeneinander in einem gemeinsamen Grid (bricht auf
+                                    schmalem Platz automatisch untereinander um)</td>
+                                <td>
+                                    Dieselben Parameter wie <code>sm_naechstes_spiel</code>/<code>sm_letztes_spiel</code>,
+                                    zusätzlich <code>reihenfolge</code> (<code>naechstes-zuerst</code>/<code>letztes-zuerst</code>,
+                                    Standard: naechstes-zuerst)
+                                </td>
+                            </tr>
+                            <tr>
                                 <td><code>[sm_vereinsuebersicht verein="hannover"]</code></td>
                                 <td>Vereinsübersicht: anstehende &amp; gespielte Spiele aller Teams</td>
                                 <td>

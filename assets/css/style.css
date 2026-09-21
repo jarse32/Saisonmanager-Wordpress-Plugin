@@ -567,6 +567,15 @@
     cursor: pointer;
     transition: background 0.2s, box-shadow 0.2s;
     box-shadow: var(--smf-shadow-emphasis);
+    /* Beide Kartentypen (nächstes/letztes Spiel) nebeneinander auf gleiche
+       Höhe bringen, unabhängig davon ob sie in einem Grid (smf-spiel-duo,
+       siehe unten) oder manuell in zwei Theme-Spalten stehen - height:100%
+       greift nur, wenn der umgebende Container bereits eine Höhe vorgibt
+       (Grid mit align-items:stretch, oder ein Spalten-Block mit
+       align-items:stretch), ist sonst wirkungslos. */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .smf-single-game:hover {
@@ -698,6 +707,15 @@
     margin-top: 2px;
 }
 
+/* Reserviert die Zeit-Zeile weiterhin im Layout (Template rendert sie immer,
+   siehe single-game.php), auch wenn kein Anstoß mehr relevant ist (Spiel
+   bereits gespielt) - sonst hat die "Letztes Spiel"-Karte eine Zeile
+   weniger als "Nächstes Spiel" und alles darunter (Matchup, Footer, Button)
+   rutscht nach oben. Nur visuell/für Screenreader ausgeblendet. */
+.smf-single-game__date-time--empty {
+    visibility: hidden;
+}
+
 .smf-single-game__footer {
     display: flex;
     gap: 1rem;
@@ -714,6 +732,12 @@
 
 .smf-single-game__action {
     text-align: center;
+    /* An den unteren Kartenrand pinnen statt direkt nach dem Footer zu
+       folgen - hält den Button auf gleicher Höhe, wenn zwei Karten
+       unterschiedlich viel Inhalt haben (z.B. eine mit, eine ohne
+       Spieltag-Angabe), sofern die Karte selbst eine Höhe hat (siehe
+       height:100% an .smf-single-game oben). */
+    margin-top: auto;
 }
 
 .smf-btn {
@@ -732,6 +756,43 @@
 .smf-single-game:hover .smf-btn {
     background: var(--smf-btn-hover-bg);
     transform: scale(1.03);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Spiel-Duo (Shortcode sm_spiel_duo) - nächstes und letztes Spiel     */
+/*  gemeinsam in einem Grid statt als zwei unabhängig platzierte        */
+/*  Shortcodes. Mobile-first: gestapelt per Default, nebeneinander erst */
+/*  ab genug Platz - per Container Query statt Media Query, damit das   */
+/*  Umbrechen vom tatsächlichen Platz des Grids abhängt (z.B. in einer  */
+/*  schmalen Sidebar bleibt es gestapelt, selbst auf einem breiten      */
+/*  Bildschirm). Kein Media-Query-Fallback: alle Zielbrowser (Chrome/   */
+/*  Edge 105+, Firefox 110+, Safari 16+) unterstützen Container Queries.*/
+/* ------------------------------------------------------------------ */
+
+/* Zwei verschachtelte Elemente sind hier kein Zufall: eine Container-Query
+   kann NIE das Element selbst stylen, das den Containment-Kontext
+   herstellt (Henne-Ei-Problem - dessen eigene Größe ist ja gerade erst
+   Gegenstand der Abfrage), nur dessen Nachfahren. .smf-spiel-duo (vom
+   Shortcode als äußerer Wrapper ausgegeben) liefert also nur die Breite,
+   das Grid selbst sitzt auf dem inneren .smf-spiel-duo__grid. */
+.smf-spiel-duo {
+    container-type: inline-size;
+    container-name: smf-spiel-duo;
+}
+
+.smf-spiel-duo__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    align-items: stretch;
+}
+
+/* Schwellwert 36rem (576px): zwei Karten mit Logo, Teamnamen und
+   Innenabstand brauchen je ca. 17rem, damit sie nicht gequetscht wirken. */
+@container smf-spiel-duo (min-width: 36rem) {
+    .smf-spiel-duo__grid {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 /* ------------------------------------------------------------------ */

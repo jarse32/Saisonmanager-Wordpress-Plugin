@@ -72,6 +72,18 @@
     @media (max-width: 640px) {
         .preview-two-col { grid-template-columns: 1fr; }
     }
+    .preview-hint {
+        font-size: 0.82rem;
+        color: #666;
+        margin: 0.25rem 0 0.75rem;
+    }
+    /* Erzwingt einen schmalen Container unabhängig von der Fensterbreite,
+       um die Container-Query-Umbruchlogik von .smf-spiel-duo (style.css)
+       auch auf einem breiten Bildschirm im gestapelten Zustand zu zeigen -
+       reine Vorschau-Chrome, keine Plugin-Klasse. */
+    .preview-narrow-wrap {
+        max-width: 22rem;
+    }
 </style>
 </head>
 <body>
@@ -343,7 +355,13 @@
     </div>
 
     <!-- ============================================================ -->
-    <div class="preview-section-label">Shortcode: [sm_naechstes_spiel] / [sm_letztes_spiel]</div>
+    <div class="preview-section-label">Shortcode: [sm_naechstes_spiel] / [sm_letztes_spiel] – einzeln in zwei Theme-Spalten (Bestandsnutzung, ohne sm_spiel_duo)</div>
+    <p class="preview-hint">
+        Zeigt die Höhen-/Button-Korrektur aus Etappe A1 auch ohne den neuen Shortcode:
+        "Letztes Spiel" hat keine Uhrzeit-Zeile mehr sichtbar, nimmt aber weiterhin denselben
+        Platz ein wie die Uhrzeit-Zeile bei "Nächstes Spiel" - beide Karten bleiben gleich hoch,
+        beide Buttons auf gleicher Höhe.
+    </p>
     <div class="preview-two-col">
 
         <div class="smf-single-game smf-game--upcoming smf-single-game--with-logos" role="button" tabindex="0">
@@ -393,6 +411,7 @@
             <div class="smf-single-game__date-row">
                 <span class="smf-single-game__date-day">Montag</span>
                 <span class="smf-single-game__date-full">14. September 2026</span>
+                <span class="smf-single-game__date-time smf-single-game__date-time--empty" aria-hidden="true">&nbsp;</span>
             </div>
             <div class="smf-single-game__matchup">
                 <div class="smf-single-game__team smf-single-game__team--home">
@@ -411,18 +430,156 @@
                     <span class="smf-single-game__team-name">TSV Musterstadt</span>
                 </div>
             </div>
+            <div class="smf-single-game__action">
+                <span class="smf-btn">Spielbericht ansehen</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ============================================================ -->
+    <div class="preview-section-label">Shortcode: [sm_spiel_duo] – breiter Container (nebeneinander, Container Query aktiv)</div>
+    <p class="preview-hint">
+        Gemeinsames Grid statt zwei unabhängiger Shortcodes. Unterschiedlich viel Fußzeilen-Inhalt
+        (rechte Karte ohne Spieltag-Angabe) zeigt, dass der Button trotzdem auf gleicher Höhe bleibt.
+    </p>
+    <div class="smf smf-spiel-duo"><div class="smf-spiel-duo__grid">
+
+        <div class="smf-single-game smf-game--upcoming smf-single-game--with-logos" role="button" tabindex="0">
+            <div class="smf-single-game__label">
+                <span>Nächstes Spiel</span>
+                <span class="smf-single-game__league">Regionalliga Nord</span>
+            </div>
+            <div class="smf-single-game__date-row">
+                <span class="smf-single-game__date-day">Montag</span>
+                <span class="smf-single-game__date-full">21. September 2026</span>
+                <span class="smf-single-game__date-time">19:30 Uhr</span>
+            </div>
+            <div class="smf-single-game__matchup">
+                <div class="smf-single-game__team smf-single-game__team--home">
+                    <div class="smf-single-game__logo-wrap">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23ffffff'/%3E%3C/svg%3E" alt="" class="smf-single-game__logo">
+                    </div>
+                    <span class="smf-single-game__team-name">Floorball Beispielhausen</span>
+                </div>
+                <div class="smf-single-game__center">
+                    <div class="smf-single-game__score smf-single-game__score--upcoming">vs.</div>
+                </div>
+                <div class="smf-single-game__team smf-single-game__team--away">
+                    <div class="smf-single-game__logo-wrap">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23ffffff'/%3E%3C/svg%3E" alt="" class="smf-single-game__logo">
+                    </div>
+                    <span class="smf-single-game__team-name">Beispiel SV Nord</span>
+                </div>
+            </div>
             <div class="smf-single-game__footer">
                 <span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     Musterhalle
                 </span>
-                <span>Spieltag 5</span>
+                <span>Spieltag 6</span>
+            </div>
+            <div class="smf-single-game__action">
+                <span class="smf-btn">Details ansehen</span>
+            </div>
+        </div>
+
+        <div class="smf-single-game smf-game--played smf-single-game--with-logos" role="button" tabindex="0">
+            <div class="smf-single-game__label">
+                <span>Letztes Spiel</span>
+                <span class="smf-single-game__league">Regionalliga Nord</span>
+            </div>
+            <div class="smf-single-game__date-row">
+                <span class="smf-single-game__date-day">Montag</span>
+                <span class="smf-single-game__date-full">14. September 2026</span>
+                <span class="smf-single-game__date-time smf-single-game__date-time--empty" aria-hidden="true">&nbsp;</span>
+            </div>
+            <div class="smf-single-game__matchup">
+                <div class="smf-single-game__team smf-single-game__team--home">
+                    <div class="smf-single-game__logo-wrap">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23ffffff'/%3E%3C/svg%3E" alt="" class="smf-single-game__logo">
+                    </div>
+                    <span class="smf-single-game__team-name">Beispiel SV Nord</span>
+                </div>
+                <div class="smf-single-game__center">
+                    <div class="smf-single-game__score">7 : 4</div>
+                </div>
+                <div class="smf-single-game__team smf-single-game__team--away">
+                    <div class="smf-single-game__logo-wrap">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23ffffff'/%3E%3C/svg%3E" alt="" class="smf-single-game__logo">
+                    </div>
+                    <span class="smf-single-game__team-name">TSV Musterstadt</span>
+                </div>
             </div>
             <div class="smf-single-game__action">
                 <span class="smf-btn">Spielbericht ansehen</span>
             </div>
         </div>
 
+    </div></div>
+
+    <!-- ============================================================ -->
+    <div class="preview-section-label">Shortcode: [sm_spiel_duo] – schmaler Container (gestapelt, Container Query greift noch nicht)</div>
+    <p class="preview-hint">
+        Dieselben zwei Karten wie oben, nur in einem schmalen Container (&lt; 36rem) - das Grid
+        stapelt automatisch, unabhängig von der Fensterbreite drumherum.
+    </p>
+    <div class="preview-narrow-wrap">
+        <div class="smf smf-spiel-duo"><div class="smf-spiel-duo__grid">
+
+            <div class="smf-single-game smf-game--upcoming smf-single-game--with-logos" role="button" tabindex="0">
+                <div class="smf-single-game__label">
+                    <span>Nächstes Spiel</span>
+                    <span class="smf-single-game__league">Regionalliga Nord</span>
+                </div>
+                <div class="smf-single-game__date-row">
+                    <span class="smf-single-game__date-day">Montag</span>
+                    <span class="smf-single-game__date-full">21. September 2026</span>
+                    <span class="smf-single-game__date-time">19:30 Uhr</span>
+                </div>
+                <div class="smf-single-game__matchup">
+                    <div class="smf-single-game__team smf-single-game__team--home">
+                        <span class="smf-single-game__team-name">Floorball Beispielhausen</span>
+                    </div>
+                    <div class="smf-single-game__center">
+                        <div class="smf-single-game__score smf-single-game__score--upcoming">vs.</div>
+                    </div>
+                    <div class="smf-single-game__team smf-single-game__team--away">
+                        <span class="smf-single-game__team-name">Beispiel SV Nord</span>
+                    </div>
+                </div>
+                <div class="smf-single-game__action">
+                    <span class="smf-btn">Details ansehen</span>
+                </div>
+            </div>
+
+            <div class="smf-single-game smf-game--played smf-single-game--with-logos" role="button" tabindex="0">
+                <div class="smf-single-game__label">
+                    <span>Letztes Spiel</span>
+                    <span class="smf-single-game__league">Regionalliga Nord</span>
+                </div>
+                <div class="smf-single-game__date-row">
+                    <span class="smf-single-game__date-day">Montag</span>
+                    <span class="smf-single-game__date-full">14. September 2026</span>
+                    <span class="smf-single-game__date-time smf-single-game__date-time--empty" aria-hidden="true">&nbsp;</span>
+                </div>
+                <div class="smf-single-game__matchup">
+                    <div class="smf-single-game__team smf-single-game__team--home">
+                        <span class="smf-single-game__team-name">Beispiel SV Nord</span>
+                    </div>
+                    <div class="smf-single-game__center">
+                        <div class="smf-single-game__score">7 : 4</div>
+                    </div>
+                    <div class="smf-single-game__team smf-single-game__team--away">
+                        <span class="smf-single-game__team-name">TSV Musterstadt</span>
+                    </div>
+                </div>
+                <div class="smf-single-game__action">
+                    <span class="smf-btn">Spielbericht ansehen</span>
+                </div>
+            </div>
+
+        </div></div>
     </div>
 
     <!-- ============================================================ -->

@@ -8,6 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  * [sm_spiele liga_id="123" anzahl="10" team="Eichehorn"]
  * [sm_naechstes_spiel liga_id="123" team="Eichehorn"]
  * [sm_letztes_spiel liga_id="123"]
+ * [sm_spiel_duo liga_id="123" reihenfolge="naechstes-zuerst"]
  * [sm_scorer team_id="6754" anzahl="10"]
  */
 class SMF_Shortcodes {
@@ -17,6 +18,7 @@ class SMF_Shortcodes {
         add_shortcode( 'sm_spiele',             array( $this, 'shortcode_spiele' ) );
         add_shortcode( 'sm_naechstes_spiel',    array( $this, 'shortcode_naechstes_spiel' ) );
         add_shortcode( 'sm_letztes_spiel',      array( $this, 'shortcode_letztes_spiel' ) );
+        add_shortcode( 'sm_spiel_duo',          array( $this, 'shortcode_spiel_duo' ) );
         add_shortcode( 'sm_vereinsuebersicht',  array( $this, 'shortcode_vereinsuebersicht' ) );
         add_shortcode( 'sm_scorer',             array( $this, 'shortcode_scorer' ) );
     }
@@ -266,6 +268,64 @@ class SMF_Shortcodes {
             'stale_since'     => $stale_since,
         ) );
         return ob_get_clean();
+    }
+
+    // ----------------------------------------------------------------
+    // [sm_spiel_duo liga_id="123" team="Eichehorn" reihenfolge="naechstes-zuerst"
+    //               logos="true" namen="true" logo_groesse="mittel" hervorheben=""]
+    //
+    // Kombiniert sm_naechstes_spiel und sm_letztes_spiel in einem
+    // gemeinsamen Grid (siehe .smf-spiel-duo in style.css), statt beide
+    // Shortcodes einzeln in Theme-Spalten zu setzen - Hauptgrund dafür
+    // ist nicht das Layout selbst (das übernehmen die beiden Karten seit
+    // der Höhen-/Button-Korrektur in shortcode_naechstes_spiel() /
+    // shortcode_letztes_spiel() auch einzeln zuverlässig), sondern ein
+    // gemeinsamer, garantiert gleich breiter Container für die
+    // Container-Query-Umbruchlogik. Ruft absichtlich die beiden
+    // bestehenden Methoden auf statt deren Logik zu duplizieren - beide
+    // cachen ohnehin über denselben Spielplan-Request (SMF_Cache
+    // dedupliziert per Transient), macht hier also keinen zweiten
+    // API-Aufruf.
+    //
+    // reihenfolge steuert nur die Reihenfolge im Markup (und damit bei
+    // Tab-Navigation/Screenreadern) - im Grid ab Container-Breite
+    // nebeneinander sind beide ohnehin gleichzeitig sichtbar.
+    // ----------------------------------------------------------------
+    public function shortcode_spiel_duo( $atts ) {
+        $duo_atts = shortcode_atts( array(
+            'liga_id'      => get_option( 'smf_default_league_id', '' ),
+            'team'         => '',
+            'logos'        => 'true',
+            'namen'        => 'true',
+            'logo_groesse' => 'mittel',
+            'hervorheben'  => '',
+            'reihenfolge'  => 'naechstes-zuerst',
+        ), $atts, 'sm_spiel_duo' );
+
+        $liga_id = (int) $duo_atts['liga_id'];
+        if ( ! $liga_id ) {
+            // Einmalige Prüfung hier statt in beiden Einzel-Shortcodes
+            // gleichzeitig - sonst erschiene dieselbe Fehlermeldung doppelt.
+            return $this->error( 'Bitte liga_id angeben, z.B. [sm_spiel_duo liga_id="123"]' );
+        }
+
+        // reihenfolge ist kein Attribut der Einzel-Shortcodes - vor der
+        // Weitergabe entfernen, shortcode_atts() dort würde es sonst
+        // stillschweigend ignorieren, was zwar unschädlich, aber unnötig
+        // unklar wäre.
+        $shared_atts = $duo_atts;
+        unset( $shared_atts['reihenfolge'] );
+
+        $naechstes = $this->shortcode_naechstes_spiel( $shared_atts );
+        $letztes   = $this->shortcode_letztes_spiel( $shared_atts );
+
+        $reihenfolge = $duo_atts['reihenfolge'] === 'letztes-zuerst' ? 'letztes-zuerst' : 'naechstes-zuerst';
+        $cards       = ( $reihenfolge === 'letztes-zuerst' ) ? array( $letztes, $naechstes ) : array( $naechstes, $letztes );
+
+        // Zwei verschachtelte Divs sind Absicht, siehe Kommentar bei
+        // .smf-spiel-duo in style.css: der äußere Wrapper liefert nur die
+        // Breite für die Container Query, das Grid sitzt auf dem inneren.
+        return '<div class="smf smf-spiel-duo"><div class="smf-spiel-duo__grid">' . implode( '', $cards ) . '</div></div>';
     }
 
     // ----------------------------------------------------------------
