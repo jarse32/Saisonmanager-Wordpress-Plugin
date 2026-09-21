@@ -24,6 +24,9 @@ class SMF_API {
     /** TTL für Stream-Felder bei ended: lang, ein einmal gesetzter Aufzeichnungs-Link ändert sich praktisch nie mehr. */
     const STREAM_CACHE_TTL_ENDED = 6 * HOUR_IN_SECONDS;
 
+    /** get_livestream_target_game(): Zeitfenster nach Anstoß, innerhalb dessen die Aufzeichnung eines zuletzt gespielten Spiels vor einem weiter entfernten kommenden Spiel bevorzugt wird. */
+    const LIVESTREAM_RECENT_ENDED_MAX_AGE = 48 * HOUR_IN_SECONDS;
+
     /**
      * Zwischenspeicher für get_game_stream_fields() PRO PHP-Request (nicht
      * PRO INSTANZ - static) - siehe dort.
@@ -708,6 +711,76 @@ class SMF_API {
         } );
 
         return $past[0];
+    }
+
+    /**
+     * Welches Spiel eines Teams der Shortcode sm_livestream zeigt (v1.9.0),
+     * in dieser Priorität:
+     *
+     * 1. Ein laufendes Spiel.
+     * 2. Die Aufzeichnung des zuletzt gespielten Spiels, wenn dessen
+     *    Anstoß höchstens LIVESTREAM_RECENT_ENDED_MAX_AGE zurückliegt -
+     *    UNABHÄNGIG von $include_ended_fallback: ein frisch beendetes
+     *    Spiel ist relevanter als ein erst in einer Woche anstehendes
+     *    nächstes Spiel ohne eigenen Stream-Link.
+     * 3. Das nächste kommende Spiel.
+     * 4. Erst wenn nichts davon existiert (Saison zuende o.ä.): die
+     *    Aufzeichnung des zuletzt gespielten Spiels, auch wenn es länger
+     *    als LIVESTREAM_RECENT_ENDED_MAX_AGE zurückliegt - hier greift
+     *    $include_ended_fallback (Shortcode-Attribut
+     *    nach_spielende="ausblenden" unterdrückt genau diesen Fall).
+     *
+     * "Spielende" ist in der API nicht als eigener Zeitstempel vorhanden
+     * (nur Anstoß-Datum/-Zeit plus started/ended-Flags) - Stufe 2 misst
+     * daher wie der Rest dieser Klasse (siehe RUNNING_MAX_AGE in
+     * SMF_Game_Status) ab dem ANSTOSS, nicht ab einem tatsächlichen
+     * Spielende. Für ein Feld-Hockey-Spiel (~75-90 Minuten inkl. Pausen)
+     * ist das innerhalb eines 48h-Fensters vernachlässigbar ungenau.
+     *
+     * @param array    $games
+     * @param bool     $include_ended_fallback Steuert NUR Stufe 4, siehe oben (Shortcode-Attribut nach_spielende="ausblenden")
+     * @param int|null $now Referenzzeitpunkt, siehe filter_upcoming_games()/filter_past_games().
+     * @return array|null
+     */
+    public function get_livestream_target_game( $games, $include_ended_fallback = true, $now = null ) {
+        $now = $now ?? time();
+
+        // 1. Laufend - mehrere gleichzeitig laufende Spiele desselben Teams
+        // sind praktisch ausgeschlossen, aber zur Sicherheit wie
+        // get_next_game() nach frühestem Anstoß sortiert statt blind das
+        // erste Array-Element zu nehmen.
+        $running = array_values( array_filter( $games, function( $game ) use ( $now ) {
+            return SMF_Game_Status::status( $game, $now ) === 'running';
+        } ) );
+        if ( ! empty( $running ) ) {
+            usort( $running, function( $a, $b ) {
+                return self::parse_game_date( $a ) - self::parse_game_date( $b );
+            } );
+            return $running[0];
+        }
+
+        $last    = $this->get_last_game( $games, $now );
+        $kickoff = $last ? self::parse_game_date( $last ) : false;
+
+        // 2. Kürzlich beendet (Aufzeichnung), unabhängig von $include_ended_fallback.
+        if ( $last && $kickoff && ( $now - $kickoff ) <= self::LIVESTREAM_RECENT_ENDED_MAX_AGE ) {
+            return $last;
+        }
+
+        // 3. Nächstes kommendes Spiel. Kein laufendes Spiel kann hier mehr
+        // zurückkommen ($running war oben leer), get_next_game() liefert
+        // also garantiert nur ein wirklich zukünftiges Spiel.
+        $next = $this->get_next_game( $games, $now );
+        if ( $next ) {
+            return $next;
+        }
+
+        // 4. Ältere Aufzeichnung, nur wenn erlaubt.
+        if ( ! $include_ended_fallback ) {
+            return null;
+        }
+
+        return $last;
     }
 
     /**

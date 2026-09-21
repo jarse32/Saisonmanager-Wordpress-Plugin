@@ -144,6 +144,12 @@ class SMF_Admin {
             },
             'default'           => 'nur_link',
         ] );
+        register_setting( 'smf_settings_group', 'smf_stream_remember_consent', [
+            'sanitize_callback' => static function ( $val ) {
+                return $val === 'an' ? 'an' : 'aus';
+            },
+            'default'           => 'aus',
+        ] );
 
         register_setting( 'smf_design_group', 'smf_design', [
             'type'              => 'array',
@@ -447,12 +453,36 @@ class SMF_Admin {
                                         Zeigt bei Spielen mit hinterlegtem <code>live_stream_link</code>/<code>vod_link</code>
                                         einen kleinen "Livestream"-/"Aufzeichnung"-Button in den Karten
                                         (<code>sm_naechstes_spiel</code>, <code>sm_letztes_spiel</code>,
-                                        <code>sm_spiel_duo</code>), der das Spieldetail-Modal öffnet. Dort je nach
+                                        <code>sm_spiel_duo</code>), der das Spieldetail-Modal öffnet, sowie den
+                                        eigenständigen Shortcode <code>sm_livestream</code> (großer Player). Je nach
                                         Modus entweder nur ein Link zum Anbieter ("Nur Link") oder – nach einem
                                         zusätzlichen bewussten Klick, ohne vorher Daten an den Anbieter zu senden –
                                         ein eingebetteter Player ("Zwei-Klick"). Nur YouTube und Twitch werden
                                         eingebettet, siehe README, Abschnitt „Livestream-/Aufzeichnungs-Einbettung“.
                                         Standard für neue Installationen: „Nur Link“.
+                                    </p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="smf_stream_remember_consent">Einwilligung merken erlauben</label></th>
+                                <td>
+                                    <?php $current_remember = get_option( 'smf_stream_remember_consent', 'aus' ); ?>
+                                    <select id="smf_stream_remember_consent" name="smf_stream_remember_consent">
+                                        <option value="an" <?php selected( $current_remember, 'an' ); ?>>An</option>
+                                        <option value="aus" <?php selected( $current_remember, 'aus' ); ?>>Aus</option>
+                                    </select>
+                                    <p class="description">
+                                        Nur wirksam bei Livestream-Einbettung = "Zwei-Klick": zeigt am Platzhalter
+                                        zusätzlich eine (standardmäßig nicht angehakte) Checkbox
+                                        "&lt;Anbieter&gt;-Inhalte künftig immer laden". Wird sie beim Klick auf
+                                        "Video laden" angehakt, merkt sich der Browser der Besucher:in diese
+                                        Entscheidung für 12 Monate getrennt pro Anbieter (YouTube/Twitch) - rein
+                                        clientseitig in <code>localStorage</code>, kein Cookie, keine Übertragung an
+                                        diese Website. Künftige Besuche laden den Player dann direkt, ohne
+                                        Platzhalter; ein kleiner Link am geladenen Player widerruft die
+                                        Entscheidung wieder. Diese Option "Aus" zu setzen blendet die Checkbox aus
+                                        UND ignoriert eine bereits gespeicherte Entscheidung sofort wieder.
+                                        Standard: Aus.
                                     </p>
                                 </td>
                             </tr>
@@ -844,6 +874,22 @@ class SMF_Admin {
                                     (voll/kompakt), <code>namen</code> (voll/abgekuerzt, überschreibt nur das Format,
                                     nicht ob Namen überhaupt erscheinen), <code>titel</code>, <code>summe</code>
                                     (true/false, Summenzeile aus Team-Gesamtwerten)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><code>[sm_livestream team_id="6754"]</code></td>
+                                <td>Großer Livestream-/Aufzeichnungs-Player eines Teams, über alle Wettbewerbe der
+                                    Saison. Priorität: laufendes Spiel &gt; Aufzeichnung des letzten Spiels (wenn
+                                    Anstoß &le; 48 Std. zurückliegt) &gt; nächstes Spiel &gt; ältere Aufzeichnung</td>
+                                <td>
+                                    <code>team_id</code> (Pflicht), <code>nach_spielende</code>
+                                    (<code>aufzeichnung</code>/<code>ausblenden</code>, Standard: aufzeichnung -
+                                    steuert nur die letzte Stufe "ältere Aufzeichnung"), <code>titel</code>
+                                    (frei, Standard: kein Titel),
+                                    <code>hinweis</code> (true/false, Standard: false - ohne verfügbaren Stream
+                                    standardmäßig komplett stumm, keine leere Box). Respektiert die Option
+                                    "Livestream-Einbettung" oben (bei "Aus": kein Player, bei "Nur Link": nur ein
+                                    Link-Button)
                                 </td>
                             </tr>
                         </tbody>

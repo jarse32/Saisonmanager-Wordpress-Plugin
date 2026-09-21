@@ -1187,9 +1187,89 @@
     font-size: calc(var(--smf-fs-base) * 0.875);
 }
 
+/* Checkbox "<Anbieter>-Inhalte künftig immer laden" (v1.9.0, Teil 1) -
+   rendert nur, wenn die Option "Einwilligung merken erlauben" an ist. */
+.smf-stream-embed__remember {
+    display: flex;
+    align-items: center;
+    gap: 0.45em;
+    font-size: calc(var(--smf-fs-base) * 0.8125);
+    cursor: pointer;
+}
+
+.smf-stream-embed__remember input[type="checkbox"] {
+    margin: 0;
+}
+
 .smf-stream-reveal {
     font-size: calc(var(--smf-fs-base) * 0.85);
     padding: 0.5rem 1.25rem;
+}
+
+/* Widerrufs-Link am geladenen Video - sitzt bewusst AUSSERHALB der 16:9-Box
+   (.smf-stream-embed hat overflow:hidden, siehe main.js .after()-Aufruf). */
+.smf-stream-forget {
+    display: block;
+    margin: 0.5rem auto 0;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-size: calc(var(--smf-fs-base) * 0.75);
+    color: var(--smf-color-text-muted);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.smf-stream-forget:hover {
+    color: var(--smf-color-text);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Shortcode sm_livestream: großer Player (v1.9.0, Teil 2)             */
+/* ------------------------------------------------------------------ */
+
+.smf-livestream {
+    box-shadow: var(--smf-shadow);
+    border-radius: var(--smf-radius);
+    overflow: hidden;
+}
+
+.smf-livestream__header {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.15rem 0.75rem;
+}
+
+.smf-livestream__label {
+    font-size: calc(var(--smf-fs-base) * 0.75);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    color: var(--smf-color-on-primary);
+    opacity: 0.85;
+}
+
+.smf-livestream__body {
+    background: var(--smf-color-surface);
+    padding: 1.25rem;
+}
+
+.smf-livestream__info {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    font-size: calc(var(--smf-fs-base) * 1.05);
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.smf-livestream__date {
+    font-size: calc(var(--smf-fs-base) * 0.875);
+    color: var(--smf-color-text-muted);
+    margin-bottom: 1rem;
 }
 
 .smf-stream-link {

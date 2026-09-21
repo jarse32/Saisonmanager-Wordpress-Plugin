@@ -984,6 +984,11 @@
                     <div class="smf-stream-embed__placeholder">
                         <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/></svg>
                         <p class="smf-stream-embed__notice">Wird von YouTube eingebettet. Beim Laden werden Daten an YouTube übertragen.</p>
+                        <!-- Checkbox nur bei Option "Einwilligung merken erlauben" = an (v1.9.0, Teil 1) -->
+                        <label class="smf-stream-embed__remember">
+                            <input type="checkbox">
+                            YouTube-Inhalte künftig immer laden
+                        </label>
                         <button type="button" class="smf-btn smf-stream-reveal">Video laden</button>
                         <a class="smf-stream-link" href="#">Auf YouTube ansehen</a>
                     </div>
@@ -1089,9 +1094,19 @@
         </div>
 
         <div>
-            <p style="font-size: 0.85rem; color: var(--smf-color-text-muted); margin: 0 0 0.5rem;">Modal-Ausschnitt, Option "Zwei-Klick" – NACH Klick auf "Video laden" (main.js ersetzt den Platzhalter durch ein iframe; hier ein Dummy statt eines echten Anbieter-Embeds):</p>
+            <p style="font-size: 0.85rem; color: var(--smf-color-text-muted); margin: 0 0 0.5rem;">Modal-Ausschnitt, Option "Zwei-Klick" – NACH Klick auf "Video laden", OHNE angehakte "merken"-Checkbox (main.js ersetzt den Platzhalter durch ein iframe; hier ein Dummy statt eines echten Anbieter-Embeds). Kein Widerrufs-Link, da nichts gemerkt wurde:</p>
             <div class="smf-stream-embed" style="max-width: 400px;">
                 <iframe class="smf-stream-embed__iframe" srcdoc="<html><body style='margin:0;display:flex;align-items:center;justify-content:center;height:100%;background:#111;color:#fff;font:14px sans-serif;'>Dummy-Player (kein echter Anbieter-Request)</body></html>" title="Dummy-Vorschau"></iframe>
+            </div>
+        </div>
+
+        <div>
+            <p style="font-size: 0.85rem; color: var(--smf-color-text-muted); margin: 0 0 0.5rem;">Wie oben, aber mit gemerkter Einwilligung (Checkbox war angehakt bzw. localStorage-Eintrag vom letzten Besuch noch gültig) - main.js lädt in diesem Fall direkt, ganz ohne Platzhalter, und hängt den Widerrufs-Link an:</p>
+            <div style="max-width: 400px;">
+                <div class="smf-stream-embed">
+                    <iframe class="smf-stream-embed__iframe" srcdoc="<html><body style='margin:0;display:flex;align-items:center;justify-content:center;height:100%;background:#111;color:#fff;font:14px sans-serif;'>Dummy-Player (kein echter Anbieter-Request)</body></html>" title="Dummy-Vorschau"></iframe>
+                </div>
+                <button type="button" class="smf-stream-forget">Automatisches Laden beenden</button>
             </div>
         </div>
 
@@ -1105,6 +1120,62 @@
             </div>
         </div>
     </div>
+
+    <!-- ============================================================ -->
+    <div class="preview-section-label">Shortcode: [sm_livestream team_id="6754"] (v1.9.0, Teil 2) – Platzhalter, gemerkte Einwilligung, Kein-Stream-Hinweis</div>
+
+    <div class="preview-two-col">
+        <div>
+            <p style="font-size: 0.85rem; color: var(--smf-color-text-muted); margin: 0 0 0.5rem;">Standardzustand (Zwei-Klick, Einwilligung merken an) - laufendes Spiel, noch nicht geladen:</p>
+            <div class="smf smf-livestream">
+                <div class="smf-header smf-livestream__header">
+                    <h3 class="smf-title">Heute live</h3>
+                    <span class="smf-livestream__label">Livestream</span>
+                </div>
+                <div class="smf-livestream__body">
+                    <div class="smf-livestream__info">
+                        <span class="smf-livestream__matchup">Floorball Beispielhausen – Beispiel SV Nord</span>
+                        <span class="smf-badge smf-badge--live"><span class="smf-badge__dot" aria-hidden="true"></span>Live</span>
+                    </div>
+                    <div class="smf-livestream__date">Montag, 21. September 2026 – 19:30 Uhr</div>
+                    <div class="smf-stream-embed">
+                        <div class="smf-stream-embed__placeholder">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/></svg>
+                            <p class="smf-stream-embed__notice">Wird von YouTube eingebettet. Beim Laden werden Daten an YouTube übertragen.</p>
+                            <label class="smf-stream-embed__remember">
+                                <input type="checkbox">
+                                YouTube-Inhalte künftig immer laden
+                            </label>
+                            <button type="button" class="smf-btn smf-stream-reveal">Video laden</button>
+                            <a class="smf-stream-link" href="#">Auf YouTube ansehen</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <p style="font-size: 0.85rem; color: var(--smf-color-text-muted); margin: 0 0 0.5rem;">Gemerkte Einwilligung (simuliert) - main.js lädt direkt, ohne Platzhalter, kein <code>titel</code>-Attribut gesetzt:</p>
+            <div class="smf smf-livestream">
+                <div class="smf-header smf-livestream__header">
+                    <span class="smf-livestream__label">Aufzeichnung</span>
+                </div>
+                <div class="smf-livestream__body">
+                    <div class="smf-livestream__info">
+                        <span class="smf-livestream__matchup">Beispiel SV Nord – TSV Musterstadt</span>
+                    </div>
+                    <div class="smf-livestream__date">Montag, 14. September 2026</div>
+                    <div class="smf-stream-embed">
+                        <iframe class="smf-stream-embed__iframe" srcdoc="<html><body style='margin:0;display:flex;align-items:center;justify-content:center;height:100%;background:#111;color:#fff;font:14px sans-serif;'>Dummy-Player (kein echter Anbieter-Request)</body></html>" title="Dummy-Vorschau"></iframe>
+                    </div>
+                    <button type="button" class="smf-stream-forget">Automatisches Laden beenden</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <p style="font-size: 0.85rem; color: var(--smf-color-text-muted); margin: 1rem 0 0.5rem;">Kein Spiel mit Stream-Link, Attribut <code>hinweis="true"</code> (Standard <code>hinweis="false"</code> gibt stattdessen NICHTS aus - keine leere Box):</p>
+    <div class="smf-notice">Aktuell kein Livestream verfügbar.</div>
 
     <!-- ============================================================ -->
     <div class="preview-section-label">Fehler- und Hinweistexte</div>

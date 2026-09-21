@@ -4,7 +4,7 @@ Tags: floorball, sport, spielplan, ergebnisse, tabelle
 Requires at least: 5.3
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.8.0
+Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,21 @@ im `main`-Branch des Repositories eine neue Version veröffentlicht wird -
 Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren*.
 
 == Changelog ==
+
+= 1.9.0 =
+* Neu: gemerkte Einwilligung für die Zwei-Klick-Einbettung - Checkbox
+  "<Anbieter>-Inhalte künftig immer laden" am Platzhalter, rein clientseitig
+  in `localStorage` (kein Cookie, 12 Monate, getrennt pro Anbieter),
+  widerrufbar über einen Link am geladenen Player. Steuerbar über die neue
+  Einstellung "Einwilligung merken erlauben" (Standard: Aus)
+* Neuer Shortcode `sm_livestream team_id="6754"`: eigenständiger, großer
+  Livestream-/Aufzeichnungs-Player für ein Team (z.B. für eine eigene
+  "Heute live"-Seite), inkl. Heim/Gast, Datum/Uhrzeit und LIVE-Abzeichen.
+  Auswahl des Spiels: laufend > Aufzeichnung des letzten Spiels (wenn
+  Anstoß höchstens 48 Std. zurückliegt) > nächstes Spiel > ältere
+  Aufzeichnung (letztere abschaltbar über `nach_spielende="ausblenden"`)
+* Ohne verfügbaren Stream gibt `sm_livestream` standardmäßig nichts aus
+  (keine leere Box), wahlweise mit dezentem Hinweistext (`hinweis="true"`)
 
 = 1.8.0 =
 * Neu: Livestream-/Aufzeichnungs-Button in den Karten (`sm_naechstes_spiel`,
@@ -171,6 +186,11 @@ Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren
 * Vereinsübersicht (alle Teams eines Vereins)
 
 == Upgrade Notice ==
+
+= 1.9.0 =
+Keine Aktion nötig. Neu: gemerkte Zwei-Klick-Einwilligung (Standard weiter
+aus) und der eigenständige Shortcode sm_livestream für einen großen
+Player pro Team - beide unter SM Floorball -> Einstellungen anpassbar.
 
 = 1.8.0 =
 Keine Aktion nötig. Neu: Livestream-/Aufzeichnungs-Button in den Karten und

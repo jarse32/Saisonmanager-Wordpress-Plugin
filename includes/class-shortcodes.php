@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  * [sm_letztes_spiel liga_id="123"]
  * [sm_spiel_duo liga_id="123" reihenfolge="naechstes-zuerst"]
  * [sm_scorer team_id="6754" anzahl="10"]
+ * [sm_livestream team_id="6754" nach_spielende="aufzeichnung"]
  */
 class SMF_Shortcodes {
 
@@ -21,6 +22,7 @@ class SMF_Shortcodes {
         add_shortcode( 'sm_spiel_duo',          array( $this, 'shortcode_spiel_duo' ) );
         add_shortcode( 'sm_vereinsuebersicht',  array( $this, 'shortcode_vereinsuebersicht' ) );
         add_shortcode( 'sm_scorer',             array( $this, 'shortcode_scorer' ) );
+        add_shortcode( 'sm_livestream',         array( $this, 'shortcode_livestream' ) );
     }
 
     // ----------------------------------------------------------------
@@ -457,6 +459,99 @@ class SMF_Shortcodes {
             'spalten'        => $spalten,
             'show_totals'    => $atts['summe'] === 'true',
             'names_disabled' => $names_disabled,
+        ) );
+        return ob_get_clean();
+    }
+
+    // ----------------------------------------------------------------
+    // [sm_livestream team_id="6754" nach_spielende="aufzeichnung|ausblenden"
+    //                titel="" hinweis="false"]
+    //
+    // Zeigt den Livestream/die Aufzeichnung des für dieses Team gerade
+    // relevantesten Spiels als großen Player (v1.9.0, Teil 2) - siehe
+    // SMF_API::get_livestream_target_game() für die Auswahl (laufend, sonst
+    // nächstes, sonst optional das zuletzt gespielte). Nutzt
+    // teams/{id}/matches statt liga_id, wie sm_scorer - liefert alle
+    // Wettbewerbe des Teams in einem Request, kein Rätselraten nach der
+    // richtigen Liga-ID.
+    // ----------------------------------------------------------------
+    public function shortcode_livestream( $atts ) {
+        $atts = shortcode_atts( array(
+            'team_id'       => '',
+            'nach_spielende' => 'aufzeichnung',
+            'titel'         => '',
+            'hinweis'       => 'false',
+        ), $atts, 'sm_livestream' );
+
+        $team_id = (int) $atts['team_id'];
+        if ( ! $team_id ) {
+            return $this->error( 'Bitte team_id angeben, z.B. [sm_livestream team_id="6754"]' );
+        }
+
+        $api      = new SMF_API();
+        $response = $api->get_team_matches( $team_id );
+        if ( is_wp_error( $response ) ) {
+            return $this->error( $response );
+        }
+
+        $games  = ( isset( $response['matches'] ) && is_array( $response['matches'] ) ) ? $response['matches'] : array();
+        $include_ended_fallback = $atts['nach_spielende'] !== 'ausblenden';
+        $game   = $api->get_livestream_target_game( $games, $include_ended_fallback );
+
+        // Erst nach dem letzten API-Aufruf lesen, direkt vor dem Rendern.
+        $stale_since = $api->stale_since();
+
+        $stream        = null;
+        $section_title = '';
+
+        if ( $game ) {
+            $game_id = isset( $game['game_id'] ) ? (int) $game['game_id'] : 0;
+            $status  = SMF_Game_Status::status( $game );
+            $mode    = get_option( 'smf_stream_embed_mode', 'nur_link' );
+
+            if ( $game_id && $mode !== 'aus' ) {
+                $stream_fields = $api->get_game_stream_fields( $game_id, $status );
+                $picked        = SMF_Stream::pick_link( $stream_fields, $status );
+
+                if ( $picked ) {
+                    $parsed = SMF_Stream::parse_url( $picked['url'] );
+                    if ( $parsed['valid'] ) {
+                        $stream = array(
+                            'kind'      => $picked['kind'],
+                            'parsed'    => $parsed,
+                            'embed_url' => ( $mode === 'zwei_klick' && $parsed['embeddable'] )
+                                ? SMF_Stream::build_embed_url( $parsed, SMF_Stream::embed_parent_host() )
+                                : '',
+                        );
+                    }
+                }
+            }
+
+            if ( $stream ) {
+                $section_title = ( $stream['kind'] === 'vod' )
+                    ? smf_label( 'stream_section_title_vod', 'Aufzeichnung' )
+                    : smf_label( 'stream_section_title_live', 'Livestream' );
+            }
+        }
+
+        // "Keine leere Box": ohne Stream (kein passendes Spiel ODER Spiel
+        // ohne nutzbaren Link) standardmäßig gar keine Ausgabe, per
+        // hinweis="true" ein dezenter Text statt einer leeren Fläche.
+        if ( ! $stream ) {
+            if ( $atts['hinweis'] !== 'true' ) {
+                return '';
+            }
+            return '<div class="smf-notice">' . esc_html( smf_label( 'livestream_no_stream_notice', 'Aktuell kein Livestream verfügbar.' ) ) . '</div>'
+                . self::stale_notice( $stale_since );
+        }
+
+        ob_start();
+        smf_render_template( 'livestream', array(
+            'game'           => $game,
+            'stream'         => $stream,
+            'section_title'  => $section_title,
+            'titel'          => $atts['titel'],
+            'stale_since'    => $stale_since,
         ) );
         return ob_get_clean();
     }

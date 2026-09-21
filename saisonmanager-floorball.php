@@ -3,7 +3,7 @@
  * Plugin Name: SM Floorball
  * Plugin URI:  https://github.com/jarse32/Saisonmanager-Wordpress-Plugin
  * Description: Zeigt Floorball-Spiele, Tabellen und Ligen aus der Saisonmanager-API via Shortcodes an. Inoffizielles Community-Projekt, nicht von Saisonmanager/FVD betrieben.
- * Version:     1.8.0
+ * Version:     1.9.0
  * Author:      Kasche
  * Text Domain: saisonmanager-floorball
  * License:     GPL-2.0+
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'SMF_VERSION', '1.8.0' );
+define( 'SMF_VERSION', '1.9.0' );
 define( 'SMF_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SMF_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -133,6 +133,21 @@ function smf_maybe_migrate_stream_embed_mode() {
 add_action( 'plugins_loaded', 'smf_maybe_migrate_stream_embed_mode' );
 
 /**
+ * Einmalige Migration für die neue Option "Einwilligung merken erlauben"
+ * (smf_stream_remember_consent, v1.9.0 Teil 1) - gleiches Muster wie
+ * smf_maybe_migrate_stream_embed_mode() direkt darüber. Default "aus" für
+ * alle Installationen (Bestand wie neu) - datensparsamster Zustand, siehe
+ * README.
+ */
+function smf_maybe_migrate_stream_remember_consent() {
+    if ( get_option( 'smf_stream_remember_consent', false ) !== false ) {
+        return;
+    }
+    update_option( 'smf_stream_remember_consent', 'aus' );
+}
+add_action( 'plugins_loaded', 'smf_maybe_migrate_stream_remember_consent' );
+
+/**
  * Admin-Einstellungen + POST-Handler registrieren.
  * Läuft auf admin_init, damit admin_post_* Actions rechtzeitig verfügbar sind.
  */
@@ -196,8 +211,17 @@ function smf_enqueue_assets() {
     );
 
     wp_localize_script( 'smf-script', 'smf_ajax', array(
-        'ajax_url' => admin_url( 'admin-ajax.php' ),
-        'nonce'    => wp_create_nonce( 'smf_nonce' ),
+        'ajax_url'               => admin_url( 'admin-ajax.php' ),
+        'nonce'                  => wp_create_nonce( 'smf_nonce' ),
+        // v1.9.0, Teil 1: Globales Ein/Aus für "Einwilligung merken" - bei
+        // "aus" ignoriert main.js auch eine noch vorhandene alte
+        // localStorage-Einwilligung (siehe maybeAutoRevealStreams()), statt
+        // nur künftige Einwilligungen zu verhindern. Kein zusätzlicher
+        // Modus-Check nötig: die Checkbox, die eine Einwilligung überhaupt
+        // erst erzeugen kann, rendert PHP-seitig ohnehin nur bei
+        // smf_stream_embed_mode = "zwei_klick" (siehe smf_render_stream_embed()).
+        'stream_remember_allowed' => get_option( 'smf_stream_remember_consent', 'aus' ) === 'an',
+        'stream_forget_label'     => smf_label( 'stream_forget_link', 'Automatisches Laden beenden' ),
     ) );
 }
 add_action( 'wp_enqueue_scripts', 'smf_enqueue_assets' );
@@ -411,6 +435,80 @@ function smf_game_status_badge_html( $status ) {
         return '<span class="smf-badge smf-badge--canceled">' . esc_html( smf_label( 'canceled_badge_label', 'Abgesagt' ) ) . '</span>';
     }
     return '';
+}
+
+/**
+ * HTML-Fragment für einen Livestream-/Aufzeichnungs-Player oder -Link -
+ * gemeinsam genutzt vom Spieldetail-Modal (game-detail.php) UND dem
+ * Shortcode sm_livestream (livestream.php, v1.9.0), damit Markup/Klassen
+ * für Platzhalter, Zwei-Klick-Reveal und "Einwilligung merken" nicht an
+ * zwei Stellen auseinanderlaufen. Reine Darstellung - OB überhaupt etwas
+ * übergeben wird (Option smf_stream_embed_mode, Link-Wahl je Spielstatus),
+ * entscheiden die Aufrufer selbst (siehe dort).
+ *
+ * Die Überschrift ("Livestream"/"Aufzeichnung") ist bewusst NICHT Teil
+ * dieser Funktion - die beiden Aufrufer platzieren/beschriften sie
+ * unterschiedlich (Modal: feste Abschnittsüberschrift; sm_livestream:
+ * zusätzlich zu einem optionalen freien Titel-Attribut).
+ *
+ * @param array{kind: string, parsed: array, embed_url: string} $stream Siehe game-detail.php/livestream.php für den Aufbau
+ * @param string $embed_title Wert für das title-Attribut des iframes (Screenreader/Tab-Titel), z.B. "Livestream: Heim – Gast"
+ * @return string
+ */
+function smf_render_stream_embed( array $stream, $embed_title ) {
+    $provider       = isset( $stream['parsed']['provider'] ) ? $stream['parsed']['provider'] : '';
+    $provider_label = ( ! empty( $stream['parsed']['provider_label'] ) ) ? $stream['parsed']['provider_label'] : ( isset( $stream['parsed']['host'] ) ? $stream['parsed']['host'] : '' );
+    $link_url       = isset( $stream['parsed']['link_url'] ) ? $stream['parsed']['link_url'] : '';
+    $embed_url      = isset( $stream['embed_url'] ) ? $stream['embed_url'] : '';
+
+    $external_link_html = '<a class="smf-btn smf-stream-link" href="' . esc_url( $link_url ) . '" target="_blank" rel="noopener noreferrer">'
+        . esc_html( sprintf( smf_label( 'stream_external_link', 'Auf %s ansehen' ), $provider_label ) )
+        . '</a>';
+
+    if ( $embed_url === '' ) {
+        return '<p>' . $external_link_html . '</p>';
+    }
+
+    $remember_allowed = get_option( 'smf_stream_remember_consent', 'aus' ) === 'an';
+
+    ob_start();
+    ?>
+    <div class="smf-stream-embed" data-provider="<?php echo esc_attr( $provider ); ?>">
+        <div class="smf-stream-embed__placeholder">
+            <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/></svg>
+            <p class="smf-stream-embed__notice">
+                <?php
+                echo esc_html( sprintf(
+                    /* translators: %1$s: Anbieter, z.B. YouTube */
+                    smf_label( 'stream_privacy_notice', 'Wird von %1$s eingebettet. Beim Laden werden Daten an %1$s übertragen.' ),
+                    $provider_label
+                ) );
+                ?>
+            </p>
+            <?php if ( $remember_allowed ) : ?>
+                <label class="smf-stream-embed__remember">
+                    <input type="checkbox" class="smf-stream-remember-checkbox">
+                    <?php
+                    echo esc_html( sprintf(
+                        /* translators: %s: Anbieter, z.B. YouTube */
+                        smf_label( 'stream_remember_checkbox', '%s-Inhalte künftig immer laden' ),
+                        $provider_label
+                    ) );
+                    ?>
+                </label>
+            <?php endif; ?>
+            <button type="button" class="smf-btn smf-stream-reveal"
+                    data-embed-url="<?php echo esc_url( $embed_url ); ?>"
+                    data-embed-title="<?php echo esc_attr( $embed_title ); ?>">
+                <?php echo esc_html( smf_label( 'stream_reveal_btn', 'Video laden' ) ); ?>
+            </button>
+            <a class="smf-stream-link" href="<?php echo esc_url( $link_url ); ?>" target="_blank" rel="noopener noreferrer">
+                <?php echo esc_html( sprintf( smf_label( 'stream_external_link', 'Auf %s ansehen' ), $provider_label ) ); ?>
+            </a>
+        </div>
+    </div>
+    <?php
+    return ob_get_clean();
 }
 
 /**

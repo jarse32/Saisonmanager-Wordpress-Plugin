@@ -143,8 +143,7 @@ if ( $smf_stream_mode !== 'aus' ) {
     }
 }
 
-$smf_stream_provider_label = $smf_stream ? ( $smf_stream['parsed']['provider_label'] ?: $smf_stream['parsed']['host'] ) : '';
-$smf_stream_section_title  = '';
+$smf_stream_section_title = '';
 if ( $smf_stream ) {
     $smf_stream_section_title = ( $smf_stream['kind'] === 'vod' )
         ? smf_label( 'stream_section_title_vod', 'Aufzeichnung' )
@@ -226,40 +225,12 @@ if ( $smf_stream ) {
     </div>
 
     <?php if ( $smf_stream ) : ?>
-    <!-- Livestream/Aufzeichnung (Etappe D) -->
+    <!-- Livestream/Aufzeichnung (Etappe D, v1.9.0: gemeinsames Markup mit sm_livestream) -->
     <div class="smf-detail__section">
         <h4 class="smf-detail__section-title"><?php echo esc_html( $smf_stream_section_title ); ?></h4>
-
-        <?php if ( $smf_stream['embed_url'] !== '' ) : ?>
-            <div class="smf-stream-embed">
-                <div class="smf-stream-embed__placeholder">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/></svg>
-                    <p class="smf-stream-embed__notice">
-                        <?php
-                        echo esc_html( sprintf(
-                            /* translators: %1$s: Anbieter, z.B. YouTube */
-                            smf_label( 'stream_privacy_notice', 'Wird von %1$s eingebettet. Beim Laden werden Daten an %1$s übertragen.' ),
-                            $smf_stream_provider_label
-                        ) );
-                        ?>
-                    </p>
-                    <button type="button" class="smf-btn smf-stream-reveal"
-                            data-embed-url="<?php echo esc_url( $smf_stream['embed_url'] ); ?>"
-                            data-embed-title="<?php echo esc_attr( $smf_stream_section_title . ': ' . $home_name . ' – ' . $away_name ); ?>">
-                        <?php echo esc_html( smf_label( 'stream_reveal_btn', 'Video laden' ) ); ?>
-                    </button>
-                    <a class="smf-stream-link" href="<?php echo esc_url( $smf_stream['parsed']['link_url'] ); ?>" target="_blank" rel="noopener noreferrer">
-                        <?php echo esc_html( sprintf( smf_label( 'stream_external_link', 'Auf %s ansehen' ), $smf_stream_provider_label ) ); ?>
-                    </a>
-                </div>
-            </div>
-        <?php else : ?>
-            <p>
-                <a class="smf-btn smf-stream-link" href="<?php echo esc_url( $smf_stream['parsed']['link_url'] ); ?>" target="_blank" rel="noopener noreferrer">
-                    <?php echo esc_html( sprintf( smf_label( 'stream_external_link', 'Auf %s ansehen' ), $smf_stream_provider_label ) ); ?>
-                </a>
-            </p>
-        <?php endif; ?>
+        <?php
+        echo smf_render_stream_embed( $smf_stream, $smf_stream_section_title . ': ' . $home_name . ' – ' . $away_name ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapt bereits intern
+        ?>
     </div>
     <?php endif; ?>
 
