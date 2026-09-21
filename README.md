@@ -146,6 +146,7 @@ Anfragen an den Verbandsserver.
 | `[sm_spiele liga_id="123"]` | Spielplan einer Liga | `liga_id`, `anzahl`, `team`, `modus` (`alle`/`vergangen`/`kommend`), `titel`, `logos`, `namen`, `logo_groesse`, `hervorheben` |
 | `[sm_naechstes_spiel liga_id="123"]` | Nächstes kommendes Spiel | `liga_id`, `team`, `logos`, `namen`, `logo_groesse`, `hervorheben` (ohne sichtbaren Effekt) |
 | `[sm_letztes_spiel liga_id="123"]` | Letztes gespieltes Spiel | `liga_id`, `team`, `logos`, `namen`, `logo_groesse`, `hervorheben` (ohne sichtbaren Effekt) |
+| `[sm_spiel_duo liga_id="123"]` | Nächstes und letztes Spiel nebeneinander in einem gemeinsamen Grid | wie `sm_naechstes_spiel`/`sm_letztes_spiel`, zusätzlich `reihenfolge` (`naechstes-zuerst`/`letztes-zuerst`, Standard `naechstes-zuerst`) |
 | `[sm_vereinsuebersicht verein="hannover"]` | Alle Spiele aller Teams eines Vereins | `verein` (Slug oder Name), `anzahl`, `namen`, `logo_groesse`, `hervorheben` (Standard `false`) |
 | `[sm_scorer team_id="6754"]` | Scorerliste (Punkteliste) eines Teams | `team_id` (Pflicht), `anzahl`, `spalten` (`voll`/`kompakt`), `namen` (`voll`/`abgekuerzt`), `titel`, `summe` |
 
@@ -186,6 +187,37 @@ abgeschnitten zu werden.
 Beispiel für eine Startseite mit größeren Logos:
 `[sm_vereinsuebersicht verein="hannover" logo_groesse="gross"]`
 
+### Nächstes und letztes Spiel nebeneinander (sm_spiel_duo)
+
+`[sm_naechstes_spiel]` und `[sm_letztes_spiel]` einzeln nebeneinander zu
+platzieren (z.B. in zwei Theme-Spalten) funktioniert weiterhin, beide Karten
+sind seit dieser Version auch unabhängig voneinander gleich hoch, mit Button
+auf gleicher Höhe. `[sm_spiel_duo liga_id="123"]` fasst beide zusätzlich in
+einem gemeinsamen Grid zusammen und ist der empfohlene Weg für eine
+Nebeneinander-Darstellung:
+
+```
+[sm_spiel_duo liga_id="123" team="Eichehorn"]
+```
+
+Bricht unterhalb von ca. 576px Grid-Breite automatisch untereinander um
+(abhängig von der tatsächlichen Breite des Grids selbst, nicht vom
+Fenster/Bildschirm – z.B. bleibt es in einer schmalen Sidebar auch auf einem
+breiten Bildschirm gestapelt). `reihenfolge="letztes-zuerst"` vertauscht die
+Reihenfolge im Markup.
+
+Nimmt alle Attribute von `sm_naechstes_spiel`/`sm_letztes_spiel` entgegen
+(`team`, `logos`, `namen`, `logo_groesse`, `hervorheben`) und reicht sie
+unverändert an beide Karten durch.
+
+**Hinweis für Bestandsseiten mit manuell nebeneinandergesetzten
+Shortcodes:** Ein sichtbarer Strich zwischen oder über den Karten ist
+typischerweise kein Plugin-Markup, sondern ein im Editor zwischen die beiden
+Shortcodes getippter Trenner (z.B. `[sm_naechstes_spiel] - [sm_letztes_spiel]`
+in einem Absatz), den `wpautop` als eigenen Textblock umsetzt. Einfach aus
+dem Editor entfernen, oder gleich auf `[sm_spiel_duo]` umsteigen, das ihn gar
+nicht erst nötig macht.
+
 ### Team-Highlighting
 
 `hervorheben` markiert das eigene Team in `sm_tabelle` und `sm_spiele`
@@ -214,10 +246,11 @@ einer Liga stabil ist. Ist eine Team-ID unbekannt oder nicht eindeutig
 zuordenbar, bleibt die Zeile/Karte unmarkiert statt falsch markiert zu
 werden.
 
-`sm_naechstes_spiel`/`sm_letztes_spiel` akzeptieren `hervorheben` (kein
-Fehlerkasten), zeigen aber keine Markierung - die Karte stellt ohnehin nur
-zwei Teams gleichzeitig dar, „eins davon eigen" hat dort keinen
-Unterscheidungswert. In `sm_vereinsuebersicht` ist der Standard `false`,
+`sm_naechstes_spiel`/`sm_letztes_spiel` (und damit auch `sm_spiel_duo`, das
+beide intern aufruft) akzeptieren `hervorheben` (kein Fehlerkasten), zeigen
+aber keine Markierung - die Karte stellt ohnehin nur zwei Teams gleichzeitig
+dar, „eins davon eigen" hat dort keinen Unterscheidungswert. In
+`sm_vereinsuebersicht` ist der Standard `false`,
 weil dort jedes gezeigte Spiel bereits eins der eigenen Teams betrifft; ein
 expliziter Wert funktioniert trotzdem, z.B. um auf einer Seite nur die
 1. Mannschaft zu markieren.
