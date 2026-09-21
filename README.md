@@ -21,7 +21,7 @@ WordPress-Seiten an – per Shortcode, ohne eigene Programmierung.
 
 ## Voraussetzungen
 
-- WordPress ≥ 5.0, PHP ≥ 7.4
+- WordPress ≥ 5.3 (wegen `wp_date()`, DST-korrekte Anzeige von Spieldaten), PHP ≥ 7.4
 - Ein eigener Saisonmanager-API-Key. Beantragung unter
   [saisonmanager.de/api-zugang](https://saisonmanager.de/api-zugang)
   (nicht-kommerzielles Vorhaben, ein Key pro Projekt/Website).
@@ -143,11 +143,11 @@ Anfragen an den Verbandsserver.
 | Shortcode | Beschreibung | Wichtigste Parameter |
 |---|---|---|
 | `[sm_tabelle liga_id="123"]` | Liga-Tabelle | `liga_id`, `titel`, `logos`, `logo_groesse`, `hervorheben` |
-| `[sm_spiele liga_id="123"]` | Spielplan einer Liga | `liga_id`, `anzahl`, `team`, `modus` (`alle`/`vergangen`/`kommend`), `titel`, `logos`, `namen`, `logo_groesse`, `hervorheben` |
-| `[sm_naechstes_spiel liga_id="123"]` | Nächstes kommendes Spiel | `liga_id`, `team`, `logos`, `namen`, `logo_groesse`, `hervorheben` (ohne sichtbaren Effekt) |
-| `[sm_letztes_spiel liga_id="123"]` | Letztes gespieltes Spiel | `liga_id`, `team`, `logos`, `namen`, `logo_groesse`, `hervorheben` (ohne sichtbaren Effekt) |
+| `[sm_spiele liga_id="123"]` | Spielplan einer Liga | `liga_id`, `anzahl`, `team`, `modus` (`alle`/`vergangen`/`kommend`), `titel`, `logos`, `namen`, `logo_groesse`, `hervorheben`, `live_badge` |
+| `[sm_naechstes_spiel liga_id="123"]` | Nächstes kommendes Spiel | `liga_id`, `team`, `logos`, `namen`, `logo_groesse`, `hervorheben` (ohne sichtbaren Effekt), `live_badge` |
+| `[sm_letztes_spiel liga_id="123"]` | Letztes gespieltes Spiel | `liga_id`, `team`, `logos`, `namen`, `logo_groesse`, `hervorheben` (ohne sichtbaren Effekt), `live_badge` |
 | `[sm_spiel_duo liga_id="123"]` | Nächstes und letztes Spiel nebeneinander in einem gemeinsamen Grid | wie `sm_naechstes_spiel`/`sm_letztes_spiel`, zusätzlich `reihenfolge` (`naechstes-zuerst`/`letztes-zuerst`, Standard `naechstes-zuerst`) |
-| `[sm_vereinsuebersicht verein="hannover"]` | Alle Spiele aller Teams eines Vereins | `verein` (Slug oder Name), `anzahl`, `namen`, `logo_groesse`, `hervorheben` (Standard `false`) |
+| `[sm_vereinsuebersicht verein="hannover"]` | Alle Spiele aller Teams eines Vereins | `verein` (Slug oder Name), `anzahl`, `namen`, `logo_groesse`, `hervorheben` (Standard `false`), `live_badge` |
 | `[sm_scorer team_id="6754"]` | Scorerliste (Punkteliste) eines Teams | `team_id` (Pflicht), `anzahl`, `spalten` (`voll`/`kompakt`), `namen` (`voll`/`abgekuerzt`), `titel`, `summe` |
 
 Die `liga_id`/`team_id` findest du über den Team-Finder oder den "Teams
@@ -254,6 +254,46 @@ dar, „eins davon eigen" hat dort keinen Unterscheidungswert. In
 weil dort jedes gezeigte Spiel bereits eins der eigenen Teams betrifft; ein
 expliziter Wert funktioniert trotzdem, z.B. um auf einer Seite nur die
 1. Mannschaft zu markieren.
+
+### LIVE-Kennzeichnung
+
+Ein angepfiffenes, noch nicht beendetes Spiel wird in Karten und Spiellisten
+(`sm_naechstes_spiel`, `sm_letztes_spiel`, `sm_spiel_duo`, `sm_spiele`,
+`sm_vereinsuebersicht`) automatisch als **laufend** erkannt - abgeleitet
+ausschließlich aus `started`/`ended`, **nicht** aus dem Spielbericht-Status
+(ein angepfiffenes Spiel ohne angelegten Spielbericht gilt korrekt als
+laufend). Bei `sm_naechstes_spiel`/`sm_spiel_duo` wechselt dabei zusätzlich
+das Karten-Label von "Nächstes Spiel" auf "Läuft gerade".
+
+**Kein erfundener Spielstand:** Hat der eigene Saisonmanager-Key keine
+Echtzeit-Freigabe (Regelfall, siehe „Ausfallverhalten" oben), blendet die
+API das Ergebnis eines laufenden Spiels aus, statt es veraltet zu liefern.
+Die Karte zeigt in diesem Fall "Live – Ergebnis folgt" statt eines Spielstands
+- niemals ein geratenes oder abgeschnittenes Ergebnis wie „0:0".
+
+**Zeitfenster (vier Stunden):** Ein Spiel gilt nur bis zu vier Stunden nach
+Anstoß als laufend. Setzt der Verband `ended` bei einem Spiel nie (z.B. weil
+der Spielbericht nie abgeschlossen wurde), fällt es danach in die normale
+Vergangenheits-Logik zurück und erscheint als "Letztes Spiel" statt auf
+unbestimmte Zeit das tatsächlich nächste Spiel zu verdrängen.
+
+**Staleness-Schutz:** Kommen die angezeigten Daten aus der Notreserve (der
+Verbandsserver ist gerade nicht erreichbar, siehe „Ausfallverhalten"), zeigt
+die Karte **keine** Live-Kennzeichnung - ein möglicherweise veralteter
+Live-Stand wäre schlimmer als gar keiner. Die Karte fällt in diesem Fall
+optisch komplett auf "bevorstehend" zurück, der bestehende Stand-Hinweis
+bleibt die einzige Kommunikation über den veralteten Datenstand.
+
+**Abgesagte Spiele** (`notice_type` = `"Canceled"`) erhalten unabhängig von
+Datum oder Status ein "Abgesagt"-Abzeichen.
+
+Steuerbar über die Option **SM Floorball → Allgemeine Einstellungen →
+LIVE-Kennzeichnung** (Standard: an) sowie pro Einbindung über das
+Shortcode-Attribut `live_badge` (`true`/`false`, Standard `true`), z.B.
+`[sm_naechstes_spiel liga_id="123" live_badge="false"]`. Die Abzeichenfarben
+sind über die CSS-Variablen `--smf-color-live`/`--smf-color-on-live` bzw.
+`--smf-color-canceled`/`--smf-color-on-canceled` themebar (siehe „Hooks für
+Theme-Entwickler:innen" unten) - nicht Teil der Design-Seite im Backend.
 
 ## Hooks für Theme-Entwickler:innen
 
