@@ -17,6 +17,9 @@ WordPress-Seiten an – per Shortcode, ohne eigene Programmierung.
 - Team-Finder: Club-IDs, Team-IDs und Liga-IDs finden, ohne im
   Saisonmanager-Frontend danach suchen zu müssen
 - Klick auf ein Spiel öffnet ein Modal mit Details (Ereignisse, Spielstand)
+- Optionale Livestream-/Aufzeichnungs-Einbettung (YouTube/Twitch) im
+  Spieldetail-Modal, datenschutzfreundlich per Zwei-Klick-Lösung oder als
+  reiner Link (Standard), auch ganz abschaltbar
 - Serverseitiges Caching, um API-Anfragen gering zu halten
 
 ## Voraussetzungen
@@ -295,6 +298,61 @@ sind über die CSS-Variablen `--smf-color-live`/`--smf-color-on-live` bzw.
 `--smf-color-canceled`/`--smf-color-on-canceled` themebar (siehe „Hooks für
 Theme-Entwickler:innen" unten) - nicht Teil der Design-Seite im Backend.
 
+### Livestream-/Aufzeichnungs-Einbettung
+
+Hat ein Verein im Saisonmanager zu einem Spiel einen Livestream- oder
+Aufzeichnungs-Link hinterlegt, zeigen die Karten
+(`sm_naechstes_spiel`, `sm_letztes_spiel`, `sm_spiel_duo`) dafür einen
+kleinen zusätzlichen Button ("Livestream" vor/während des Spiels,
+"Aufzeichnung" danach), der das Spieldetail-Modal öffnet - der eigentliche
+Player erscheint **ausschließlich im Modal**, nicht in Spiellisten
+(`sm_spiele`) oder der Vereinsübersicht (`sm_vereinsuebersicht`).
+
+**Link-Wahl:** Vor und während des Spiels `live_stream_link`, nach
+Spielende `vod_link` - falls vorhanden, sonst `live_stream_link` als
+Fallback (manche Vereine tragen nie eine separate Aufzeichnung ein, der
+Live-Link funktioniert bei manchen Anbietern danach trotzdem weiter). Ein
+abgesagtes Spiel zeigt nie einen Stream-Button, selbst wenn vorab ein Link
+eingetragen war.
+
+**Nur YouTube und Twitch werden eingebettet** - alle anderen Hosts
+erscheinen als reiner "Auf &lt;Anbieter&gt; ansehen"-Link statt eines
+Players, ebenso ein Kanal-Link ohne konkretes Video (z.B.
+`twitch.tv/<kanalname>` oder ein YouTube-Kanal-Link) - dafür fehlt eine
+verlässliche, einbettbare Video-ID. Nur `https`-Links werden überhaupt
+berücksichtigt.
+
+Steuerbar über **SM Floorball → Allgemeine Einstellungen →
+Livestream-Einbettung**:
+
+| Option        | Verhalten |
+|---------------|-----------|
+| **Nur Link** (Standard für Neuinstallationen) | Button öffnet das Modal, dort erscheint nur ein Link zum Anbieter - kein iframe, keine Anbieter-Anfrage beim Seitenaufruf oder Öffnen des Modals. |
+| **Zwei-Klick** | Wie oben, zusätzlich bei einbettbaren Links ein Platzhalter mit Datenschutzhinweis; erst ein zweiter, bewusster Klick auf "Video laden" erzeugt das iframe (YouTube: `youtube-nocookie.com`, Twitch: `player.twitch.tv`). Vor diesem Klick lädt die Seite kein Bild, kein Skript und keine Schrift vom Anbieter. Die "Einwilligung" gilt nur für dieses eine Video und diesen einen Aufruf - kein Cookie, kein `localStorage`, keine Abhängigkeit von einem Consent-Plugin. Schließt man das Modal, wird ein bereits geladenes iframe entfernt, damit kein Stream im Hintergrund weiterläuft. |
+| **Aus**        | Kein Button, kein Modal-Abschnitt, kein zusätzlicher API-Request für Stream-Daten. |
+
+**Zusätzlicher API-Request pro Seite:** Die Stream-Links stehen nur in
+`games/{id}`, nicht im Spielplan/`teams/{id}/matches` - für Karten (nicht
+für das Modal, das `games/{id}` ohnehin schon lädt) braucht es also einen
+kurzen Zusatzabruf pro angezeigtem Spiel. Referenzieren mehrere
+Karten-Shortcodes auf derselben Seite dasselbe Spiel (z.B.
+`sm_naechstes_spiel` **und** `sm_spiel_duo` für dasselbe Team), löst das
+trotzdem nur einen Request pro tatsächlich unterschiedlichem Spiel aus -
+im Regelfall (ein Team, "nächstes" + "letztes" Spiel) also höchstens zwei
+zusätzliche Requests je Seitenaufruf. Eigene, kurze Zwischenspeicherung
+(getrennt von der Cache-Dauer-Einstellung oben): 5 Minuten für
+anstehende/laufende Spiele (der Link wird oft erst kurz vorher
+eingetragen), 6 Stunden für bereits beendete Spiele mit Aufzeichnung.
+
+**Datenschutz:** Sobald ein Video eingebettet wird (Modus "Zwei-Klick",
+nach dem zweiten Klick), lädt der Browser der Besucher:innen Inhalte
+direkt von YouTube bzw. Twitch - eine Verbindung, auf die dieses Plugin
+keinen Einfluss hat. Vereine, die diese Funktion nutzen, sollten den
+jeweils eingebundenen Anbieter in ihrer eigenen Datenschutzerklärung
+nennen (siehe auch „Sicherheit & Datenschutz" unten). Im Standardmodus
+("Nur Link") passiert das nicht - dort verlässt niemand die eigene Seite
+ohne einen expliziten Klick auf einen normalen Link.
+
 ## Hooks für Theme-Entwickler:innen
 
 Über **SM Floorball → Design** lässt sich das Erscheinungsbild bereits ohne
@@ -374,6 +432,13 @@ Verfügbare Schlüssel und ihre Standardtexte:
 | `scorer_not_visible` | Die Scorerliste ist für dieses Team nicht verfügbar. |
 | `scorer_names_hidden` | Die Scorerliste mit Personennamen ist in den Einstellungen deaktiviert. |
 | `scorer_totals_label` | Team gesamt |
+| `stream_btn_live_label` | Livestream |
+| `stream_btn_vod_label` | Aufzeichnung |
+| `stream_section_title_live` | Livestream |
+| `stream_section_title_vod` | Aufzeichnung |
+| `stream_privacy_notice` | Wird von %1$s eingebettet. Beim Laden werden Daten an %1$s übertragen. |
+| `stream_reveal_btn` | Video laden |
+| `stream_external_link` | Auf %s ansehen |
 
 `team_side_away` z.B. auf "Auswärts" umstellen, ohne Template-Override:
 
@@ -413,7 +478,10 @@ Seitenaufruf, sollte also keine teuren Berechnungen enthalten.
   über `wp_remote_get()`.
 - Keine Weitergabe an Dritte: Das Plugin ruft ausschließlich die
   konfigurierte Saisonmanager-API-URL auf, es gibt keine weiteren
-  Aufrufe an Drittanbieter (Tracking, Werbung o.ä.).
+  Aufrufe an Drittanbieter (Tracking, Werbung o.ä.) - **Ausnahme:** die
+  optionale Livestream-/Aufzeichnungs-Einbettung (siehe „Livestream-/
+  Aufzeichnungs-Einbettung" unter Shortcodes), die im Standardmodus
+  ("Nur Link") aber ohnehin keine Anbieter-Inhalte einbettet.
 - Keine externen Schriften oder sonstigen Fremd-Assets – Design und
   Schrift werden aus dem Plugin bzw. dem Theme der Installation
   bedient (siehe *SM Floorball → Design* im Adminmenü).
