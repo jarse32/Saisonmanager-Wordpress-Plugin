@@ -18,8 +18,9 @@ WordPress-Seiten an – per Shortcode, ohne eigene Programmierung.
   Saisonmanager-Frontend danach suchen zu müssen
 - Klick auf ein Spiel öffnet ein Modal mit Details (Ereignisse, Spielstand)
 - Optionale Livestream-/Aufzeichnungs-Einbettung (YouTube/Twitch) im
-  Spieldetail-Modal, datenschutzfreundlich per Zwei-Klick-Lösung oder als
-  reiner Link (Standard), auch ganz abschaltbar
+  Spieldetail-Modal und als eigenständiger großer Player (`sm_livestream`),
+  datenschutzfreundlich per Zwei-Klick-Lösung mit optional merkbarer
+  Einwilligung oder als reiner Link (Standard), auch ganz abschaltbar
 - Serverseitiges Caching, um API-Anfragen gering zu halten
 
 ## Voraussetzungen
@@ -152,6 +153,7 @@ Anfragen an den Verbandsserver.
 | `[sm_spiel_duo liga_id="123"]` | Nächstes und letztes Spiel nebeneinander in einem gemeinsamen Grid | wie `sm_naechstes_spiel`/`sm_letztes_spiel`, zusätzlich `reihenfolge` (`naechstes-zuerst`/`letztes-zuerst`, Standard `naechstes-zuerst`) |
 | `[sm_vereinsuebersicht verein="hannover"]` | Alle Spiele aller Teams eines Vereins | `verein` (Slug oder Name), `anzahl`, `namen`, `logo_groesse`, `hervorheben` (Standard `false`), `live_badge` |
 | `[sm_scorer team_id="6754"]` | Scorerliste (Punkteliste) eines Teams | `team_id` (Pflicht), `anzahl`, `spalten` (`voll`/`kompakt`), `namen` (`voll`/`abgekuerzt`), `titel`, `summe` |
+| `[sm_livestream team_id="6754"]` | Großer Livestream-/Aufzeichnungs-Player für das laufende, sonst nächste Spiel eines Teams | `team_id` (Pflicht), `nach_spielende` (`aufzeichnung`/`ausblenden`), `titel`, `hinweis` |
 
 Die `liga_id`/`team_id` findest du über den Team-Finder oder den "Teams
 laden"-Button bei einem Verein (Spalte "Liga(en)" bzw. Team-ID).
@@ -305,8 +307,12 @@ Aufzeichnungs-Link hinterlegt, zeigen die Karten
 (`sm_naechstes_spiel`, `sm_letztes_spiel`, `sm_spiel_duo`) dafür einen
 kleinen zusätzlichen Button ("Livestream" vor/während des Spiels,
 "Aufzeichnung" danach), der das Spieldetail-Modal öffnet - der eigentliche
-Player erscheint **ausschließlich im Modal**, nicht in Spiellisten
-(`sm_spiele`) oder der Vereinsübersicht (`sm_vereinsuebersicht`).
+Player erscheint dort, nicht in Spiellisten (`sm_spiele`) oder der
+Vereinsübersicht (`sm_vereinsuebersicht`). Wer stattdessen einen
+eigenständigen, großen Player auf einer Seite einbinden möchte (z.B. eine
+"Livestream heute"-Seite), nutzt den Shortcode `sm_livestream` - siehe
+[Großer Livestream-Player](#großer-livestream-player-sm_livestream) unten;
+beide nutzen dasselbe Markup und dieselben Einstellungen.
 
 **Link-Wahl:** Vor und während des Spiels `live_stream_link`, nach
 Spielende `vod_link` - falls vorhanden, sonst `live_stream_link` als
@@ -328,20 +334,20 @@ Livestream-Einbettung**:
 | Option        | Verhalten |
 |---------------|-----------|
 | **Nur Link** (Standard für Neuinstallationen) | Button öffnet das Modal, dort erscheint nur ein Link zum Anbieter - kein iframe, keine Anbieter-Anfrage beim Seitenaufruf oder Öffnen des Modals. |
-| **Zwei-Klick** | Wie oben, zusätzlich bei einbettbaren Links ein Platzhalter mit Datenschutzhinweis; erst ein zweiter, bewusster Klick auf "Video laden" erzeugt das iframe (YouTube: `youtube-nocookie.com`, Twitch: `player.twitch.tv`). Vor diesem Klick lädt die Seite kein Bild, kein Skript und keine Schrift vom Anbieter. Die "Einwilligung" gilt nur für dieses eine Video und diesen einen Aufruf - kein Cookie, kein `localStorage`, keine Abhängigkeit von einem Consent-Plugin. Schließt man das Modal, wird ein bereits geladenes iframe entfernt, damit kein Stream im Hintergrund weiterläuft. |
-| **Aus**        | Kein Button, kein Modal-Abschnitt, kein zusätzlicher API-Request für Stream-Daten. |
+| **Zwei-Klick** | Wie oben, zusätzlich bei einbettbaren Links ein Platzhalter mit Datenschutzhinweis; erst ein zweiter, bewusster Klick auf "Video laden" erzeugt das iframe (YouTube: `youtube-nocookie.com`, Twitch: `player.twitch.tv`). Vor diesem Klick lädt die Seite kein Bild, kein Skript und keine Schrift vom Anbieter. Die Einwilligung gilt standardmäßig nur für dieses eine Video und diesen einen Aufruf - kein Cookie, kein `localStorage`, keine Abhängigkeit von einem Consent-Plugin. Optional per Checkbox dauerhaft merkbar, siehe [Einwilligung merken](#einwilligung-merken) unten. Schließt man das Modal, wird ein bereits geladenes iframe entfernt, damit kein Stream im Hintergrund weiterläuft. |
+| **Aus**        | Kein Button, kein Modal-Abschnitt, kein Player bei `sm_livestream`, kein zusätzlicher API-Request für Stream-Daten. |
 
 **Zusätzlicher API-Request pro Seite:** Die Stream-Links stehen nur in
-`games/{id}`, nicht im Spielplan/`teams/{id}/matches` - für Karten (nicht
-für das Modal, das `games/{id}` ohnehin schon lädt) braucht es also einen
-kurzen Zusatzabruf pro angezeigtem Spiel. Referenzieren mehrere
-Karten-Shortcodes auf derselben Seite dasselbe Spiel (z.B.
-`sm_naechstes_spiel` **und** `sm_spiel_duo` für dasselbe Team), löst das
-trotzdem nur einen Request pro tatsächlich unterschiedlichem Spiel aus -
-im Regelfall (ein Team, "nächstes" + "letztes" Spiel) also höchstens zwei
-zusätzliche Requests je Seitenaufruf. Eigene, kurze Zwischenspeicherung
-(getrennt von der Cache-Dauer-Einstellung oben): 5 Minuten für
-anstehende/laufende Spiele (der Link wird oft erst kurz vorher
+`games/{id}`, nicht im Spielplan/`teams/{id}/matches` - für Karten und für
+`sm_livestream` (nicht für das Modal, das `games/{id}` ohnehin schon lädt)
+braucht es also einen kurzen Zusatzabruf pro angezeigtem Spiel. Referenzieren
+mehrere Shortcodes auf derselben Seite dasselbe Spiel (z.B.
+`sm_naechstes_spiel` **und** `sm_spiel_duo` **und** `sm_livestream` für
+dasselbe Team), löst das trotzdem nur einen Request pro tatsächlich
+unterschiedlichem Spiel aus - im Regelfall (ein Team, "nächstes" + "letztes"
+Spiel) also höchstens zwei zusätzliche Requests je Seitenaufruf. Eigene, kurze
+Zwischenspeicherung (getrennt von der Cache-Dauer-Einstellung oben): 5 Minuten
+für anstehende/laufende Spiele (der Link wird oft erst kurz vorher
 eingetragen), 6 Stunden für bereits beendete Spiele mit Aufzeichnung.
 
 **Datenschutz:** Sobald ein Video eingebettet wird (Modus "Zwei-Klick",
@@ -352,6 +358,80 @@ jeweils eingebundenen Anbieter in ihrer eigenen Datenschutzerklärung
 nennen (siehe auch „Sicherheit & Datenschutz" unten). Im Standardmodus
 ("Nur Link") passiert das nicht - dort verlässt niemand die eigene Seite
 ohne einen expliziten Klick auf einen normalen Link.
+
+### Einwilligung merken
+
+Standardmäßig gilt der Klick auf "Video laden" im Modus "Zwei-Klick" immer
+nur für diesen einen Aufruf - beim nächsten Besuch erscheint wieder der
+Platzhalter. Über **SM Floorball → Allgemeine Einstellungen → Einwilligung
+merken erlauben** (Standard: **Aus**) lässt sich das ändern:
+
+- Ist die Option an, erscheint am Platzhalter zusätzlich eine (nicht
+  angehakte) Checkbox "&lt;Anbieter&gt;-Inhalte künftig immer laden". Wird
+  sie beim Klick auf "Video laden" angehakt, merkt sich der Browser der
+  Besucher:in diese Entscheidung **getrennt pro Anbieter** (YouTube/Twitch)
+  für **12 Monate**.
+- Gespeichert wird ausschließlich clientseitig in `localStorage` - kein
+  Cookie, keine Übertragung an diese oder eine andere Website, keine
+  Abhängigkeit von einem Consent-Plugin. Jeder Zugriff läuft in `try`/`catch`:
+  ist `localStorage` nicht verfügbar (z.B. privater Modus), verhält sich
+  alles wie bisher (immer erneut fragen).
+- Bei künftigen Aufrufen (Modal **und** `sm_livestream`, dieselbe Logik) wird
+  der Player bei einer gültigen, gespeicherten Einwilligung direkt geladen,
+  ohne den Platzhalter überhaupt zu zeigen.
+- Am geladenen Player erscheint dann ein kleiner Link "Automatisches Laden
+  beenden" - widerruft die Einwilligung sofort und zeigt wieder den
+  Platzhalter.
+- Wird die Option nachträglich wieder auf "Aus" gestellt, greift das sofort:
+  eine im Browser noch vorhandene ältere Einwilligung wird dann ignoriert,
+  nicht nur das künftige Merken verhindert.
+
+Nutzt ein Verein diese Funktion, sollte die Datenschutzerklärung auch die
+**gespeicherte** Einwilligung erwähnen (nicht nur die Einbettung selbst) -
+z.B. dass sie rein clientseitig in `localStorage` liegt, 12 Monate gilt und
+sich über den Widerrufs-Link jederzeit löschen lässt.
+
+### Großer Livestream-Player (sm_livestream)
+
+`[sm_livestream team_id="6754"]` zeigt den Stream des für dieses Team gerade
+relevantesten Spiels als eigenständigen, großen Player - z.B. für eine
+Landingpage "Heute live". Nutzt `team_id` statt `liga_id` (wie `sm_scorer`):
+ein Request deckt alle Wettbewerbe der Saison ab, keine Liga-ID nötig.
+
+**Auswahl des Spiels** (automatisch, ohne dass sich am eingebundenen
+Shortcode etwas ändert), in dieser Reihenfolge:
+
+1. Das gerade laufende Spiel.
+2. Die Aufzeichnung des zuletzt gespielten Spiels, wenn dessen Anstoß
+   höchstens **48 Stunden** zurückliegt - auch wenn bereits ein weiter
+   entferntes kommendes Spiel angesetzt ist (ein frisches Ergebnis ist
+   relevanter als eine noch leere Vorschau auf ein Spiel in einer Woche).
+3. Das nächste kommende Spiel.
+4. Erst wenn nichts davon zutrifft (z.B. zwischen den Saisons): die
+   Aufzeichnung des zuletzt gespielten Spiels, auch wenn es länger als 48
+   Stunden zurückliegt - abschaltbar über `nach_spielende="ausblenden"`
+   (wirkt nur auf diese letzte Stufe, nicht auf Stufe 2).
+
+Oberhalb des Players zeigt der Shortcode immer, um welches Spiel es geht:
+Heim- und Gastteam, Datum/Uhrzeit, und bei einem laufenden Spiel zusätzlich
+das LIVE-Abzeichen (dieselbe Option/Logik wie bei den Karten, siehe
+[LIVE-Kennzeichnung](#live-kennzeichnung) oben, inkl. Staleness-Gate).
+
+Attribute:
+
+| Attribut | Werte | Standard | Bedeutung |
+|---|---|---|---|
+| `team_id` | Team-ID | – (Pflicht) | siehe Team-Finder |
+| `nach_spielende` | `aufzeichnung` / `ausblenden` | `aufzeichnung` | Verhalten, wenn weder ein laufendes noch ein kommendes Spiel existiert |
+| `titel` | freier Text | leer | Eigene Überschrift zusätzlich zum automatischen "Livestream"-/"Aufzeichnung"-Label |
+| `hinweis` | `true` / `false` | `false` | Ohne verfügbaren Stream: `false` gibt nichts aus (keine leere Box), `true` zeigt einen dezenten Hinweistext |
+
+Respektiert dieselbe Option **Livestream-Einbettung** wie die Karten: bei
+"Aus" erscheint nichts (wie ohne Stream-Link), bei "Nur Link" nur ein
+Link-Button, bei "Zwei-Klick" der volle Platzhalter/Player-Ablauf inkl.
+[gemerkter Einwilligung](#einwilligung-merken). Ein Kanal-Link ohne
+konkretes Video (siehe oben) erscheint wie im Modal als reiner Link-Button,
+nie als Player.
 
 ## Hooks für Theme-Entwickler:innen
 
@@ -439,6 +519,9 @@ Verfügbare Schlüssel und ihre Standardtexte:
 | `stream_privacy_notice` | Wird von %1$s eingebettet. Beim Laden werden Daten an %1$s übertragen. |
 | `stream_reveal_btn` | Video laden |
 | `stream_external_link` | Auf %s ansehen |
+| `stream_remember_checkbox` | %s-Inhalte künftig immer laden |
+| `stream_forget_link` | Automatisches Laden beenden |
+| `livestream_no_stream_notice` | Aktuell kein Livestream verfügbar. |
 
 `team_side_away` z.B. auf "Auswärts" umstellen, ohne Template-Override:
 
