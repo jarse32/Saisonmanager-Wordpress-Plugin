@@ -66,6 +66,23 @@ class SMF_Stream {
     }
 
     /**
+     * Beschriftung ("Livestream" vs. "Aufzeichnung") an den Aufrufstellen -
+     * bewusst NUR aus dem Spielstatus, NICHT aus pick_link()['kind']: bei
+     * einem beendeten Spiel ohne vod_link liefert pick_link() den oben
+     * beschriebenen Fallback auf live_stream_link mit kind='live' - das
+     * Video selbst ist trotzdem eine Aufzeichnung, kein laufender Stream
+     * mehr, nur weil es zufällig aus demselben Feld stammt wie vor dem
+     * Anstoß. "Live" gilt ausschließlich vor/während des Spiels (v1.9.1,
+     * vorher zeigte genau dieser Fallback-Fall fälschlich "Livestream").
+     *
+     * @param string $status Rückgabe von SMF_Game_Status::status()
+     * @return 'live'|'vod'
+     */
+    public static function display_kind( $status ) {
+        return ( $status === 'ended' ) ? 'vod' : 'live';
+    }
+
+    /**
      * URL robust auswerten: liefert IMMER ein vollständiges Array zurück
      * (nie null), 'valid' unterscheidet nutzbar/unnutzbar. Eine unnutzbare
      * URL (leer, kaputt, falsches Schema) darf an keiner Aufrufstelle in

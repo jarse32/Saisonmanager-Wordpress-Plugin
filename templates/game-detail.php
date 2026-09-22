@@ -133,7 +133,9 @@ if ( $smf_stream_mode !== 'aus' ) {
         $smf_stream_parsed = SMF_Stream::parse_url( $smf_stream_picked['url'] );
         if ( $smf_stream_parsed['valid'] ) {
             $smf_stream = array(
-                'kind'      => $smf_stream_picked['kind'],
+                // Beschriftung nach Spielstatus, nicht nach
+                // pick_link()['kind'] - siehe SMF_Stream::display_kind().
+                'kind'      => SMF_Stream::display_kind( $smf_stream_status ),
                 'parsed'    => $smf_stream_parsed,
                 'embed_url' => ( $smf_stream_mode === 'zwei_klick' && $smf_stream_parsed['embeddable'] )
                     ? SMF_Stream::build_embed_url( $smf_stream_parsed, SMF_Stream::embed_parent_host() )

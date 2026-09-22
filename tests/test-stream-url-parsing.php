@@ -171,6 +171,21 @@ smf_test_assert( 'pick_link upcoming, nichts vorhanden: null', null, SMF_Stream:
 smf_test_assert( 'pick_link canceled: immer null, auch mit Daten', null, SMF_Stream::pick_link( $fields_both, 'canceled' ) );
 
 // ====================================================================
+// display_kind() - Beschriftung nach Spielstatus, nicht nach pick_link()['kind']
+// ====================================================================
+
+smf_test_assert( 'display_kind upcoming: live', 'live', SMF_Stream::display_kind( 'upcoming' ) );
+smf_test_assert( 'display_kind running: live',  'live', SMF_Stream::display_kind( 'running' ) );
+smf_test_assert( 'display_kind ended: vod',     'vod',  SMF_Stream::display_kind( 'ended' ) );
+
+// Der eigentliche Regressionsfall (v1.9.1): beendetes Spiel, kein vod_link,
+// pick_link() greift auf live_stream_link zurück (kind='live') - die
+// BESCHRIFTUNG muss trotzdem "Aufzeichnung" sein, nicht "Livestream".
+$ended_fallback_picked = SMF_Stream::pick_link( $fields_live_only, 'ended' );
+smf_test_assert( 'Regression: pick_link ended ohne vod_link liefert weiterhin kind=live (Quelle des Fehlers)', 'live', $ended_fallback_picked['kind'] );
+smf_test_assert( 'Regression: display_kind() zeigt trotzdem "Aufzeichnung" (vod), nicht "Livestream"', 'vod', SMF_Stream::display_kind( 'ended' ) );
+
+// ====================================================================
 // build_embed_url()
 // ====================================================================
 

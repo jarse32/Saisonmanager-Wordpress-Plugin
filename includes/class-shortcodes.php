@@ -470,7 +470,8 @@ class SMF_Shortcodes {
     // Zeigt den Livestream/die Aufzeichnung des für dieses Team gerade
     // relevantesten Spiels als großen Player (v1.9.0, Teil 2) - siehe
     // SMF_API::get_livestream_target_game() für die Auswahl (laufend, sonst
-    // nächstes, sonst optional das zuletzt gespielte). Nutzt
+    // die Aufzeichnung des letzten Spiels, sonst - erst wenn Anstoß < 24 Std.
+    // entfernt UND ein Link da ist - das nächste, seit v1.9.1). Nutzt
     // teams/{id}/matches statt liga_id, wie sm_scorer - liefert alle
     // Wettbewerbe des Teams in einem Request, kein Rätselraten nach der
     // richtigen Liga-ID.
@@ -496,7 +497,20 @@ class SMF_Shortcodes {
 
         $games  = ( isset( $response['matches'] ) && is_array( $response['matches'] ) ) ? $response['matches'] : array();
         $include_ended_fallback = $atts['nach_spielende'] !== 'ausblenden';
-        $game   = $api->get_livestream_target_game( $games, $include_ended_fallback );
+        $mode   = get_option( 'smf_stream_embed_mode', 'nur_link' );
+
+        // Die Auswahl darf kein Spiel ohne nutzbaren Link vor eine
+        // vorhandene Aufzeichnung ziehen (v1.9.1) - dafür bekommt sie die
+        // Link-Prüfung mit. Doppelte Requests kostet das nicht (siehe
+        // game_has_usable_stream_link()); bei abgeschalteter Einbettung
+        // ("aus") wird ohnehin kein Link gezeigt, dann bleibt die Auswahl
+        // rein terminbasiert und macht gar keine zusätzlichen Requests.
+        $game   = $api->get_livestream_target_game(
+            $games,
+            $include_ended_fallback,
+            null,
+            ( $mode === 'aus' ) ? null : array( $api, 'game_has_usable_stream_link' )
+        );
 
         // Erst nach dem letzten API-Aufruf lesen, direkt vor dem Rendern.
         $stale_since = $api->stale_since();
@@ -507,7 +521,6 @@ class SMF_Shortcodes {
         if ( $game ) {
             $game_id = isset( $game['game_id'] ) ? (int) $game['game_id'] : 0;
             $status  = SMF_Game_Status::status( $game );
-            $mode    = get_option( 'smf_stream_embed_mode', 'nur_link' );
 
             if ( $game_id && $mode !== 'aus' ) {
                 $stream_fields = $api->get_game_stream_fields( $game_id, $status );
@@ -517,7 +530,9 @@ class SMF_Shortcodes {
                     $parsed = SMF_Stream::parse_url( $picked['url'] );
                     if ( $parsed['valid'] ) {
                         $stream = array(
-                            'kind'      => $picked['kind'],
+                            // Beschriftung nach Spielstatus, nicht nach
+                            // pick_link()['kind'] - siehe display_kind().
+                            'kind'      => SMF_Stream::display_kind( $status ),
                             'parsed'    => $parsed,
                             'embed_url' => ( $mode === 'zwei_klick' && $parsed['embeddable'] )
                                 ? SMF_Stream::build_embed_url( $parsed, SMF_Stream::embed_parent_host() )
@@ -637,7 +652,9 @@ class SMF_Shortcodes {
         }
 
         $parsed = SMF_Stream::parse_url( $picked['url'] );
-        return $parsed['valid'] ? $picked['kind'] : null;
+        // Beschriftung nach Spielstatus, nicht nach pick_link()['kind'] -
+        // siehe SMF_Stream::display_kind().
+        return $parsed['valid'] ? SMF_Stream::display_kind( $status ) : null;
     }
 
     /**
