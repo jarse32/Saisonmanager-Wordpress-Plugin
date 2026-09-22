@@ -879,12 +879,14 @@ class SMF_Admin {
                             <tr>
                                 <td><code>[sm_livestream team_id="6754"]</code></td>
                                 <td>Großer Livestream-/Aufzeichnungs-Player eines Teams, über alle Wettbewerbe der
-                                    Saison. Priorität: laufendes Spiel &gt; Aufzeichnung des letzten Spiels (wenn
-                                    Anstoß &le; 48 Std. zurückliegt) &gt; nächstes Spiel &gt; ältere Aufzeichnung</td>
+                                    Saison. Priorität: laufendes Spiel &gt; Aufzeichnung des letzten Spiels (bleibt
+                                    sichtbar, ganz gleich wie alt) &gt; nächstes Spiel (erst wenn Anstoß &lt; 24 Std.
+                                    entfernt UND ein Stream-Link eingetragen ist)</td>
                                 <td>
                                     <code>team_id</code> (Pflicht), <code>nach_spielende</code>
                                     (<code>aufzeichnung</code>/<code>ausblenden</code>, Standard: aufzeichnung -
-                                    steuert nur die letzte Stufe "ältere Aufzeichnung"), <code>titel</code>
+                                    steuert nur, ob die Aufzeichnung gezeigt wird, wenn es gar kein kommendes
+                                    Spiel gibt), <code>titel</code>
                                     (frei, Standard: kein Titel),
                                     <code>hinweis</code> (true/false, Standard: false - ohne verfügbaren Stream
                                     standardmäßig komplett stumm, keine leere Box). Respektiert die Option

@@ -402,15 +402,35 @@ ein Request deckt alle Wettbewerbe der Saison ab, keine Liga-ID nötig.
 Shortcode etwas ändert), in dieser Reihenfolge:
 
 1. Das gerade laufende Spiel.
-2. Die Aufzeichnung des zuletzt gespielten Spiels, wenn dessen Anstoß
-   höchstens **48 Stunden** zurückliegt - auch wenn bereits ein weiter
-   entferntes kommendes Spiel angesetzt ist (ein frisches Ergebnis ist
-   relevanter als eine noch leere Vorschau auf ein Spiel in einer Woche).
-3. Das nächste kommende Spiel.
-4. Erst wenn nichts davon zutrifft (z.B. zwischen den Saisons): die
-   Aufzeichnung des zuletzt gespielten Spiels, auch wenn es länger als 48
-   Stunden zurückliegt - abschaltbar über `nach_spielende="ausblenden"`
-   (wirkt nur auf diese letzte Stufe, nicht auf Stufe 2).
+2. Die Aufzeichnung des zuletzt gespielten Spiels - unabhängig davon, wie
+   lange dessen Anstoß zurückliegt, solange Stufe 3 noch nicht greift. Eine
+   Woche alte Aufzeichnung schlägt also weiterhin ein Spiel, das erst in
+   zwei Wochen ansteht.
+3. Das nächste kommende Spiel - aber erst, wenn **beides** zutrifft: sein
+   Anstoß ist höchstens **24 Stunden** entfernt, UND dafür ist bereits ein
+   Stream-Link eingetragen. Ein Termin in einer Woche verdrängt die
+   Aufzeichnung nicht, selbst mit bereits gesetztem Link - und ein Termin in
+   einer Stunde ohne Link verdrängt sie ebenso wenig (seit 1.9.1; ersetzt
+   die alte, vom Anstoß des *letzten* Spiels aus gemessene 48h-Regel).
+4. Existiert daneben gar kein kommendes Spiel (z.B. zwischen den Saisons):
+   die Aufzeichnung des zuletzt gespielten Spiels, ganz gleich wie alt -
+   abschaltbar über `nach_spielende="ausblenden"` (wirkt nur auf diese
+   letzte Stufe, nicht auf Stufe 2 - existiert ein kommendes Spiel, bleibt
+   die Aufzeichnung sichtbar, bis Stufe 3 greift, unabhängig von diesem
+   Attribut).
+
+Die 24h+Link-Prüfung gilt bewusst nur für den Wechsel auf das kommende
+Spiel: ein laufendes Spiel (Stufe 1) und die Aufzeichnung (Stufe 2) werden
+immer ohne Weiteres angezeigt - sonst bliebe die Seite ausgerechnet in dem
+Zeitraum leer, in dem der Link für das kommende Spiel erst noch eingetragen
+wird.
+
+Die Beschriftung ("Livestream" vs. "Aufzeichnung") richtet sich dabei immer
+nach dem Spielstatus, nicht danach, aus welchem API-Feld der Link stammt:
+ein beendetes Spiel heißt immer "Aufzeichnung", auch wenn mangels eigenem
+Aufzeichnungslink auf den ursprünglichen Live-Link zurückgegriffen wird
+(YouTube wandelt eine beendete Live-Übertragung z.B. automatisch in ein
+normales Video an derselben URL um) - seit 1.9.1, siehe CHANGELOG.
 
 Oberhalb des Players zeigt der Shortcode immer, um welches Spiel es geht:
 Heim- und Gastteam, Datum/Uhrzeit, und bei einem laufenden Spiel zusätzlich

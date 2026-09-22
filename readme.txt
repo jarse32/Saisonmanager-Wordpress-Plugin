@@ -4,7 +4,7 @@ Tags: floorball, sport, spielplan, ergebnisse, tabelle
 Requires at least: 5.3
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.9.0
+Stable tag: 1.9.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,25 @@ im `main`-Branch des Repositories eine neue Version veröffentlicht wird -
 Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren*.
 
 == Changelog ==
+
+= 1.9.1 =
+* Behoben: `sm_livestream` meldete "Aktuell kein Livestream verfügbar",
+  obwohl eine Aufzeichnung vorlag - sobald der Anstoß des gespielten Spiels
+  mehr als 48 Std. zurücklag, gewann das nächste Spiel die Auswahl, auch
+  wenn dafür noch gar kein Stream-Link eingetragen war
+* Geändert: die alte, vom Anstoß des LETZTEN Spiels aus gemessene 48h-Regel
+  ist ersetzt durch eine Regel, die sich am NÄCHSTEN Spiel orientiert - die
+  Aufzeichnung bleibt jetzt sichtbar, ganz gleich wie alt, bis das nächste
+  Spiel höchstens 24 Std. entfernt ist UND einen Stream-Link hat. Ohne Link
+  am nächsten Spiel bleibt es bei der Aufzeichnung, auch kurz vor Anstoß.
+  `nach_spielende="ausblenden"` wirkt weiterhin nur, wenn es gar kein
+  kommendes Spiel gibt
+* Behoben: Player-Titel und Karten-Button zeigten "Livestream" statt
+  "Aufzeichnung", wenn ein beendetes Spiel mangels eigenem
+  Aufzeichnungslink auf den ursprünglichen Live-Link zurückgriff (z.B.
+  YouTube, das eine beendete Live-Übertragung automatisch in ein normales
+  Video umwandelt). Die Beschriftung richtet sich jetzt nach dem
+  Spielstatus, nicht mehr danach, aus welchem API-Feld der Link stammt
 
 = 1.9.0 =
 * Neu: gemerkte Einwilligung für die Zwei-Klick-Einbettung - Checkbox
@@ -186,6 +205,14 @@ Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren
 * Vereinsübersicht (alle Teams eines Vereins)
 
 == Upgrade Notice ==
+
+= 1.9.1 =
+Keine Aktion nötig. Fehlerbehebung: `sm_livestream` zeigt die Aufzeichnung
+des letzten Spiels jetzt so lange, bis das nächste Spiel höchstens 24 Std.
+entfernt ist UND einen Stream-Link hat - vorher konnte ein Termin ohne Link
+die Aufzeichnung schon nach 48 Std. verdecken. Außerdem heißt ein beendetes
+Spiel jetzt immer "Aufzeichnung", auch wenn der Link aus dem Live-Feld
+stammt.
 
 = 1.9.0 =
 Keine Aktion nötig. Neu: gemerkte Zwei-Klick-Einwilligung (Standard weiter
