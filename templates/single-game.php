@@ -25,8 +25,8 @@ $status = SMF_Game_Status::status( $game );
 // Staleness-Gate: Daten aus der Notreserve (Verbandsserver gerade nicht
 // erreichbar) können veraltet sein - ein "läuft gerade" auf so einem Stand
 // wäre eine erfundene Momentaufnahme. Karte fällt in diesem Fall optisch
-// komplett auf "bevorstehend" zurück (kein Live-Label, kein Badge, kein
-// "Ergebnis folgt"), der bestehende stale_notice()-Hinweis unten bleibt die
+// komplett auf "bevorstehend" zurück (kein Live-Label, kein Badge, "vs."
+// statt Stand), der bestehende stale_notice()-Hinweis unten bleibt die
 // einzige Kommunikation über den veralteten Stand.
 $display_status = ( $status === 'running' && $stale_since ) ? 'upcoming' : $status;
 
@@ -35,10 +35,8 @@ $show_badge      = ! empty( $show_status_badge ) && in_array( $display_status, a
 
 $home_name  = isset( $game['home_team_name'] )     ? $game['home_team_name']     : '?';
 $away_name  = isset( $game['guest_team_name'] )    ? $game['guest_team_name']    : '?';
-$home_score = isset( $game['result']['home_goals'] )  ? $game['result']['home_goals']  : null;
-$away_score = isset( $game['result']['guest_goals'] ) ? $game['result']['guest_goals'] : null;
 $venue      = isset( $game['arena_name'] )         ? $game['arena_name']         : ( isset( $game['arena'] ) ? $game['arena'] : '' );
-$game_day   = isset( $game['game_day'] )           ? $game['game_day']           : '';
+$game_day   = smf_game_day_label( $game );
 
 $home_logo  = '';
 $away_logo  = '';
@@ -128,20 +126,9 @@ if ( $stream_button_kind === 'vod' ) {
         </div>
 
         <div class="smf-single-game__center">
-            <?php if ( $show_badge ) : ?>
-                <?php echo smf_game_status_badge_html( $display_status ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapt bereits intern ?>
-            <?php endif; ?>
-            <?php if ( $has_result ) : ?>
-                <div class="smf-single-game__score"><?php echo esc_html( $home_score . ' : ' . $away_score ); ?></div>
-            <?php elseif ( $show_running_ui ) : ?>
-                <?php /* Niemals 0:0 erfinden: ohne Echtzeit-Freigabe blendet
-                         die API das Ergebnis eines laufenden Spiels aus, statt
-                         es veraltet zu liefern (siehe README, Abschnitt
-                         "Ausfallverhalten"/Umsetzungsauftrag Etappe B). */ ?>
-                <div class="smf-single-game__score smf-single-game__score--upcoming"><?php echo esc_html( smf_label( 'live_no_result_label', 'Live – Ergebnis folgt' ) ); ?></div>
-            <?php else : ?>
-                <div class="smf-single-game__score smf-single-game__score--upcoming"><?php echo esc_html( smf_label( 'vs_label', 'vs.' ) ); ?></div>
-            <?php endif; ?>
+            <?php /* Niemals 0:0 erfinden und in 1.9.2 auch keinen
+                     Zwischenstand zeigen - siehe smf_game_center_html(). */ ?>
+            <?php echo smf_game_center_html( $display_status, $game, $show_badge, 'single' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapt bereits intern ?>
         </div>
 
         <div class="smf-single-game__team smf-single-game__team--away">
@@ -170,7 +157,7 @@ if ( $stream_button_kind === 'vod' ) {
                 </span>
             <?php endif; ?>
             <?php if ( $game_day ) : ?>
-                <span><?php echo esc_html( smf_label( 'game_day_prefix', 'Spieltag' ) . ' ' . $game_day ); ?></span>
+                <span><?php echo esc_html( $game_day ); ?></span>
             <?php endif; ?>
         </div>
     <?php endif; ?>

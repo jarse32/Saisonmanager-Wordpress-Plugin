@@ -3,7 +3,7 @@
  * Plugin Name: SM Floorball
  * Plugin URI:  https://github.com/jarse32/Saisonmanager-Wordpress-Plugin
  * Description: Zeigt Floorball-Spiele, Tabellen und Ligen aus der Saisonmanager-API via Shortcodes an. Inoffizielles Community-Projekt, nicht von Saisonmanager/FVD betrieben.
- * Version:     1.9.1
+ * Version:     1.9.2
  * Author:      Kasche
  * Text Domain: saisonmanager-floorball
  * License:     GPL-2.0+
@@ -13,13 +13,14 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'SMF_VERSION', '1.9.1' );
+define( 'SMF_VERSION', '1.9.2' );
 define( 'SMF_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SMF_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 require_once SMF_PLUGIN_DIR . 'includes/class-cache.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-api.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-game-status.php';
+require_once SMF_PLUGIN_DIR . 'includes/class-periods.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-stream.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-design.php';
 require_once SMF_PLUGIN_DIR . 'includes/class-team-finder.php';
@@ -435,6 +436,83 @@ function smf_game_status_badge_html( $status ) {
         return '<span class="smf-badge smf-badge--canceled">' . esc_html( smf_label( 'canceled_badge_label', 'Abgesagt' ) ) . '</span>';
     }
     return '';
+}
+
+/**
+ * Inhalt der Kartenmitte (Ergebnis / "vs." / LIVE- bzw. Abgesagt-Abzeichen)
+ * für games-list, club-overview und single-game - seit v1.9.2 immer GENAU
+ * EIN Element. Vorher gaben die Templates Abzeichen und einen zusätzlichen
+ * Text ("Live – Ergebnis folgt" bzw. "Live") nacheinander aus, was
+ * umbrach und in der Vereinsübersicht Teamnamen überlappte.
+ *
+ * Regeln:
+ * - running/canceled mit Kennzeichnung: nur das Abzeichen.
+ * - running/canceled ohne Kennzeichnung: "vs." - auch bei vorhandenem
+ *   Zwischenstand, ein Stand ohne LIVE-Pill wäre mit einem Endergebnis
+ *   verwechselbar. Der Zwischenstand selbst kommt erst mit 1.10.0.
+ * - ended: das Ergebnis, sofern beide Werte vorliegen, sonst "vs.".
+ * - upcoming: "vs.".
+ *
+ * @param string $status     Angezeigter Status, also SMF_Game_Status::status() NACH dem Staleness-Gate der Templates
+ * @param array  $game       Spiel aus der API
+ * @param bool   $show_badge Kennzeichnung erlaubt (Option smf_live_badge_enabled + Attribut live_badge)
+ * @param string $variant    'list' (sm_spiele), 'compact' (sm_vereinsuebersicht) oder 'single' (Einzelspiel-Karten)
+ * @return string
+ */
+function smf_game_center_html( $status, array $game, $show_badge, $variant = 'list' ) {
+    if ( $show_badge && in_array( $status, array( 'running', 'canceled' ), true ) ) {
+        return smf_game_status_badge_html( $status );
+    }
+
+    $home_score = isset( $game['result']['home_goals'] )  ? $game['result']['home_goals']  : null;
+    $away_score = isset( $game['result']['guest_goals'] ) ? $game['result']['guest_goals'] : null;
+    $show_score = $status === 'ended' && $home_score !== null && $away_score !== null;
+
+    if ( $variant === 'compact' ) {
+        return $show_score
+            ? '<span class="smf-co-score">' . esc_html( $home_score . ':' . $away_score ) . '</span>'
+            : '<span class="smf-co-vs">' . esc_html( smf_label( 'vs_label_compact', 'vs' ) ) . '</span>';
+    }
+
+    if ( $variant === 'single' ) {
+        return $show_score
+            ? '<div class="smf-single-game__score">' . esc_html( $home_score . ' : ' . $away_score ) . '</div>'
+            : '<div class="smf-single-game__score smf-single-game__score--upcoming">' . esc_html( smf_label( 'vs_label', 'vs.' ) ) . '</div>';
+    }
+
+    return $show_score
+        ? '<span class="smf-score">' . esc_html( $home_score . ' : ' . $away_score ) . '</span>'
+        : '<span class="smf-score-vs">' . esc_html( smf_label( 'vs_label', 'vs.' ) ) . '</span>';
+}
+
+/**
+ * Spieltag-Bezeichnung eines Spiels, z.B. "Spieltag 3" - Leerstring, wenn
+ * keiner bekannt ist.
+ *
+ * Die API liefert game_day je nach Endpunkt unterschiedlich:
+ * leagues/{id}/schedule.json und teams/{id}/matches als Zahl (3),
+ * games/{id}.json als Objekt ({"game_day_number": 3, "title": "3. Spieltag"}).
+ * Direkt verkettet wurde aus dem Objekt im Spieldetail-Modal "Spieltag Array"
+ * (bis v1.9.1). Ausgabe bewusst in beiden Fällen im selben Format
+ * (game_day_prefix + Nummer) statt des API-title, damit Liste und Modal
+ * gleich aussehen und das Label überschreibbar bleibt.
+ *
+ * @param array $game
+ * @return string
+ */
+function smf_game_day_label( array $game ) {
+    $raw = isset( $game['game_day'] ) ? $game['game_day'] : null;
+    if ( is_array( $raw ) ) {
+        if ( isset( $raw['game_day_number'] ) && is_numeric( $raw['game_day_number'] ) ) {
+            $raw = $raw['game_day_number'];
+        } else {
+            return ( isset( $raw['title'] ) && is_string( $raw['title'] ) ) ? $raw['title'] : '';
+        }
+    }
+    if ( ! is_scalar( $raw ) || (string) $raw === '' || (string) $raw === '0' ) {
+        return '';
+    }
+    return smf_label( 'game_day_prefix', 'Spieltag' ) . ' ' . $raw;
 }
 
 /**

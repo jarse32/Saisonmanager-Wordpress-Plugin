@@ -430,10 +430,11 @@ class SMF_Admin {
                                         <option value="aus" <?php selected( get_option( 'smf_live_badge_enabled', 'an' ), 'aus' ); ?>>Aus</option>
                                     </select>
                                     <p class="description">
-                                        Zeigt ein LIVE-Abzeichen auf einem gerade laufenden Spiel (Anstoß erfolgt,
-                                        noch nicht beendet) in Spielkarten und Spiellisten - ohne den Spielstand zu
-                                        erfinden, falls der eigene Saisonmanager-Key keine Echtzeit-Freigabe hat
-                                        (siehe „Ausfallverhalten“ in der README). Kein Abzeichen bei Daten aus der
+                                        Zeigt auf einem gerade laufenden Spiel (Anstoß erfolgt, noch nicht beendet)
+                                        in Spielkarten und Spiellisten ein LIVE-Abzeichen anstelle des Ergebnisses,
+                                        auf abgesagten Spielen entsprechend „Abgesagt“ anstelle von „vs.“. Ein
+                                        Zwischenstand wird dabei nicht angezeigt. Bei „Aus“ zeigen laufende und
+                                        abgesagte Spiele einfach „vs.“. Kein Abzeichen bei Daten aus der
                                         Notreserve (Verbandsserver gerade nicht erreichbar) oder bei einem Anstoß,
                                         der mehr als vier Stunden zurückliegt. Pro Einbindung über das
                                         Shortcode-Attribut <code>live_badge="false"</code> abschaltbar.

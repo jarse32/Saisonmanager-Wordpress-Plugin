@@ -484,6 +484,145 @@ smf_test_assert(
     $api->get_next_game( array( $future, $canceled_upcoming_soon ) )
 );
 
+// --- v1.9.2: laufendes Spiel MIT Zwischenstand (Echtzeit-Freigabe) ---
+//
+// Mit einem Key mit Echtzeit-Freigabe liefert die API result schon während
+// des Spiels. Vorher prüfte status() has_result() vor is_running() - das
+// Spiel galt als "ended", zeigte einen scheinbaren Endstand ohne LIVE und
+// landete als "letztes Spiel".
+
+$running_with_result = smf_test_game( -30 * MINUTE_IN_SECONDS, array(
+    'game_id' => 14,
+    'started' => true,
+    'ended'   => false,
+    'result'  => array( 'home_goals' => 2, 'guest_goals' => 1 ),
+) );
+
+smf_test_assert(
+    'SMF_Game_Status::status: laufendes Spiel mit Zwischenstand ist running, NICHT ended',
+    'running',
+    SMF_Game_Status::status( $running_with_result )
+);
+
+smf_test_assert(
+    'has_result: Zwischenstand eines laufenden Spiels ist kein Ergebnis',
+    false,
+    SMF_API::has_result( $running_with_result )
+);
+
+smf_test_assert(
+    'filter_past_games: laufendes Spiel mit Zwischenstand ist NICHT past',
+    array(),
+    $api->filter_past_games( array( $running_with_result ) )
+);
+
+smf_test_assert(
+    'get_last_game: liefert das beendete Spiel, nicht das laufende mit Zwischenstand',
+    $ended,
+    $api->get_last_game( array( $ended, $running_with_result ) )
+);
+
+smf_test_assert(
+    'get_next_game: laufendes Spiel mit Zwischenstand bleibt "nächstes" Spiel',
+    $running_with_result,
+    $api->get_next_game( array( $future, $running_with_result ) )
+);
+
+// --- v1.9.2: Zwischenstand aus der Notreserve nach Ablauf von RUNNING_MAX_AGE ---
+//
+// Szenario: Die API fällt während eines Spiels aus, die Notreserve
+// (SMF_Cache, bis zu 7 Tage) enthält den letzten Stand 3:2 mit
+// started=true/ended=false. Nach Ablauf der 4 Stunden darf dieser
+// Zwischenstand NIE als Endergebnis erscheinen - das Spiel wird wie ein
+// Spiel ohne Ergebnis behandelt (Karte "vs.", keine Aufschlüsselung).
+// Dasselbe gilt für ein echtes "Zombie-Spiel", bei dem der Verband ended
+// nie setzt.
+$mirror_3_2_after_5h = smf_test_game( -5 * HOUR_IN_SECONDS, array(
+    'game_id' => 15,
+    'started' => true,
+    'ended'   => false,
+    'result'  => array( 'home_goals' => 3, 'guest_goals' => 2 ),
+) );
+
+smf_test_assert(
+    'SMF_Game_Status::status: Zwischenstand 3:2 ohne ended jenseits RUNNING_MAX_AGE ist upcoming (ohne Ergebnis), NICHT ended',
+    'upcoming',
+    SMF_Game_Status::status( $mirror_3_2_after_5h )
+);
+
+smf_test_assert(
+    'has_result: Zwischenstand 3:2 ohne ended jenseits RUNNING_MAX_AGE ist kein Ergebnis',
+    false,
+    SMF_API::has_result( $mirror_3_2_after_5h )
+);
+
+smf_test_assert(
+    'get_last_game: Spiel mit Zwischenstand jenseits RUNNING_MAX_AGE bleibt wie jedes überfällige Spiel "letztes Spiel" - aber ohne Ergebnis (siehe has_result oben)',
+    $mirror_3_2_after_5h,
+    $api->get_last_game( array( $mirror_3_2_after_5h ) )
+);
+
+// Datenqualitäts-Fall: started/ended fehlen ganz, result ist gesetzt - hier
+// bleibt der result-Fallback bestehen (unverändertes Bestandsverhalten).
+$result_without_flags = smf_test_game( -3 * HOUR_IN_SECONDS, array(
+    'game_id' => 16,
+    'result'  => array( 'home_goals' => 5, 'guest_goals' => 1 ),
+) );
+
+smf_test_assert(
+    'has_result: result ohne started/ended-Flags zählt weiterhin als Ergebnis',
+    true,
+    SMF_API::has_result( $result_without_flags )
+);
+
+// --- Zeitbasis der 4-Stunden-Grenze: geplanter Anstoß in Europe/Berlin ---
+//
+// Anstoß Samstag 24.10.2026 23:00 Uhr Berliner Zeit (CEST, UTC+2) = 21:00 UTC.
+// In der Nacht wird um 03:00 CEST auf 02:00 CET zurückgestellt. Die Grenze
+// muss bei genau 4 echten Stunden liegen (25.10. 01:00 UTC = 02:00 CET),
+// nicht bei 4 Stunden Wanduhrzeit (03:00 CET = 02:00 UTC).
+$dst_game = array(
+    'game_id'         => 17,
+    'date'            => '2026-10-24',
+    'time'            => '23:00',
+    'home_team_name'  => 'Team A',
+    'guest_team_name' => 'Team B',
+    'started'         => true,
+    'ended'           => false,
+    'result'          => array( 'home_goals' => 3, 'guest_goals' => 2 ),
+);
+$dst_limit = gmmktime( 1, 0, 0, 10, 25, 2026 ); // 21:00 UTC + 4 Std.
+
+smf_test_assert(
+    'parse_game_date: 24.10.2026 23:00 Berliner Zeit ist 21:00 UTC',
+    gmmktime( 21, 0, 0, 10, 24, 2026 ),
+    SMF_API::parse_game_date( $dst_game )
+);
+
+smf_test_assert(
+    'is_running: genau 4 echte Stunden nach Anstoß (über die Zeitumstellung) noch laufend',
+    true,
+    SMF_Game_Status::is_running( $dst_game, $dst_limit )
+);
+
+smf_test_assert(
+    'is_running: 1 Sekunde später nicht mehr laufend',
+    false,
+    SMF_Game_Status::is_running( $dst_game, $dst_limit + 1 )
+);
+
+smf_test_assert(
+    'status: 1 Sekunde nach der Grenze upcoming, der Zwischenstand 3:2 wird NICHT zum Ergebnis',
+    'upcoming',
+    SMF_Game_Status::status( $dst_game, $dst_limit + 1 )
+);
+
+smf_test_assert(
+    'status: nach 4 Std. Wanduhrzeit (03:00 CET = 02:00 UTC) ebenfalls nicht mehr laufend',
+    'upcoming',
+    SMF_Game_Status::status( $dst_game, gmmktime( 2, 0, 0, 10, 25, 2026 ) )
+);
+
 // ------------------------------------------------------------------
 
 echo "\n" . str_repeat( '=', 60 ) . "\n";

@@ -46,8 +46,6 @@ $render_game = function ( array $game ) use ( $api, $show_names, $hervorheben, $
 
     $home_name  = isset( $game['home_team_name'] )       ? $game['home_team_name']       : '?';
     $away_name  = isset( $game['guest_team_name'] )      ? $game['guest_team_name']      : '?';
-    $home_score = isset( $game['result']['home_goals'] ) ? $game['result']['home_goals'] : null;
-    $away_score = isset( $game['result']['guest_goals'] )? $game['result']['guest_goals']: null;
 
     $home_logo = SMF_API::get_logo_url( isset( $game['home_team_small_logo'] )  ? $game['home_team_small_logo']  : '' );
     $away_logo = SMF_API::get_logo_url( isset( $game['guest_team_small_logo'] ) ? $game['guest_team_small_logo'] : '' );
@@ -109,16 +107,7 @@ $render_game = function ( array $game ) use ( $api, $show_names, $hervorheben, $
             </div>
 
             <div class="smf-co-game__center">
-                <?php if ( $show_badge ) : ?>
-                    <?php echo smf_game_status_badge_html( $display_status ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapt bereits intern ?>
-                <?php endif; ?>
-                <?php if ( $has_result && $home_score !== null && $away_score !== null ) : ?>
-                    <span class="smf-co-score"><?php echo esc_html( $home_score . ':' . $away_score ); ?></span>
-                <?php elseif ( $show_running_ui ) : ?>
-                    <span class="smf-co-vs"><?php echo esc_html( smf_label( 'live_no_result_label_compact', 'Live' ) ); ?></span>
-                <?php else : ?>
-                    <span class="smf-co-vs"><?php echo esc_html( smf_label( 'vs_label_compact', 'vs' ) ); ?></span>
-                <?php endif; ?>
+                <?php echo smf_game_center_html( $display_status, $game, $show_badge, 'compact' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapt bereits intern ?>
             </div>
 
             <div class="smf-co-game__team smf-co-game__team--away<?php echo $away_is_own ? ' smf-co-game__team--own' : ''; ?>">

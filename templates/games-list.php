@@ -68,10 +68,8 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : smf_labe
 
                 $home_name  = isset( $game['home_team_name'] )     ? $game['home_team_name']     : '?';
                 $away_name  = isset( $game['guest_team_name'] )    ? $game['guest_team_name']    : '?';
-                $home_score = isset( $game['result']['home_goals'] )  ? $game['result']['home_goals']  : null;
-                $away_score = isset( $game['result']['guest_goals'] ) ? $game['result']['guest_goals'] : null;
                 $venue      = isset( $game['arena_name'] )         ? $game['arena_name']         : ( isset( $game['arena'] ) ? $game['arena'] : '' );
-                $game_day   = isset( $game['game_day'] )           ? $game['game_day']           : '';
+                $game_day   = smf_game_day_label( $game );
                 $home_logo  = $show_logos ? SMF_API::get_logo_url( isset( $game['home_team_small_logo'] ) ? $game['home_team_small_logo'] : '' ) : '';
                 $away_logo  = $show_logos ? SMF_API::get_logo_url( isset( $game['guest_team_small_logo'] ) ? $game['guest_team_small_logo'] : '' ) : '';
 
@@ -107,7 +105,7 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : smf_labe
                             </span>
                         <?php endif; ?>
                         <?php if ( $game_day ) : ?>
-                            <span class="smf-game-day"><?php echo esc_html( smf_label( 'game_day_prefix', 'Spieltag' ) . ' ' . $game_day ); ?></span>
+                            <span class="smf-game-day"><?php echo esc_html( $game_day ); ?></span>
                         <?php endif; ?>
                         <?php if ( $venue ) : ?>
                             <span class="smf-game-venue">
@@ -136,16 +134,7 @@ $section_title = isset( $title_map[ $modus ] ) ? $title_map[ $modus ] : smf_labe
                         </div>
 
                         <div class="smf-game-score">
-                            <?php if ( $show_badge ) : ?>
-                                <?php echo smf_game_status_badge_html( $display_status ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapt bereits intern ?>
-                            <?php endif; ?>
-                            <?php if ( $has_result ) : ?>
-                                <span class="smf-score"><?php echo esc_html( $home_score . ' : ' . $away_score ); ?></span>
-                            <?php elseif ( $show_running_ui ) : ?>
-                                <span class="smf-score-vs"><?php echo esc_html( smf_label( 'live_no_result_label', 'Live – Ergebnis folgt' ) ); ?></span>
-                            <?php else : ?>
-                                <span class="smf-score-vs"><?php echo esc_html( smf_label( 'vs_label', 'vs.' ) ); ?></span>
-                            <?php endif; ?>
+                            <?php echo smf_game_center_html( $display_status, $game, $show_badge, 'list' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapt bereits intern ?>
                         </div>
 
                         <!-- Away: Logo links (nah am Score), Name rechts -->

@@ -49,12 +49,17 @@ class SMF_Game_Status {
 
         $now = $now ?? time();
 
-        if ( SMF_API::has_result( $game ) ) {
-            return 'ended';
-        }
-
+        // "running" vor "ended" prüfen (v1.9.2): Ein laufendes Spiel mit
+        // gefülltem result (Zwischenstand bei Echtzeit-Freigabe) ist noch
+        // nicht beendet - siehe SMF_API::has_result(). Jenseits von
+        // RUNNING_MAX_AGE ohne ended bleibt es "upcoming" (ohne Ergebnis),
+        // nie "ended".
         if ( self::is_running( $game, $now ) ) {
             return 'running';
+        }
+
+        if ( SMF_API::has_result( $game ) ) {
+            return 'ended';
         }
 
         return 'upcoming';
@@ -66,6 +71,12 @@ class SMF_Game_Status {
      * fehlendes/unparsbares Datum (SMF_API::parse_game_date() liefert dann
      * false, z.B. bei "TBD") zählt bewusst NICHT als laufend - ohne
      * verlässliches Datum lässt sich das Zeitfenster nicht prüfen.
+     *
+     * Basis ist der GEPLANTE Anstoß (date + time des Spielplans, als
+     * Europe/Berlin gelesen, siehe SMF_API::parse_game_date()), nicht
+     * actual_start_time aus games/{id} - das Feld fehlt in Spielplan und
+     * Team-Endpunkt. Verglichen werden Unix-Sekunden, die Grenze ist damit
+     * auch über eine Zeitumstellung hinweg genau 4 echte Stunden.
      *
      * Eigenständig nutzbar (nicht nur über status()), weil
      * SMF_API::filter_past_games()/filter_upcoming_games() exakt dieselbe

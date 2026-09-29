@@ -656,12 +656,29 @@ class SMF_API {
      * Statisch aus demselben Grund wie parse_game_date() oben - genutzt von
      * SMF_Game_Status::status() ohne eigene SMF_API-Instanz.
      *
+     * Angepfiffen, aber nicht beendet (started=true, ended=false): result ist
+     * dann ein Zwischenstand, NIE ein Ergebnis (v1.9.2) - unabhängig davon,
+     * wie lange der Anstoß zurückliegt. Mit einem Key mit Echtzeit-Freigabe
+     * liefert die API den Stand schon während des Spiels; bis v1.9.1 galt
+     * ein solches Spiel als beendet. Bewusst auch jenseits von
+     * SMF_Game_Status::RUNNING_MAX_AGE (4 Std.): Fällt die API während eines
+     * Spiels aus, liefert die Notreserve (SMF_Cache, bis zu 7 Tage) weiter
+     * den letzten Zwischenstand samt started=true/ended=false - nach Ablauf
+     * der 4 Stunden würde er sonst als Endergebnis erscheinen. Ein solches
+     * Spiel wird stattdessen wie ein Spiel ohne Ergebnis behandelt.
+     *
+     * Der result-Fallback greift damit nur noch, wenn started/ended fehlen
+     * (Datenqualitäts-Fall, siehe test-api-game-filters.php).
+     *
      * @param array $game
      * @return bool
      */
     public static function has_result( $game ) {
         if ( ! empty( $game['ended'] ) ) {
             return true;
+        }
+        if ( ! empty( $game['started'] ) ) {
+            return false;
         }
         // Fallback: result-Objekt vorhanden und befüllt
         if ( isset( $game['result']['home_goals'] ) && isset( $game['result']['guest_goals'] ) ) {

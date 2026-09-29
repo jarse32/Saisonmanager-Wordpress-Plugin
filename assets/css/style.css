@@ -504,6 +504,10 @@
     font-weight: 700;
     font-size: calc(var(--smf-fs-base) * 1);
     color: var(--smf-color-text);
+    /* Ein einzelnes langes Wort ("Wellingsbüttel") darf nicht über die
+       Spalte hinaus in die Kartenmitte laufen, siehe .smf-co-game__name. */
+    overflow-wrap: anywhere;
+    hyphens: auto;
 }
 
 /* Team-Highlighting in der Spielkarte: NUR Tönung + fette Schrift, bewusst
@@ -537,13 +541,11 @@
 .smf-game-score {
     flex: 0 0 auto;
     min-width: 80px;
-    /* Gegenstück zu min-width: ohne Obergrenze weigert sich ein
-       flex-shrink:0-Element, schmaler als sein einzeiliger Inhalt zu
-       werden (siehe ausführlicher Kommentar bei .smf-single-game__center) -
-       bei langem Text wie "Live – Ergebnis folgt" (smf-score-vs unten)
-       liefe er sonst über die Team-Spalten links/rechts hinweg statt
-       umzubrechen. */
-    max-width: 9rem;
+    /* Seit v1.9.2 steht hier immer genau EIN kurzes Element (Ergebnis,
+       "vs." oder LIVE-/Abgesagt-Abzeichen, siehe smf_game_center_html()) -
+       es bricht nie um. Lange Teamnamen brechen stattdessen in ihrer
+       eigenen Spalte um (overflow-wrap unten). */
+    white-space: nowrap;
     text-align: center;
 }
 
@@ -679,9 +681,15 @@
 
 .smf-single-game__team {
     flex: 1;
+    /* Ohne min-width:0 wäre die Spalte mindestens so breit wie das längste
+       Wort und drückte die Mitte zusammen (v1.9.2, siehe
+       .smf-single-game__center). */
+    min-width: 0;
     font-size: calc(var(--smf-fs-base) * 1.1);
     font-weight: 700;
     line-height: 1.3;
+    overflow-wrap: anywhere;
+    hyphens: auto;
 }
 
 .smf-single-game__team--home { text-align: right; }
@@ -690,13 +698,12 @@
 .smf-single-game__center {
     flex: 0 0 auto;
     text-align: center;
-    /* max-width erzwungen, sonst berechnet der Browser bei flex-shrink:0
-       ohne Breitenvorgabe die "hypothetische Größe" aus dem Inhalt in EINER
-       Zeile (max-content) und weigert sich, schmaler zu werden als das -
-       bei kurzem Text wie "vs." unsichtbar, bei "Live – Ergebnis folgt"
-       (siehe .smf-single-game__score--upcoming unten) lief der Text sonst
-       über die Team-Boxen links/rechts hinweg, statt umzubrechen. */
-    max-width: 7rem;
+    /* Genau EIN kurzes Element (smf_game_center_html(), v1.9.2) - bricht
+       nie um. Die frühere max-width (Schutz gegen den langen Text "Live –
+       Ergebnis folgt") entfällt: sie hätte ein zweistelliges Ergebnis in
+       großer Schrift ("10 : 12") jetzt über den Rand laufen lassen. */
+    min-width: 3.5rem;
+    white-space: nowrap;
 }
 
 .smf-single-game__score {
@@ -836,9 +843,9 @@
 /* ------------------------------------------------------------------ */
 /*  Status-Abzeichen (SMF_Game_Status: LIVE / Abgesagt)                 */
 /*  Erscheint in .smf-single-game__center, .smf-game-score und          */
-/*  .smf-co-game__center - jeweils bereits zentriert/text-align:center, */
-/*  daher hier nur der Abstand zum Text darunter (Score/vs/Ergebnis-    */
-/*  folgt), kein eigenes Layout nötig.                                  */
+/*  .smf-co-game__center - seit v1.9.2 ANSTELLE von Ergebnis/"vs.",     */
+/*  nicht mehr darüber (smf_game_center_html()), daher kein Abstand     */
+/*  nach unten. Außerdem in .smf-livestream__info neben dem Matchup.    */
 /* ------------------------------------------------------------------ */
 
 .smf-badge {
@@ -846,7 +853,6 @@
     align-items: center;
     gap: 0.3em;
     padding: 0.2em 0.65em;
-    margin-bottom: 0.35em;
     border-radius: 9999px;
     font-size: calc(var(--smf-fs-base) * 0.7);
     font-weight: 700;
@@ -1105,6 +1111,17 @@
 .smf-detail__score--upcoming {
     color: var(--smf-color-text-muted);
     font-size: calc(var(--smf-fs-base) * 1.6);
+}
+
+/* Laufendes Spiel im Modal (v1.9.2): Abzeichen statt Ergebnis, etwas größer
+   als in den Karten, da hier die Mitte deutlich mehr Platz hat. */
+.smf-detail__score--running {
+    white-space: nowrap;
+}
+
+.smf-detail__score--running .smf-badge {
+    font-size: calc(var(--smf-fs-base) * 0.95);
+    letter-spacing: 0.06em;
 }
 
 .smf-detail__periods {
@@ -1636,12 +1653,20 @@ p > a.smf-btn.smf-stream-link {
     font-size: calc(var(--smf-fs-base) * 0.92);
     font-weight: 600;
     color: var(--smf-color-text);
+    /* v1.9.2: Ein einzelnes Wort, das breiter ist als die Teamspalte
+       ("Wellingsbüttel" auf dem Handy), lief vorher über die Spalte
+       (min-width:0) hinaus unter das LIVE-Abzeichen in der Mitte. */
+    min-width: 0;
+    overflow-wrap: anywhere;
+    hyphens: auto;
 }
 
 .smf-co-game__center {
     flex: 0 0 auto;
     text-align: center;
     min-width: 46px;
+    /* Genau EIN kurzes Element, bricht nie um - siehe .smf-game-score. */
+    white-space: nowrap;
 }
 
 .smf-co-score {

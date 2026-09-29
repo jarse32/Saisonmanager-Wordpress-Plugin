@@ -11,16 +11,25 @@ $date_ts    = $api->parse_game_date( $game );
 $has_result = $api->has_result( $game );
 $game_tz    = SMF_API::game_timezone();
 
+// Laufendes Spiel (v1.9.2): dieselbe Mitte wie in den Karten, siehe
+// smf_game_center_html() - LIVE-Abzeichen bzw. "vs." bei ausgeschalteter
+// Kennzeichnung, noch ohne Zwischenstand und ohne Aufschlüsselung. Kein
+// Staleness-Gate nötig: games/{id} wird nie aus der Notreserve geliefert
+// (SMF_API::get_game(), $mirror = false). Das Shortcode-Attribut live_badge
+// der Karte erreicht das per AJAX geladene Modal nicht - hier gilt nur die
+// globale Option.
+$detail_status      = SMF_Game_Status::status( $game );
+$detail_is_running  = $detail_status === 'running';
+$detail_show_badge  = get_option( 'smf_live_badge_enabled', 'an' ) === 'an';
+
 $home_name  = isset( $game['home_team_name'] )  ? $game['home_team_name']  : '?';
 $away_name  = isset( $game['guest_team_name'] ) ? $game['guest_team_name'] : '?';
 $home_score = isset( $game['result']['home_goals'] )  ? $game['result']['home_goals']  : null;
 $away_score = isset( $game['result']['guest_goals'] ) ? $game['result']['guest_goals'] : null;
 $venue      = isset( $game['arena_name'] ) ? $game['arena_name'] : ( isset( $game['arena'] ) ? $game['arena'] : '' );
-$game_day   = isset( $game['game_day'] )   ? $game['game_day']   : '';
+$game_day   = smf_game_day_label( $game );
 $league     = isset( $game['league_name'] ) ? $game['league_name'] : ( isset( $game['game_operation_name'] ) ? $game['game_operation_name'] : '' );
 
-$periods_home  = isset( $game['result']['home_goals_period'] )  ? $game['result']['home_goals_period']  : array();
-$periods_guest = isset( $game['result']['guest_goals_period'] ) ? $game['result']['guest_goals_period'] : array();
 $overtime      = ! empty( $game['result']['overtime'] );
 $postfix_raw   = isset( $game['result']['postfix'] ) ? $game['result']['postfix'] : '';
 $postfix       = '';
@@ -91,7 +100,21 @@ usort( $timeline, function( $a, $b ) {
     return strcmp( $sa, $sb );
 } );
 
-// Events nach Drittel gruppieren
+// Spielform (Halbzeiten/Drittel) für Aufschlüsselung und Spielverlauf, siehe
+// SMF_Periods. games/{id}.json liefert period_titles normalerweise mit - nur
+// wenn die fehlen, die (gecachte) Liga nachladen statt sofort auf den
+// Liganamen zurückzufallen.
+$smf_league_data = null;
+if ( empty( $game['period_titles'] ) && ! empty( $game['league_id'] ) ) {
+    $smf_league_response = $api->get_league( (int) $game['league_id'] );
+    if ( is_array( $smf_league_response ) ) {
+        $smf_league_data = $smf_league_response;
+    }
+}
+$regular_periods = SMF_Periods::regular_count( $game, $smf_league_data );
+$period_rows     = SMF_Periods::breakdown( $game, $regular_periods );
+
+// Events nach Periode gruppieren
 $by_period = array();
 foreach ( $timeline as $ev ) {
     $period = isset( $ev['period'] ) ? (int) $ev['period'] : 0;
@@ -123,7 +146,7 @@ $smf_stream_mode = get_option( 'smf_stream_embed_mode', 'nur_link' );
 $smf_stream       = null;
 
 if ( $smf_stream_mode !== 'aus' ) {
-    $smf_stream_status = SMF_Game_Status::status( $game );
+    $smf_stream_status = $detail_status;
     $smf_stream_picked = SMF_Stream::pick_link( array(
         'live_stream_link' => isset( $game['live_stream_link'] ) ? $game['live_stream_link'] : null,
         'vod_link'         => isset( $game['vod_link'] )         ? $game['vod_link']         : null,
@@ -177,7 +200,7 @@ if ( $smf_stream ) {
                 </span>
             <?php endif; ?>
             <?php if ( $game_day ) : ?>
-                <span><?php echo esc_html( smf_label( 'game_day_prefix', 'Spieltag' ) . ' ' . $game_day ); ?></span>
+                <span><?php echo esc_html( $game_day ); ?></span>
             <?php endif; ?>
         </div>
     </div>
@@ -201,20 +224,30 @@ if ( $smf_stream ) {
                 <?php elseif ( $overtime ) : ?>
                     <div class="smf-detail__score-postfix">n.V.</div>
                 <?php endif; ?>
-                <?php if ( ! empty( $periods_home ) ) : ?>
+                <?php if ( ! empty( $period_rows ) ) : ?>
                     <div class="smf-detail__periods">
-                        <?php foreach ( $periods_home as $i => $ph ) :
-                            $pa = isset( $periods_guest[ $i ] ) ? $periods_guest[ $i ] : 0;
-                            if ( $ph == 0 && $pa == 0 ) continue;
-                            $label = ( $i < 3 ) ? ( $i + 1 ) . '. Drittel' : 'Verl.';
-                        ?>
-                            <span><?php echo esc_html( $label . ': ' . $ph . ':' . $pa ); ?></span>
+                        <?php foreach ( $period_rows as $row ) : ?>
+                            <span><?php echo esc_html( $row['label'] . ': ' . $row['home'] . ':' . $row['guest'] ); ?></span>
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
+            <?php elseif ( $detail_is_running ) : ?>
+                <div class="smf-detail__score smf-detail__score--running">
+                    <?php if ( $detail_show_badge ) : ?>
+                        <?php echo smf_game_status_badge_html( 'running' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapt bereits intern ?>
+                    <?php else : ?>
+                        <span class="smf-detail__score--upcoming"><?php echo esc_html( smf_label( 'vs_label', 'vs.' ) ); ?></span>
+                    <?php endif; ?>
+                </div>
             <?php else : ?>
                 <div class="smf-detail__score smf-detail__score--upcoming">&ndash;:&ndash;</div>
-                <div class="smf-detail__upcoming-hint">Spiel noch nicht gespielt</div>
+                <?php if ( empty( $game['started'] ) ) : ?>
+                    <?php /* Angepfiffen, aber weder laufend noch beendet (kein
+                             ended nach mehr als 4 Std., siehe
+                             SMF_API::has_result()): "noch nicht gespielt" wäre
+                             falsch - dann nur "–:–". */ ?>
+                    <div class="smf-detail__upcoming-hint">Spiel noch nicht gespielt</div>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
 
@@ -244,8 +277,8 @@ if ( $smf_stream ) {
         <div class="smf-timeline">
 
             <?php foreach ( $by_period as $period_num => $period_events ) :
-                if ( $period_num > 0 ) :
-                    $period_label = ( $period_num <= 3 ) ? $period_num . '. Drittel' : 'Verlängerung';
+                $period_label = $period_num > 0 ? SMF_Periods::label( $period_num, $regular_periods ) : '';
+                if ( $period_label !== '' ) :
                 ?>
                 <div class="smf-timeline__period"><?php echo esc_html( $period_label ); ?></div>
                 <?php endif; ?>
