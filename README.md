@@ -270,17 +270,39 @@ ausschließlich aus `started`/`ended`, **nicht** aus dem Spielbericht-Status
 laufend). Bei `sm_naechstes_spiel`/`sm_spiel_duo` wechselt dabei zusätzlich
 das Karten-Label von "Nächstes Spiel" auf "Läuft gerade".
 
-**Kein erfundener Spielstand:** Hat der eigene Saisonmanager-Key keine
+**Genau ein Element statt Ergebnis (seit 1.9.2):** Ein laufendes Spiel zeigt
+an der Stelle des Ergebnisses bzw. „vs." nur das Abzeichen **● LIVE**, ein
+abgesagtes nur **Abgesagt** - ohne zusätzlichen Text darunter. Bis 1.9.1
+stand bei laufenden Spielen zusätzlich "Live – Ergebnis folgt" (bzw. "Live"
+in der Vereinsübersicht), was auf schmalen Karten umbrach und Teamnamen
+überlappen konnte.
+
+**Kein Spielstand während des Spiels:** Hat der eigene Saisonmanager-Key keine
 Echtzeit-Freigabe (Regelfall, siehe „Ausfallverhalten" oben), blendet die
 API das Ergebnis eines laufenden Spiels aus, statt es veraltet zu liefern.
-Die Karte zeigt in diesem Fall "Live – Ergebnis folgt" statt eines Spielstands
-- niemals ein geratenes oder abgeschnittenes Ergebnis wie „0:0".
+Mit Echtzeit-Freigabe liefert sie dagegen schon einen Zwischenstand - den
+zeigt das Plugin in 1.9.2 bewusst noch nicht an (geplant für 1.10.0), wertet
+ihn aber auch nicht mehr als Endergebnis: Bis 1.9.1 galt ein laufendes Spiel
+mit Zwischenstand als beendet (kein LIVE, Einsortierung unter „Letzte
+Ergebnisse"/`sm_letztes_spiel`). Niemals ein geratenes Ergebnis wie „0:0".
 
 **Zeitfenster (vier Stunden):** Ein Spiel gilt nur bis zu vier Stunden nach
-Anstoß als laufend. Setzt der Verband `ended` bei einem Spiel nie (z.B. weil
+dem geplanten Anstoß (Datum und Uhrzeit laut Spielplan, Berliner Zeit) als
+laufend. Setzt der Verband `ended` bei einem Spiel nie (z.B. weil
 der Spielbericht nie abgeschlossen wurde), fällt es danach in die normale
 Vergangenheits-Logik zurück und erscheint als "Letztes Spiel" statt auf
-unbestimmte Zeit das tatsächlich nächste Spiel zu verdrängen.
+unbestimmte Zeit das tatsächlich nächste Spiel zu verdrängen - allerdings
+**ohne Ergebnis** („vs."): Ein Stand bei angepfiffenem, aber nicht beendetem
+Spiel ist immer ein Zwischenstand (seit 1.9.2). Das gilt auch, wenn die API
+während eines Spiels ausfällt und die Notreserve den letzten Zwischenstand
+weiter liefert - er wird nach Ablauf der vier Stunden nicht zum
+Endergebnis.
+
+**Spieldetail:** Ein laufendes Spiel zeigt im Modal ebenfalls das
+LIVE-Abzeichen (bzw. „vs." bei ausgeschalteter Kennzeichnung), ohne
+Zwischenstand und ohne Aufschlüsselung (seit 1.9.2). Maßgeblich ist dort
+nur die globale Option - das Shortcode-Attribut `live_badge` der Karte wird
+nicht ans Modal weitergegeben.
 
 **Staleness-Schutz:** Kommen die angezeigten Daten aus der Notreserve (der
 Verbandsserver ist gerade nicht erreichbar, siehe „Ausfallverhalten"), zeigt
@@ -295,7 +317,10 @@ Datum oder Status ein "Abgesagt"-Abzeichen.
 Steuerbar über die Option **SM Floorball → Allgemeine Einstellungen →
 LIVE-Kennzeichnung** (Standard: an) sowie pro Einbindung über das
 Shortcode-Attribut `live_badge` (`true`/`false`, Standard `true`), z.B.
-`[sm_naechstes_spiel liga_id="123" live_badge="false"]`. Die Abzeichenfarben
+`[sm_naechstes_spiel liga_id="123" live_badge="false"]`. Ist die
+Kennzeichnung aus, zeigen laufende und abgesagte Spiele einfach „vs." -
+auch wenn schon ein Zwischenstand vorliegt, denn ein Stand ohne
+LIVE-Abzeichen wäre mit einem Endergebnis verwechselbar. Die Abzeichenfarben
 sind über die CSS-Variablen `--smf-color-live`/`--smf-color-on-live` bzw.
 `--smf-color-canceled`/`--smf-color-on-canceled` themebar (siehe „Hooks für
 Theme-Entwickler:innen" unten) - nicht Teil der Design-Seite im Backend.
@@ -527,6 +552,15 @@ Verfügbare Schlüssel und ihre Standardtexte:
 | `team_side_away` | Gast |
 | `vs_label` | vs. |
 | `vs_label_compact` | vs |
+| `live_badge_label` | Live |
+| `canceled_badge_label` | Abgesagt |
+| `period_label_half` | %d. Halbzeit |
+| `period_label_third` | %d. Drittel |
+| `period_label_generic` | %d. Spielabschnitt |
+| `period_label_overtime` | Verlängerung |
+| `period_label_overtime_short` | Verl. |
+| `period_label_penalty_shots` | Penaltyschießen |
+| `period_label_penalty_shots_short` | PS |
 | `scorer_list_title` | Scorerliste |
 | `scorer_no_data` | Für dieses Team liegen noch keine Scorerpunkte vor. |
 | `scorer_not_visible` | Die Scorerliste ist für dieses Team nicht verfügbar. |
@@ -542,6 +576,21 @@ Verfügbare Schlüssel und ihre Standardtexte:
 | `stream_remember_checkbox` | %s-Inhalte künftig immer laden |
 | `stream_forget_link` | Automatisches Laden beenden |
 | `livestream_no_stream_notice` | Aktuell kein Livestream verfügbar. |
+
+Die `period_label_*`-Schlüssel beschriften Ergebnis-Aufschlüsselung und
+Spielverlauf im Spieldetail (seit 1.9.2). Ob Halbzeiten (Kleinfeld) oder
+Drittel (Großfeld) gelten, ermittelt das Plugin aus den Daten des Spiels
+bzw. der Liga, nicht aus dem Liganamen. `%d` steht für die Nummer. Die
+Kurzformen (`_short`) stehen in der Ergebnis-Aufschlüsselung, die
+Langformen als Überschriften im Spielverlauf. `period_label_generic` greift
+nur bei einer Liga mit weder zwei noch drei regulären Perioden.
+
+**Nicht mehr verwendet (seit 1.9.2):** `live_no_result_label` (bisher
+"Live – Ergebnis folgt") und `live_no_result_label_compact` (bisher "Live").
+Laufende Spiele zeigen seitdem nur noch das LIVE-Abzeichen
+(`live_badge_label`), siehe „LIVE-Kennzeichnung". Ein über `smf_labels`
+gesetzter Wert für diese beiden Schlüssel bleibt folgenlos und kann
+entfernt werden.
 
 `team_side_away` z.B. auf "Auswärts" umstellen, ohne Template-Override:
 
@@ -686,6 +735,15 @@ auf die Neutral-Defaults zurücksetzen:
 
 ```
 php tests/test-design-sanitize.php
+```
+
+Nach demselben Muster gibt es weitere Tests unter `tests/`, u.a.
+`test-api-game-filters.php` (Spielstatus, nächstes/letztes Spiel) und
+`test-periods.php` (Halbzeiten/Drittel, Verlängerung, Penaltyschießen).
+Alle auf einmal:
+
+```
+for t in tests/*.php; do php "$t" > /dev/null || echo "FEHLER: $t"; done
 ```
 
 ### Plugin Check: bewusst akzeptierte Findings

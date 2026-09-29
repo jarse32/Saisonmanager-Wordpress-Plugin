@@ -4,7 +4,7 @@ Tags: floorball, sport, spielplan, ergebnisse, tabelle
 Requires at least: 5.3
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.9.1
+Stable tag: 1.9.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,41 @@ im `main`-Branch des Repositories eine neue Version veröffentlicht wird -
 Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren*.
 
 == Changelog ==
+
+= 1.9.2 =
+* Behoben: laufende Spiele zeigten zwei Elemente gleichzeitig - das
+  LIVE-Abzeichen und zusätzlich "Live – Ergebnis folgt" (Spielliste,
+  Einzelspiel-Karten) bzw. "Live" (Vereinsübersicht). Der Text brach auf
+  schmalen Karten mehrzeilig um, in der Vereinsübersicht überlappte das
+  Abzeichen lange Teamnamen. Jetzt steht an der Stelle des Ergebnisses genau
+  ein Element: "● LIVE", "Abgesagt", "vs." oder das Ergebnis. Lange
+  Teamnamen brechen in ihrer eigenen Spalte um
+* Geändert: bei ausgeschalteter LIVE-Kennzeichnung zeigen laufende Spiele
+  "vs." - bisher stand dort trotzdem "Live – Ergebnis folgt", weil dieser
+  Text nicht an die Option gekoppelt war. Die Label-Schlüssel
+  `live_no_result_label` und `live_no_result_label_compact` werden nicht
+  mehr verwendet
+* Behoben: mit einem Saisonmanager-Key mit Echtzeit-Freigabe galt ein
+  laufendes Spiel, für das die API schon einen Zwischenstand liefert, als
+  beendet - ohne LIVE-Kennzeichnung, mit scheinbarem Endstand und als
+  "Letztes Spiel". Ein Zwischenstand wird in 1.9.2 noch nicht angezeigt
+* Behoben: ein angepfiffenes, aber nie beendetes Spiel (ended fehlt auch
+  mehr als 4 Std. nach Anstoß) wertete einen vorhandenen Zwischenstand als
+  Endergebnis - z.B. wenn die API während eines Spiels ausfällt und die
+  Notreserve den letzten Stand weiter liefert. Ein solches Spiel gilt jetzt
+  als Spiel ohne Ergebnis ("vs.", keine Aufschlüsselung)
+* Behoben: das Spieldetail zeigte bei einem laufenden Spiel "–:– Spiel noch
+  nicht gespielt". Jetzt steht dort das LIVE-Abzeichen bzw. "vs." bei
+  ausgeschalteter LIVE-Kennzeichnung, noch ohne Zwischenstand
+* Behoben: das Spieldetail beschriftete Perioden immer als Drittel. Kleinfeld
+  (zwei Halbzeiten) zeigte die Verlängerung als "3. Drittel", Großfeld das
+  Penaltyschießen als "Verl."/"Verlängerung". Jetzt: "1. Halbzeit"/
+  "1. Drittel", "Verlängerung" (kurz "Verl."), "Penaltyschießen" (kurz "PS"),
+  ermittelt aus den Spiel- bzw. Ligadaten und per `smf_labels` anpassbar
+* Behoben: 0:0-Perioden der regulären Spielzeit fehlten in der
+  Ergebnis-Aufschlüsselung
+* Behoben: im Kopf des Spieldetails stand "Spieltag Array" statt der
+  Spieltagsnummer
 
 = 1.9.1 =
 * Behoben: `sm_livestream` meldete "Aktuell kein Livestream verfügbar",
@@ -205,6 +240,15 @@ Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren
 * Vereinsübersicht (alle Teams eines Vereins)
 
 == Upgrade Notice ==
+
+= 1.9.2 =
+Keine Aktion nötig. Fehlerbehebungen: laufende Spiele zeigen nur noch ein
+LIVE-Abzeichen statt Abzeichen plus "Live – Ergebnis folgt", Kleinfeld-Spiele
+im Spieldetail Halbzeiten statt Drittel, und der Spieldetail-Kopf die
+Spieltagsnummer statt "Spieltag Array". Ein Zwischenstand gilt nie als
+Endergebnis, auch nicht aus der Notreserve bei einem API-Ausfall. Wer
+`live_no_result_label` per
+`smf_labels` angepasst hat: der Schlüssel wird nicht mehr verwendet.
 
 = 1.9.1 =
 Keine Aktion nötig. Fehlerbehebung: `sm_livestream` zeigt die Aufzeichnung
