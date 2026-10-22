@@ -68,6 +68,18 @@ Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren
 
 == Changelog ==
 
+= 1.10.0 =
+* Neu: Attribut `team_id` für `sm_naechstes_spiel`, `sm_letztes_spiel` und
+  `sm_spiel_duo` - zeigt Liga- UND Pokalspiele eines Teams in einem Block,
+  der Wettbewerbsname kommt aus dem jeweiligen Spiel. Empfohlener Weg statt
+  `liga_id`
+* Neu: `team_id` und `liga_id` nehmen mehrere kommagetrennte Werte an und
+  sind kombinierbar (auch bei `sm_livestream`); doppelte Spiele erscheinen
+  nur einmal. Fällt eine Quelle aus, zeigt der Block die übrigen Spiele
+* Geändert: die Standard-Liga greift nur noch, wenn weder `team_id` noch
+  `liga_id` gesetzt ist. Bestehende Shortcodes mit nur `liga_id`/`team`
+  verhalten sich unverändert
+
 = 1.9.2 =
 * Behoben: laufende Spiele zeigten zwei Elemente gleichzeitig - das
   LIVE-Abzeichen und zusätzlich "Live – Ergebnis folgt" (Spielliste,
@@ -240,6 +252,11 @@ Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren
 * Vereinsübersicht (alle Teams eines Vereins)
 
 == Upgrade Notice ==
+
+= 1.10.0 =
+Keine Aktion nötig, voll abwärtskompatibel. Neu: `team_id` für die
+Spielkarten (`[sm_naechstes_spiel team_id="6754"]`) zeigt Liga und Pokal in
+einem Block; mehrere Quellen sind kommagetrennt möglich.
 
 = 1.9.2 =
 Keine Aktion nötig. Fehlerbehebungen: laufende Spiele zeigen nur noch ein

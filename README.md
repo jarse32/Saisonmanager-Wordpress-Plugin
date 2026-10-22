@@ -148,12 +148,12 @@ Anfragen an den Verbandsserver.
 |---|---|---|
 | `[sm_tabelle liga_id="123"]` | Liga-Tabelle | `liga_id`, `titel`, `logos`, `logo_groesse`, `hervorheben` |
 | `[sm_spiele liga_id="123"]` | Spielplan einer Liga | `liga_id`, `anzahl`, `team`, `modus` (`alle`/`vergangen`/`kommend`), `titel`, `logos`, `namen`, `logo_groesse`, `hervorheben`, `live_badge` |
-| `[sm_naechstes_spiel liga_id="123"]` | Nächstes kommendes Spiel | `liga_id`, `team`, `logos`, `namen`, `logo_groesse`, `hervorheben` (ohne sichtbaren Effekt), `live_badge` |
-| `[sm_letztes_spiel liga_id="123"]` | Letztes gespieltes Spiel | `liga_id`, `team`, `logos`, `namen`, `logo_groesse`, `hervorheben` (ohne sichtbaren Effekt), `live_badge` |
-| `[sm_spiel_duo liga_id="123"]` | Nächstes und letztes Spiel nebeneinander in einem gemeinsamen Grid | wie `sm_naechstes_spiel`/`sm_letztes_spiel`, zusätzlich `reihenfolge` (`naechstes-zuerst`/`letztes-zuerst`, Standard `naechstes-zuerst`) |
+| `[sm_naechstes_spiel team_id="6754"]` | Nächstes kommendes Spiel (mit `team_id`: Liga + Pokal) | `team_id` (empfohlen), `liga_id`, `team`, `logos`, `namen`, `logo_groesse`, `hervorheben` (ohne sichtbaren Effekt), `live_badge` |
+| `[sm_letztes_spiel team_id="6754"]` | Letztes gespieltes Spiel (mit `team_id`: Liga + Pokal) | `team_id` (empfohlen), `liga_id`, `team`, `logos`, `namen`, `logo_groesse`, `hervorheben` (ohne sichtbaren Effekt), `live_badge` |
+| `[sm_spiel_duo team_id="6754"]` | Nächstes und letztes Spiel nebeneinander in einem gemeinsamen Grid | wie `sm_naechstes_spiel`/`sm_letztes_spiel`, zusätzlich `reihenfolge` (`naechstes-zuerst`/`letztes-zuerst`, Standard `naechstes-zuerst`) |
 | `[sm_vereinsuebersicht verein="hannover"]` | Alle Spiele aller Teams eines Vereins | `verein` (Slug oder Name), `anzahl`, `namen`, `logo_groesse`, `hervorheben` (Standard `false`), `live_badge` |
 | `[sm_scorer team_id="6754"]` | Scorerliste (Punkteliste) eines Teams | `team_id` (Pflicht), `anzahl`, `spalten` (`voll`/`kompakt`), `namen` (`voll`/`abgekuerzt`), `titel`, `summe` |
-| `[sm_livestream team_id="6754"]` | Großer Livestream-/Aufzeichnungs-Player für das laufende, sonst nächste Spiel eines Teams | `team_id` (Pflicht), `nach_spielende` (`aufzeichnung`/`ausblenden`), `titel`, `hinweis` |
+| `[sm_livestream team_id="6754"]` | Großer Livestream-/Aufzeichnungs-Player für das laufende, sonst nächste Spiel eines Teams | `team_id` (oder `liga_id` + `team`), `nach_spielende` (`aufzeichnung`/`ausblenden`), `titel`, `hinweis` |
 
 Die `liga_id`/`team_id` findest du über den Team-Finder oder den "Teams
 laden"-Button bei einem Verein (Spalte "Liga(en)" bzw. Team-ID).
@@ -162,6 +162,34 @@ Vollständige Referenz direkt in der Admin-Oberfläche unter
 Klarnamen von Spieler:innen an – siehe
 [Personenbezogene Daten](#personenbezogene-daten) weiter unten, bevor du
 den Shortcode einsetzt.
+
+### Liga und Pokal in einem Block (team_id)
+
+Seit 1.10.0 kennen `sm_naechstes_spiel`, `sm_letztes_spiel`, `sm_spiel_duo`
+und `sm_livestream` das Attribut `team_id`. **Das ist der empfohlene Weg** –
+analog zur [Vereinskonfiguration](#vereine--teams) holt das Plugin damit alle
+Spiele des Teams über alle Wettbewerbe der Saison (Liga **und** Pokal) in
+einem Request, statt nur den Spielplan einer einzelnen Liga zu durchsuchen.
+Die Karte zeigt dabei den Wettbewerb des konkreten Spiels an.
+
+```
+[sm_naechstes_spiel team_id="6754"]
+```
+
+`team_id` und `liga_id` sind kombinierbar und nehmen jeweils mehrere,
+kommagetrennte Werte an. `team` (Namensfragment) filtert dabei nur die
+Spiele aus `liga_id` – die `team_id`-Spiele gehören ohnehin zum Team.
+Doppelte Spiele (aus beiden Quellen) erscheinen nur einmal:
+
+```
+[sm_naechstes_spiel liga_id="123" team="Eichehorn" team_id="6754"]
+[sm_letztes_spiel liga_id="123,124" team="Eichehorn"]
+```
+
+Fällt eine einzelne Quelle aus, zeigt der Block die Spiele der übrigen.
+Die Standard-Liga aus den Einstellungen greift nur, wenn weder `team_id`
+noch `liga_id` gesetzt ist (bei `sm_livestream` gar nicht). Bestehende
+Shortcodes mit nur `liga_id`/`team` verhalten sich unverändert.
 
 ### Teamnamen und Logogröße
 
@@ -197,11 +225,12 @@ Beispiel für eine Startseite mit größeren Logos:
 `[sm_naechstes_spiel]` und `[sm_letztes_spiel]` einzeln nebeneinander zu
 platzieren (z.B. in zwei Theme-Spalten) funktioniert weiterhin, beide Karten
 sind seit dieser Version auch unabhängig voneinander gleich hoch, mit Button
-auf gleicher Höhe. `[sm_spiel_duo liga_id="123"]` fasst beide zusätzlich in
+auf gleicher Höhe. `[sm_spiel_duo team_id="6754"]` fasst beide zusätzlich in
 einem gemeinsamen Grid zusammen und ist der empfohlene Weg für eine
 Nebeneinander-Darstellung:
 
 ```
+[sm_spiel_duo team_id="6754"]
 [sm_spiel_duo liga_id="123" team="Eichehorn"]
 ```
 
@@ -212,7 +241,7 @@ breiten Bildschirm gestapelt). `reihenfolge="letztes-zuerst"` vertauscht die
 Reihenfolge im Markup.
 
 Nimmt alle Attribute von `sm_naechstes_spiel`/`sm_letztes_spiel` entgegen
-(`team`, `logos`, `namen`, `logo_groesse`, `hervorheben`) und reicht sie
+(`team_id`, `liga_id`, `team`, `logos`, `namen`, `logo_groesse`, `hervorheben`) und reicht sie
 unverändert an beide Karten durch.
 
 **Hinweis für Bestandsseiten mit manuell nebeneinandergesetzten
@@ -281,7 +310,7 @@ in der Vereinsübersicht), was auf schmalen Karten umbrach und Teamnamen
 Echtzeit-Freigabe (Regelfall, siehe „Ausfallverhalten" oben), blendet die
 API das Ergebnis eines laufenden Spiels aus, statt es veraltet zu liefern.
 Mit Echtzeit-Freigabe liefert sie dagegen schon einen Zwischenstand - den
-zeigt das Plugin in 1.9.2 bewusst noch nicht an (geplant für 1.10.0), wertet
+zeigt das Plugin bewusst noch nicht an (geplant für eine spätere Version), wertet
 ihn aber auch nicht mehr als Endergebnis: Bis 1.9.1 galt ein laufendes Spiel
 mit Zwischenstand als beendet (kein LIVE, Einsortierung unter „Letzte
 Ergebnisse"/`sm_letztes_spiel`). Niemals ein geratenes Ergebnis wie „0:0".
@@ -421,7 +450,9 @@ sich über den Widerrufs-Link jederzeit löschen lässt.
 `[sm_livestream team_id="6754"]` zeigt den Stream des für dieses Team gerade
 relevantesten Spiels als eigenständigen, großen Player - z.B. für eine
 Landingpage "Heute live". Nutzt `team_id` statt `liga_id` (wie `sm_scorer`):
-ein Request deckt alle Wettbewerbe der Saison ab, keine Liga-ID nötig.
+ein Request deckt alle Wettbewerbe der Saison ab, keine Liga-ID nötig. Seit
+1.10.0 sind mehrere `team_id` (kommagetrennt) sowie zusätzlich `liga_id` +
+`team` möglich, siehe [Liga und Pokal in einem Block](#liga-und-pokal-in-einem-block-team_id).
 
 **Auswahl des Spiels** (automatisch, ohne dass sich am eingebundenen
 Shortcode etwas ändert), in dieser Reihenfolge:
@@ -466,7 +497,8 @@ Attribute:
 
 | Attribut | Werte | Standard | Bedeutung |
 |---|---|---|---|
-| `team_id` | Team-ID | – (Pflicht) | siehe Team-Finder |
+| `team_id` | Team-ID(s), kommagetrennt | – (Pflicht, sofern kein `liga_id`) | siehe Team-Finder |
+| `liga_id` / `team` | Liga-ID(s) / Namensfragment | leer | Optionale zusätzliche Quelle, keine Standard-Liga |
 | `nach_spielende` | `aufzeichnung` / `ausblenden` | `aufzeichnung` | Verhalten, wenn weder ein laufendes noch ein kommendes Spiel existiert |
 | `titel` | freier Text | leer | Eigene Überschrift zusätzlich zum automatischen "Livestream"-/"Aufzeichnung"-Label |
 | `hinweis` | `true` / `false` | `false` | Ohne verfügbaren Stream: `false` gibt nichts aus (keine leere Box), `true` zeigt einen dezenten Hinweistext |

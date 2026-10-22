@@ -382,7 +382,7 @@ class SMF_Admin {
                                     <input type="number" id="smf_default_league_id" name="smf_default_league_id"
                                            value="<?php echo esc_attr( get_option( 'smf_default_league_id', '' ) ); ?>"
                                            class="small-text">
-                                    <p class="description">Fallback wenn im Shortcode keine <code>liga_id</code> angegeben ist.</p>
+                                    <p class="description">Fallback wenn im Shortcode keine <code>liga_id</code> angegeben ist (bei Spielkarten nur, wenn auch keine <code>team_id</code> gesetzt ist).</p>
                                 </td>
                             </tr>
                             <tr>
@@ -822,10 +822,13 @@ class SMF_Admin {
                                 </td>
                             </tr>
                             <tr>
-                                <td><code>[sm_naechstes_spiel liga_id="123"]</code></td>
+                                <td><code>[sm_naechstes_spiel team_id="6754"]</code></td>
                                 <td>Nächstes kommendes Spiel</td>
                                 <td>
-                                    <code>liga_id</code>, <code>team</code>, <code>logos</code> (true/false, Standard: true),
+                                    <code>team_id</code> (empfohlen: alle Wettbewerbe des Teams, Liga + Pokal), <code>liga_id</code>,
+                                    <code>team</code> (filtert nur die <code>liga_id</code>-Spiele) - <code>team_id</code> und
+                                    <code>liga_id</code> jeweils kommagetrennt mehrfach und kombinierbar,
+                                    <code>logos</code> (true/false, Standard: true),
                                     <code>namen</code> (true/false, Standard: true), <code>logo_groesse</code>
                                     (klein/mittel/gross/sehr_gross, Standard: mittel), <code>live_badge</code>
                                     (true/false, Standard: true). <code>hervorheben</code> wird
@@ -834,10 +837,13 @@ class SMF_Admin {
                                 </td>
                             </tr>
                             <tr>
-                                <td><code>[sm_letztes_spiel liga_id="123"]</code></td>
+                                <td><code>[sm_letztes_spiel team_id="6754"]</code></td>
                                 <td>Letztes gespieltes Spiel</td>
                                 <td>
-                                    <code>liga_id</code>, <code>team</code>, <code>logos</code> (true/false, Standard: true),
+                                    <code>team_id</code> (empfohlen: alle Wettbewerbe des Teams, Liga + Pokal), <code>liga_id</code>,
+                                    <code>team</code> (filtert nur die <code>liga_id</code>-Spiele) - <code>team_id</code> und
+                                    <code>liga_id</code> jeweils kommagetrennt mehrfach und kombinierbar,
+                                    <code>logos</code> (true/false, Standard: true),
                                     <code>namen</code> (true/false, Standard: true), <code>logo_groesse</code>
                                     (klein/mittel/gross/sehr_gross, Standard: mittel), <code>live_badge</code>
                                     (true/false, Standard: true). <code>hervorheben</code> wird
@@ -845,7 +851,7 @@ class SMF_Admin {
                                 </td>
                             </tr>
                             <tr>
-                                <td><code>[sm_spiel_duo liga_id="123"]</code></td>
+                                <td><code>[sm_spiel_duo team_id="6754"]</code></td>
                                 <td>Nächstes und letztes Spiel nebeneinander in einem gemeinsamen Grid (bricht auf
                                     schmalem Platz automatisch untereinander um)</td>
                                 <td>
@@ -884,7 +890,8 @@ class SMF_Admin {
                                     sichtbar, ganz gleich wie alt) &gt; nächstes Spiel (erst wenn Anstoß &lt; 24 Std.
                                     entfernt UND ein Stream-Link eingetragen ist)</td>
                                 <td>
-                                    <code>team_id</code> (Pflicht), <code>nach_spielende</code>
+                                    <code>team_id</code> (kommagetrennt mehrere möglich; alternativ/zusätzlich
+                                    <code>liga_id</code> + <code>team</code>, keine Standard-Liga), <code>nach_spielende</code>
                                     (<code>aufzeichnung</code>/<code>ausblenden</code>, Standard: aufzeichnung -
                                     steuert nur, ob die Aufzeichnung gezeigt wird, wenn es gar kein kommendes
                                     Spiel gibt), <code>titel</code>
@@ -902,6 +909,13 @@ class SMF_Admin {
                         über den Team-Finder oben (Spalte "Liga(en)" bei den gefundenen Teams) oder über den
                         "Teams laden"-Button bei einem Verein. Die <code>team_id</code> für
                         <code>[sm_scorer]</code>/<code>[sm_vereinsuebersicht]</code> findest du an derselben Stelle.
+                    </p>
+                    <p class="description">
+                        Empfohlen für Spielkarten (seit 1.10.0): <code>team_id</code> statt <code>liga_id</code> -
+                        analog zur Vereinskonfiguration zeigt <code>[sm_naechstes_spiel team_id="6754"]</code> Liga- UND
+                        Pokalspiele des Teams in einem Block, der Wettbewerbsname kommt aus dem jeweiligen Spiel.
+                        Kombinierbar mit einer Liga: <code>[sm_naechstes_spiel liga_id="123" team="Eichehorn" team_id="6754"]</code>.
+                        Die Standard-Liga greift nur, wenn weder <code>team_id</code> noch <code>liga_id</code> gesetzt ist.
                     </p>
                     <p class="description">
                         Beispiel: <code>[sm_scorer team_id="6754" anzahl="10" spalten="kompakt" namen="abgekuerzt"]</code>
