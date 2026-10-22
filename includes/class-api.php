@@ -882,6 +882,27 @@ class SMF_API {
     }
 
     /**
+     * Doppelte Spiele anhand game_id entfernen - das erste Vorkommen bleibt
+     * (samt eventueller Zusatzfelder wie _liga_name). Gemeinsam genutzt von
+     * SMF_ClubOverview::get_games() (zwei eigene Teams spielen gegeneinander)
+     * und SMF_Shortcodes::collect_games() (dasselbe Spiel aus team_id- UND
+     * liga_id-Quelle). Spiele ohne game_id bleiben unangetastet.
+     *
+     * @param array $games
+     * @return array
+     */
+    public static function unique_games( $games ) {
+        $seen = array();
+        return array_values( array_filter( $games, function ( $g ) use ( &$seen ) {
+            $id = isset( $g['game_id'] ) ? $g['game_id'] : null;
+            if ( $id === null ) return true;
+            if ( isset( $seen[ $id ] ) ) return false;
+            $seen[ $id ] = true;
+            return true;
+        } ) );
+    }
+
+    /**
      * @param array  $games
      * @param string $team_name
      * @return array

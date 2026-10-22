@@ -139,14 +139,7 @@ class SMF_ClubOverview {
         }
 
         // Duplikate anhand game_id entfernen (z.B. wenn zwei eigene Teams gegeneinander spielen)
-        $seen      = array();
-        $all_games = array_values( array_filter( $all_games, function ( $g ) use ( &$seen ) {
-            $id = isset( $g['game_id'] ) ? $g['game_id'] : null;
-            if ( $id === null ) return true;
-            if ( isset( $seen[ $id ] ) ) return false;
-            $seen[ $id ] = true;
-            return true;
-        } ) );
+        $all_games = SMF_API::unique_games( $all_games );
 
         // Anstehende Spiele: aufsteigend nach Datum
         $upcoming = $api->filter_upcoming_games( $all_games );

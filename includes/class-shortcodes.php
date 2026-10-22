@@ -6,9 +6,10 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  *
  * [sm_tabelle liga_id="123"]
  * [sm_spiele liga_id="123" anzahl="10" team="Eichehorn"]
+ * [sm_naechstes_spiel team_id="6754"]
  * [sm_naechstes_spiel liga_id="123" team="Eichehorn"]
- * [sm_letztes_spiel liga_id="123"]
- * [sm_spiel_duo liga_id="123" reihenfolge="naechstes-zuerst"]
+ * [sm_letztes_spiel team_id="6754,6755" liga_id="123"]
+ * [sm_spiel_duo team_id="6754" reihenfolge="naechstes-zuerst"]
  * [sm_scorer team_id="6754" anzahl="10"]
  * [sm_livestream team_id="6754" nach_spielende="aufzeichnung"]
  */
@@ -150,7 +151,11 @@ class SMF_Shortcodes {
     }
 
     // ----------------------------------------------------------------
-    // [sm_naechstes_spiel liga_id="123" team="Eichehorn" namen="true" logo_groesse="mittel" hervorheben=""]
+    // [sm_naechstes_spiel team_id="6754" liga_id="123" team="Eichehorn" namen="true" logo_groesse="mittel" hervorheben=""]
+    //
+    // team_id und liga_id jeweils kommagetrennt mehrfach und kombinierbar
+    // (v1.10.0) - siehe collect_games(). Der angezeigte Wettbewerbsname
+    // stammt aus dem konkreten Spiel (Liga oder Pokal).
     //
     // hervorheben wird akzeptiert (kein Fehlerkasten bei Verwendung), hat
     // hier aber bewusst KEINEN sichtbaren Effekt: Die Karte zeigt ohnehin
@@ -160,7 +165,8 @@ class SMF_Shortcodes {
     // ----------------------------------------------------------------
     public function shortcode_naechstes_spiel( $atts ) {
         $atts = shortcode_atts( array(
-            'liga_id'      => get_option( 'smf_default_league_id', '' ),
+            'team_id'      => '',
+            'liga_id'      => '',
             'team'         => '',
             'logos'        => 'true',
             'namen'        => 'true',
@@ -169,31 +175,18 @@ class SMF_Shortcodes {
             'live_badge'   => 'true',
         ), $atts, 'sm_naechstes_spiel' );
 
-        $liga_id = (int) $atts['liga_id'];
-        if ( ! $liga_id ) {
-            return $this->error( 'Bitte liga_id angeben.' );
+        $collected = $this->collect_games( $atts );
+        if ( ! is_array( $collected ) ) {
+            return $collected;
         }
-
-        $api = new SMF_API();
-
-        $schedule = $api->get_schedule( $liga_id );
-        if ( is_wp_error( $schedule ) ) {
-            return $this->error( $schedule );
-        }
-
-        $games = $this->normalize_schedule( $schedule );
-
-        if ( ! empty( $atts['team'] ) ) {
-            $games = $api->filter_by_team( $games, $atts['team'] );
-        }
+        list( $api, $games ) = $collected;
 
         $game = $api->get_next_game( $games );
         if ( ! $game ) {
             return '<div class="smf-notice">Kein kommendes Spiel gefunden.</div>' . self::stale_notice( $api->stale_since() );
         }
 
-        $league      = $api->get_league( $liga_id );
-        $league_name = is_wp_error( $league ) ? '' : ( isset( $league['name'] ) ? $league['name'] : '' );
+        $league_name = isset( $game['_liga_name'] ) ? $game['_liga_name'] : '';
 
         // Erst nach dem letzten API-Aufruf lesen, direkt vor dem Rendern.
         $stale_since = $api->stale_since();
@@ -218,14 +211,16 @@ class SMF_Shortcodes {
     }
 
     // ----------------------------------------------------------------
-    // [sm_letztes_spiel liga_id="123" team="Eichehorn" namen="true" logo_groesse="mittel" hervorheben=""]
+    // [sm_letztes_spiel team_id="6754" liga_id="123" team="Eichehorn" namen="true" logo_groesse="mittel" hervorheben=""]
     //
+    // Quellen wie bei shortcode_naechstes_spiel() oben (collect_games()).
     // hervorheben wird akzeptiert, hat aber bewusst keinen sichtbaren
     // Effekt - siehe Begründung bei shortcode_naechstes_spiel() oben.
     // ----------------------------------------------------------------
     public function shortcode_letztes_spiel( $atts ) {
         $atts = shortcode_atts( array(
-            'liga_id'      => get_option( 'smf_default_league_id', '' ),
+            'team_id'      => '',
+            'liga_id'      => '',
             'team'         => '',
             'logos'        => 'true',
             'namen'        => 'true',
@@ -234,31 +229,18 @@ class SMF_Shortcodes {
             'live_badge'   => 'true',
         ), $atts, 'sm_letztes_spiel' );
 
-        $liga_id = (int) $atts['liga_id'];
-        if ( ! $liga_id ) {
-            return $this->error( 'Bitte liga_id angeben.' );
+        $collected = $this->collect_games( $atts );
+        if ( ! is_array( $collected ) ) {
+            return $collected;
         }
-
-        $api = new SMF_API();
-
-        $schedule = $api->get_schedule( $liga_id );
-        if ( is_wp_error( $schedule ) ) {
-            return $this->error( $schedule );
-        }
-
-        $games = $this->normalize_schedule( $schedule );
-
-        if ( ! empty( $atts['team'] ) ) {
-            $games = $api->filter_by_team( $games, $atts['team'] );
-        }
+        list( $api, $games ) = $collected;
 
         $game = $api->get_last_game( $games );
         if ( ! $game ) {
             return '<div class="smf-notice">Kein gespieltes Spiel gefunden.</div>' . self::stale_notice( $api->stale_since() );
         }
 
-        $league      = $api->get_league( $liga_id );
-        $league_name = is_wp_error( $league ) ? '' : ( isset( $league['name'] ) ? $league['name'] : '' );
+        $league_name = isset( $game['_liga_name'] ) ? $game['_liga_name'] : '';
 
         // Erst nach dem letzten API-Aufruf lesen, direkt vor dem Rendern.
         $stale_since = $api->stale_since();
@@ -288,7 +270,7 @@ class SMF_Shortcodes {
     }
 
     // ----------------------------------------------------------------
-    // [sm_spiel_duo liga_id="123" team="Eichehorn" reihenfolge="naechstes-zuerst"
+    // [sm_spiel_duo team_id="6754" liga_id="123" team="Eichehorn" reihenfolge="naechstes-zuerst"
     //               logos="true" namen="true" logo_groesse="mittel" hervorheben=""]
     //
     // Kombiniert sm_naechstes_spiel und sm_letztes_spiel in einem
@@ -310,7 +292,8 @@ class SMF_Shortcodes {
     // ----------------------------------------------------------------
     public function shortcode_spiel_duo( $atts ) {
         $duo_atts = shortcode_atts( array(
-            'liga_id'      => get_option( 'smf_default_league_id', '' ),
+            'team_id'      => '',
+            'liga_id'      => '',
             'team'         => '',
             'logos'        => 'true',
             'namen'        => 'true',
@@ -320,11 +303,14 @@ class SMF_Shortcodes {
             'reihenfolge'  => 'naechstes-zuerst',
         ), $atts, 'sm_spiel_duo' );
 
-        $liga_id = (int) $duo_atts['liga_id'];
-        if ( ! $liga_id ) {
-            // Einmalige Prüfung hier statt in beiden Einzel-Shortcodes
-            // gleichzeitig - sonst erschiene dieselbe Fehlermeldung doppelt.
-            return $this->error( 'Bitte liga_id angeben, z.B. [sm_spiel_duo liga_id="123"]' );
+        // Einmalige Prüfung hier statt in beiden Einzel-Shortcodes
+        // gleichzeitig - sonst erschiene dieselbe Fehlermeldung doppelt.
+        // Gleiche Regel wie collect_games(): Standard-Liga nur ohne
+        // team_id UND ohne liga_id.
+        if ( ! self::parse_id_list( $duo_atts['team_id'] )
+            && ! self::parse_id_list( $duo_atts['liga_id'] )
+            && ! self::parse_id_list( get_option( 'smf_default_league_id', '' ) ) ) {
+            return $this->error( 'Bitte team_id oder liga_id angeben, z.B. [sm_spiel_duo team_id="6754"]' );
         }
 
         // reihenfolge ist kein Attribut der Einzel-Shortcodes - vor der
@@ -475,27 +461,32 @@ class SMF_Shortcodes {
     // teams/{id}/matches statt liga_id, wie sm_scorer - liefert alle
     // Wettbewerbe des Teams in einem Request, kein Rätselraten nach der
     // richtigen Liga-ID.
+    //
+    // Seit v1.10.0 über collect_games(): team_id kommagetrennt mehrfach,
+    // optional ergänzt um liga_id/team. Anders als die Spielkarten OHNE
+    // Fallback auf die Standard-Liga - ein Livestream ohne Team-Bezug wäre
+    // beliebig, [sm_livestream] ohne Attribute bleibt daher ein Fehler.
     // ----------------------------------------------------------------
     public function shortcode_livestream( $atts ) {
         $atts = shortcode_atts( array(
             'team_id'       => '',
+            'liga_id'       => '',
+            'team'          => '',
             'nach_spielende' => 'aufzeichnung',
             'titel'         => '',
             'hinweis'       => 'false',
         ), $atts, 'sm_livestream' );
 
-        $team_id = (int) $atts['team_id'];
-        if ( ! $team_id ) {
-            return $this->error( 'Bitte team_id angeben, z.B. [sm_livestream team_id="6754"]' );
+        $collected = $this->collect_games(
+            $atts,
+            false,
+            'Bitte team_id oder liga_id angeben, z.B. [sm_livestream team_id="6754"]'
+        );
+        if ( ! is_array( $collected ) ) {
+            return $collected;
         }
+        list( $api, $games ) = $collected;
 
-        $api      = new SMF_API();
-        $response = $api->get_team_matches( $team_id );
-        if ( is_wp_error( $response ) ) {
-            return $this->error( $response );
-        }
-
-        $games  = ( isset( $response['matches'] ) && is_array( $response['matches'] ) ) ? $response['matches'] : array();
         $include_ended_fallback = $atts['nach_spielende'] !== 'ausblenden';
         $mode   = get_option( 'smf_stream_embed_mode', 'nur_link' );
 
@@ -673,6 +664,113 @@ class SMF_Shortcodes {
             return false;
         }
         return get_option( 'smf_live_badge_enabled', 'an' ) === 'an';
+    }
+
+    /**
+     * Spiele aus allen angegebenen Quellen sammeln (v1.10.0) - Grundlage für
+     * sm_naechstes_spiel, sm_letztes_spiel, sm_spiel_duo und sm_livestream.
+     *
+     * Zwei Quellenarten, jeweils kommagetrennt mehrfach und kombinierbar:
+     * - team_id: teams/{id}/matches - alle Wettbewerbe des Teams (Liga UND
+     *   Pokal) in einem Request, Wettbewerbsname direkt aus dem Spiel.
+     * - liga_id: Spielplan der Liga, optional per team (Namensfragment)
+     *   gefiltert - der Filter gilt NUR für diese Quelle, team_id-Spiele
+     *   gehören ohnehin zum Team.
+     *
+     * smf_default_league_id greift nur, wenn WEDER team_id NOCH liga_id
+     * gesetzt ist (und $use_default_league das erlaubt) - deshalb steht der
+     * liga_id-Default in shortcode_atts() auf '' und wird erst hier aufgelöst.
+     *
+     * Fällt eine einzelne Quelle aus (WP_Error), wird sie übersprungen und
+     * der Block zeigt die übrigen Spiele. Scheitern ALLE Quellen, kommt der
+     * letzte Fehler zurück - wie bisher bei einer einzelnen liga_id, statt
+     * stillschweigend "Kein Spiel gefunden" zu zeigen.
+     *
+     * Jedes Spiel trägt danach $game['_liga_name'] (wie in der
+     * Vereinsübersicht), damit die Karte den Wettbewerb DIESES Spiels zeigt.
+     *
+     * @param array $atts               Bereits per shortcode_atts() aufgelöste Attribute (team_id, liga_id, team)
+     * @param bool  $use_default_league Fallback auf smf_default_league_id erlauben
+     * @param string $missing_message   Fehlermeldung, wenn gar keine Quelle angegeben ist
+     * @return array|string array( SMF_API $api, array $games ) oder fertiges Fehler-HTML (siehe error())
+     */
+    private function collect_games( $atts, $use_default_league = true, $missing_message = 'Bitte team_id oder liga_id angeben.' ) {
+        $team_ids = self::parse_id_list( isset( $atts['team_id'] ) ? $atts['team_id'] : '' );
+        $liga_ids = self::parse_id_list( isset( $atts['liga_id'] ) ? $atts['liga_id'] : '' );
+
+        if ( ! $team_ids && ! $liga_ids && $use_default_league ) {
+            $liga_ids = self::parse_id_list( get_option( 'smf_default_league_id', '' ) );
+        }
+
+        if ( ! $team_ids && ! $liga_ids ) {
+            return $this->error( $missing_message );
+        }
+
+        $api        = new SMF_API();
+        $games      = array();
+        $last_error = null;
+        $ok_count   = 0;
+
+        foreach ( $team_ids as $team_id ) {
+            $response = $api->get_team_matches( $team_id );
+            if ( is_wp_error( $response ) ) {
+                $last_error = $response;
+                continue;
+            }
+            $ok_count++;
+
+            $matches = ( isset( $response['matches'] ) && is_array( $response['matches'] ) ) ? $response['matches'] : array();
+            foreach ( $matches as &$game ) {
+                $game['_liga_name'] = isset( $game['league_name'] ) ? $game['league_name'] : ( isset( $game['league_short_name'] ) ? $game['league_short_name'] : '' );
+            }
+            unset( $game );
+
+            $games = array_merge( $games, $matches );
+        }
+
+        foreach ( $liga_ids as $liga_id ) {
+            $schedule = $api->get_schedule( $liga_id );
+            if ( is_wp_error( $schedule ) ) {
+                $last_error = $schedule;
+                continue;
+            }
+            $ok_count++;
+
+            $matches = $this->normalize_schedule( $schedule );
+            if ( ! empty( $atts['team'] ) ) {
+                $matches = $api->filter_by_team( $matches, $atts['team'] );
+            }
+
+            $league      = $api->get_league( $liga_id );
+            $league_name = is_wp_error( $league ) ? '' : ( isset( $league['name'] ) ? $league['name'] : '' );
+            foreach ( $matches as &$game ) {
+                $game['_liga_name'] = $league_name;
+            }
+            unset( $game );
+
+            $games = array_merge( $games, $matches );
+        }
+
+        if ( ! $ok_count ) {
+            return $this->error( $last_error );
+        }
+
+        return array( $api, SMF_API::unique_games( $games ) );
+    }
+
+    /**
+     * Kommagetrennte ID-Liste ("2449, 2451") in positive, eindeutige
+     * Integer zerlegen. Ungültige Einträge fallen still weg - wie bisher
+     * bei (int) $atts['liga_id'] kein Fehlerkasten für einen Tippfehler.
+     *
+     * @param string|int $value
+     * @return int[]
+     */
+    private static function parse_id_list( $value ) {
+        $ids = array_map( 'intval', explode( ',', (string) $value ) );
+        return array_values( array_unique( array_filter( $ids, function ( $id ) {
+            return $id > 0;
+        } ) ) );
     }
 
     /**
