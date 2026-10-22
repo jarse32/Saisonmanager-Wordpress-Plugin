@@ -4,7 +4,7 @@ Tags: floorball, sport, spielplan, ergebnisse, tabelle
 Requires at least: 5.3
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.10.0
+Stable tag: 1.10.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,12 @@ im `main`-Branch des Repositories eine neue Version veröffentlicht wird -
 Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren*.
 
 == Changelog ==
+
+= 1.10.1 =
+* Behoben: `team_id` zusammen mit `liga_id` (ohne `team`) mischte den
+  kompletten Ligaspielplan ein - "Nächstes Spiel" zeigte dann ein beliebiges
+  Ligaspiel fremder Teams. Die Liga-Spiele werden jetzt auf die angegebenen
+  `team_id`s eingeschränkt
 
 = 1.10.0 =
 * Neu: Attribut `team_id` für `sm_naechstes_spiel`, `sm_letztes_spiel` und
@@ -252,6 +258,10 @@ Updates laufen dann wie bei jedem anderen Plugin über *Plugins -> Aktualisieren
 * Vereinsübersicht (alle Teams eines Vereins)
 
 == Upgrade Notice ==
+
+= 1.10.1 =
+Keine Aktion nötig. Fehlerbehebung: `[sm_naechstes_spiel liga_id="…" team_id="…"]`
+zeigt jetzt nur Spiele des Teams statt eines beliebigen Ligaspiels.
 
 = 1.10.0 =
 Keine Aktion nötig, voll abwärtskompatibel. Neu: `team_id` für die

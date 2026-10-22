@@ -178,7 +178,9 @@ Die Karte zeigt dabei den Wettbewerb des konkreten Spiels an.
 
 `team_id` und `liga_id` sind kombinierbar und nehmen jeweils mehrere,
 kommagetrennte Werte an. `team` (Namensfragment) filtert dabei nur die
-Spiele aus `liga_id` – die `team_id`-Spiele gehören ohnehin zum Team.
+Spiele aus `liga_id` – die `team_id`-Spiele gehören ohnehin zum Team. Ohne
+`team` werden die `liga_id`-Spiele auf die angegebenen `team_id`s
+eingeschränkt (seit 1.10.1), statt den kompletten Ligaspielplan einzumischen.
 Doppelte Spiele (aus beiden Quellen) erscheinen nur einmal:
 
 ```

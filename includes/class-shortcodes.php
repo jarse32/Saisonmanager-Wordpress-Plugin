@@ -675,7 +675,8 @@ class SMF_Shortcodes {
      *   Pokal) in einem Request, Wettbewerbsname direkt aus dem Spiel.
      * - liga_id: Spielplan der Liga, optional per team (Namensfragment)
      *   gefiltert - der Filter gilt NUR für diese Quelle, team_id-Spiele
-     *   gehören ohnehin zum Team.
+     *   gehören ohnehin zum Team. Ohne team, aber mit team_id werden die
+     *   Liga-Spiele stattdessen auf diese Team-IDs eingeschränkt.
      *
      * smf_default_league_id greift nur, wenn WEDER team_id NOCH liga_id
      * gesetzt ist (und $use_default_league das erlaubt) - deshalb steht der
@@ -739,6 +740,16 @@ class SMF_Shortcodes {
             $matches = $this->normalize_schedule( $schedule );
             if ( ! empty( $atts['team'] ) ) {
                 $matches = $api->filter_by_team( $matches, $atts['team'] );
+            } elseif ( $team_ids ) {
+                // Ohne team, aber mit team_id (v1.10.1): Liga-Spiele auf die
+                // angegebenen Teams einschränken - sonst landete der komplette
+                // Ligaspielplan im Block und "nächstes Spiel" wäre ein
+                // beliebiges Ligaspiel fremder Teams.
+                $matches = array_values( array_filter( $matches, function ( $g ) use ( $team_ids ) {
+                    $home  = isset( $g['home_team_id'] ) ? (int) $g['home_team_id'] : 0;
+                    $guest = isset( $g['guest_team_id'] ) ? (int) $g['guest_team_id'] : 0;
+                    return in_array( $home, $team_ids, true ) || in_array( $guest, $team_ids, true );
+                } ) );
             }
 
             $league      = $api->get_league( $liga_id );

@@ -826,7 +826,7 @@ class SMF_Admin {
                                 <td>Nächstes kommendes Spiel</td>
                                 <td>
                                     <code>team_id</code> (empfohlen: alle Wettbewerbe des Teams, Liga + Pokal), <code>liga_id</code>,
-                                    <code>team</code> (filtert nur die <code>liga_id</code>-Spiele) - <code>team_id</code> und
+                                    <code>team</code> (filtert nur die <code>liga_id</code>-Spiele; ohne <code>team</code> filtert dort <code>team_id</code>) - <code>team_id</code> und
                                     <code>liga_id</code> jeweils kommagetrennt mehrfach und kombinierbar,
                                     <code>logos</code> (true/false, Standard: true),
                                     <code>namen</code> (true/false, Standard: true), <code>logo_groesse</code>
@@ -841,7 +841,7 @@ class SMF_Admin {
                                 <td>Letztes gespieltes Spiel</td>
                                 <td>
                                     <code>team_id</code> (empfohlen: alle Wettbewerbe des Teams, Liga + Pokal), <code>liga_id</code>,
-                                    <code>team</code> (filtert nur die <code>liga_id</code>-Spiele) - <code>team_id</code> und
+                                    <code>team</code> (filtert nur die <code>liga_id</code>-Spiele; ohne <code>team</code> filtert dort <code>team_id</code>) - <code>team_id</code> und
                                     <code>liga_id</code> jeweils kommagetrennt mehrfach und kombinierbar,
                                     <code>logos</code> (true/false, Standard: true),
                                     <code>namen</code> (true/false, Standard: true), <code>logo_groesse</code>
